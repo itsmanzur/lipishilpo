@@ -3,7 +3,7 @@ import {
   Feather, BookOpen, Plus, FileText, Library, BarChart3,
   LayoutTemplate, ChevronRight, Download, CheckCheck,
   Sparkles, ArrowRight, ArrowLeft, LayoutDashboard, Check, X, Undo2, Loader2, Globe,
-  Search, ChevronUp, ChevronDown, Trash2, FileCode, HelpCircle,
+  Search, ChevronUp, ChevronDown, Trash2, FileCode, HelpCircle, Sliders, LogOut,
   Maximize2, Minimize2, Sun, Moon, Coffee, History, Target,
   MessageSquare, MessageSquarePlus, CheckCircle, Eye, Edit3,
 } from 'lucide-react';
@@ -19,6 +19,8 @@ import {
 import { AudioProofreader } from './components/AudioProofreader';
 import { AIPanel } from './components/AIPanel';
 import { ExportPanel } from './components/ExportPanel';
+import { DocsView } from './components/DocsView';
+import { SettingsView } from './components/SettingsView';
 import { wpConfig } from './api';
 import { translations, getSavedLanguage, saveLanguage, type Language } from './i18n';
 
@@ -58,7 +60,16 @@ export default function App() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [pid, setPid] = useState<string | null>(null);
   const [cid, setCid] = useState<string | null>(null);
-  const [view, setView] = useState<'projects' | 'editor'>('projects');
+  const [view, setView] = useState<'projects' | 'editor' | 'docs' | 'settings'>(() => {
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const page = urlParams.get('page');
+      const v = urlParams.get('view');
+      if (v === 'docs' || page === 'lipishilpo-docs') return 'docs';
+      if (v === 'settings' || page === 'lipishilpo-settings') return 'settings';
+    } catch {}
+    return 'projects';
+  });
   const [tabKey, setTabKey] = useState<'proofread' | 'audio' | 'comments' | 'snapshots' | 'aiEdit' | 'analysis' | 'format'>('proofread');
   const [modal, setModal] = useState(false);
   const [statsModal, setStatsModal] = useState(false);
@@ -160,7 +171,6 @@ export default function App() {
         if (list.length > 0) {
           setPid(list[0].id);
           setCid(list[0].chapters[0]?.id ?? null);
-          setView('projects');
         }
       })
       .catch((e) => setLoadError(e.message))
@@ -707,11 +717,6 @@ export default function App() {
             <span>{t.brandName}<small>{t.brandTagline}</small></span>
           </div>
 
-          <a href={wpConfig.adminUrl} className="sidebar-exit-wp" title={t.btnExitToDashboardTitle}>
-            <ArrowLeft size={14} />
-            <span>{t.btnExitToDashboard}</span>
-          </a>
-
           <div className="section-label first-label">{t.workspace}</div>
 
           <button className={'nav ' + (view === 'projects' ? 'active' : '')} onClick={() => setView('projects')}>
@@ -784,16 +789,21 @@ export default function App() {
             <LayoutTemplate size={18} /> {t.bookFormatting}
           </button>
 
-          <a href="/wp-admin/admin.php?page=lipishilpo-docs" target="_blank" rel="noopener" className="nav">
-            <HelpCircle size={18} /> {t.btnUserGuide}
-          </a>
+          <button className={'nav ' + (view === 'docs' ? 'active' : '')} onClick={() => setView('docs')}>
+            <HelpCircle size={18} /> {t.tabDocs}
+          </button>
+
+          <button className={'nav ' + (view === 'settings' ? 'active' : '')} onClick={() => setView('settings')}>
+            <Sliders size={18} /> {t.tabSettings}
+          </button>
 
           <div className="sidebar-bottom">
             <div>{t.brandName} <span>STUDIO</span></div>
             <p style={{ whiteSpace: 'pre-line' }}>{t.studioQuote}</p>
             <footer>
-              <span>{lang === 'bn' ? 'ল' : 'L'}</span>
-              <div>{t.studioLabel}<small>{t.savedToServer}</small></div>
+              <a href={wpConfig.adminUrl} className="sidebar-wp-return-link" title={t.btnExitToWpTitle}>
+                <LogOut size={13} /> <span>{t.btnExitToWp}</span>
+              </a>
             </footer>
           </div>
         </aside>
@@ -817,29 +827,63 @@ export default function App() {
         {!focusMode && (
           <header>
             <div className="breadcrumb">
-              <a href={wpConfig.adminUrl} className="exit-to-wp-btn" title={t.btnExitToDashboardTitle}>
-                <ArrowLeft size={14} />
-                <span>{t.btnExitToDashboard}</span>
-              </a>
-              <span className="breadcrumb-divider">/</span>
-              <button title={t.allProjects} onClick={() => setView('projects')}>
-                <Library size={18} />
-              </button>
-              <span>{t.myProjects}</span>
-              {project && <><ChevronRight size={14} /><strong>{project.title}</strong></>}
+              {view !== 'projects' && (
+                <>
+                  <button
+                    className="exit-to-wp-btn"
+                    onClick={() => setView('projects')}
+                    title={t.btnExitToDashboardTitle}
+                  >
+                    <ArrowLeft size={14} />
+                    <span>{t.btnExitToDashboard}</span>
+                  </button>
+                  <span className="breadcrumb-divider">/</span>
+                </>
+              )}
+              {view === 'projects' ? (
+                <>
+                  <Library size={18} />
+                  <span>{t.myProjects}</span>
+                </>
+              ) : view === 'docs' ? (
+                <>
+                  <HelpCircle size={18} />
+                  <span>{t.tabDocs}</span>
+                </>
+              ) : view === 'settings' ? (
+                <>
+                  <Sliders size={18} />
+                  <span>{t.tabSettings}</span>
+                </>
+              ) : (
+                <>
+                  <button title={t.allProjects} onClick={() => setView('projects')}>
+                    <Library size={18} />
+                  </button>
+                  <span>{t.myProjects}</span>
+                  {project && <><ChevronRight size={14} /><strong>{project.title}</strong></>}
+                </>
+              )}
             </div>
 
             <div className="header-actions">
-              {/* User Guide Docs icon */}
-              <a
-                href="/wp-admin/admin.php?page=lipishilpo-docs"
-                target="_blank"
-                rel="noopener"
-                className="header-icon-btn"
+              {/* User Guide Docs button */}
+              <button
+                className={'header-icon-btn ' + (view === 'docs' ? 'active' : '')}
+                onClick={() => setView(view === 'docs' ? (project ? 'editor' : 'projects') : 'docs')}
                 title={t.btnUserGuide}
               >
                 <HelpCircle size={15} />
-              </a>
+              </button>
+
+              {/* Settings button */}
+              <button
+                className={'header-icon-btn ' + (view === 'settings' ? 'active' : '')}
+                onClick={() => setView(view === 'settings' ? (project ? 'editor' : 'projects') : 'settings')}
+                title={t.tabSettings}
+              >
+                <Sliders size={15} />
+              </button>
 
               {/* Theme Switcher */}
               {view === 'editor' && (
@@ -1809,6 +1853,19 @@ export default function App() {
             )}
             </div>
           </>
+        ) : view === 'docs' ? (
+          <DocsView
+            lang={lang}
+            onOpenEditor={() => setView(project ? 'editor' : 'projects')}
+            onOpenSettings={() => setView('settings')}
+          />
+        ) : view === 'settings' ? (
+          <SettingsView
+            isPro={wpConfig.isPro}
+            lang={lang}
+            onToggleLang={toggleLanguage}
+            onOpenEditor={() => setView(project ? 'editor' : 'projects')}
+          />
         ) : null}
       </main>
 

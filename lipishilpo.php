@@ -142,7 +142,7 @@ function lipishilpo_admin_page_menu() {
 		__( 'User Guide & Docs', 'lipishilpo' ),
 		'read',
 		'lipishilpo-docs',
-		array( 'Lipishilpo_Docs', 'render_docs_page' )
+		'lipishilpo_admin_editor_page'
 	);
 
 	add_submenu_page(
@@ -151,7 +151,7 @@ function lipishilpo_admin_page_menu() {
 		__( 'Settings & Info', 'lipishilpo' ),
 		'manage_options',
 		'lipishilpo-settings',
-		array( 'Lipishilpo_Admin', 'render_settings_page' )
+		'lipishilpo_admin_editor_page'
 	);
 }
 
@@ -165,11 +165,16 @@ function lipishilpo_admin_editor_page() {
 	echo '</div>';
 }
 
-// ── Fullscreen Admin Body Class for Studio Editor ────────────────────────
+// ── Fullscreen Admin Body Class for Studio Editor & SPA Pages ────────────
 add_filter( 'admin_body_class', 'lipishilpo_admin_body_class' );
 function lipishilpo_admin_body_class( $classes ) {
 	$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
-	if ( $screen && ( 'toplevel_page_lipishilpo' === $screen->id || 'lipishilpo_page_lipishilpo' === $screen->id ) ) {
+	if ( $screen && (
+		'toplevel_page_lipishilpo' === $screen->id ||
+		'lipishilpo_page_lipishilpo' === $screen->id ||
+		'lipishilpo_page_lipishilpo-docs' === $screen->id ||
+		'lipishilpo_page_lipishilpo-settings' === $screen->id
+	) ) {
 		$classes .= ' lipishilpo-studio-fullscreen ';
 	}
 	return $classes;

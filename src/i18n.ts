@@ -30,9 +30,13 @@ export const translations = {
     savedToServer: 'Saved to server',
     savedInBrowser: 'Saved in browser',
 
-    // Header
+    // Header & Navigation
     btnExitToDashboard: 'Dashboard',
-    btnExitToDashboardTitle: 'Exit to WordPress Admin Dashboard',
+    btnExitToDashboardTitle: 'Return to Manuscripts Dashboard',
+    btnExitToWp: 'Exit to WordPress',
+    btnExitToWpTitle: 'Return to WordPress Admin (wp-admin)',
+    tabSettings: 'Settings & Info',
+    tabDocs: 'User Guide & Docs',
     myProjects: 'My Projects',
     saved: 'Saved',
     saving: 'Saving…',
@@ -295,9 +299,13 @@ export const translations = {
     savedToServer: 'সার্ভারে সংরক্ষিত',
     savedInBrowser: 'ব্রাউজারে সংরক্ষিত',
 
-    // Header
+    // Header & Navigation
     btnExitToDashboard: 'ড্যাশবোর্ড',
-    btnExitToDashboardTitle: 'মূল ওয়ার্ডপ্রেস ড্যাশবোর্ডে ফিরে যান',
+    btnExitToDashboardTitle: 'পাণ্ডুলিপি ড্যাশবোর্ডে ফিরে যান',
+    btnExitToWp: 'ওয়ার্ডপ্রেসে ফিরুন',
+    btnExitToWpTitle: 'মূল ওয়ার্ডপ্রেস অ্যাডমিন (wp-admin)-এ ফিরে যান',
+    tabSettings: 'সেটিংস ও তথ্য',
+    tabDocs: 'ব্যবহার নির্দেশিকা ও ডক',
     myProjects: 'আমার প্রজেক্ট',
     saved: 'সংরক্ষিত',
     saving: 'সংরক্ষণ হচ্ছে…',
