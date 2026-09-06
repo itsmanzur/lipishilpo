@@ -31,8 +31,8 @@ export const translations = {
     savedInBrowser: 'Saved in browser',
 
     // Header & Navigation
-    btnExitToDashboard: 'Manuscript Studio',
-    btnExitToDashboardTitle: 'Return to Lipishilpo Manuscripts',
+    btnExitToDashboard: 'Back to Dashboard',
+    btnExitToDashboardTitle: 'Return to Lipishilpo Dashboard',
     btnExitToWp: 'WordPress Dashboard',
     btnExitToWpTitle: 'Return to WordPress Admin Dashboard',
     tabSettings: 'Settings & Info',
@@ -300,8 +300,8 @@ export const translations = {
     savedInBrowser: 'ব্রাউজারে সংরক্ষিত',
 
     // Header & Navigation
-    btnExitToDashboard: 'পাণ্ডুলিপি তালিকা',
-    btnExitToDashboardTitle: 'লিপিশিল্পের পাণ্ডুলিপি ড্যাশবোর্ডে ফিরে যান',
+    btnExitToDashboard: 'ড্যাশবোর্ডে ফিরে যান',
+    btnExitToDashboardTitle: 'লিপিশিল্প ড্যাশবোর্ডে ফিরে যান (/wp-admin/admin.php?page=lipishilpo)',
     btnExitToWp: 'WordPress ড্যাশবোর্ড',
     btnExitToWpTitle: 'মূল ওয়ার্ডপ্রেস ড্যাশবোর্ডে ফিরে যান',
     tabSettings: 'সেটিংস ও তথ্য',

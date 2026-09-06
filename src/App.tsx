@@ -729,15 +729,6 @@ export default function App() {
             <span>{t.brandName}<small>{t.brandTagline}</small></span>
           </div>
 
-          <a
-            href={wpConfig.adminUrl || '/wp-admin/'}
-            className="sidebar-exit-wp"
-            title={t.btnExitToWpTitle}
-          >
-            <ArrowLeft size={14} />
-            <span>{t.btnExitToWp}</span>
-          </a>
-
           <div className="section-label first-label">{t.workspace}</div>
 
           <button className={'nav ' + (view === 'projects' ? 'active' : '')} onClick={() => setView('projects')}>
@@ -848,22 +839,23 @@ export default function App() {
         {!focusMode && (
           <header>
             <div className="breadcrumb">
-              {/* Button to go to WordPress Dashboard */}
-              <a
-                href={wpConfig.adminUrl || '/wp-admin/'}
-                className="exit-to-wp-btn"
-                title={t.btnExitToWpTitle}
-              >
-                <ArrowLeft size={14} />
-                <span>{t.btnExitToWp}</span>
-              </a>
-
-              <span className="breadcrumb-divider">/</span>
-
               {view === 'projects' ? (
                 <>
-                  <Library size={17} />
+                  <Library size={18} />
                   <span>{t.myProjects}</span>
+                </>
+              ) : view === 'editor' ? (
+                <>
+                  <button
+                    className="exit-to-wp-btn"
+                    title={t.btnExitToDashboardTitle}
+                    onClick={() => setView('projects')}
+                  >
+                    <ArrowLeft size={14} />
+                    <span>{t.btnExitToDashboard}</span>
+                  </button>
+                  <span className="breadcrumb-divider">/</span>
+                  {project && <strong>{project.title}</strong>}
                 </>
               ) : (
                 <>
@@ -872,25 +864,19 @@ export default function App() {
                     title={t.btnExitToDashboardTitle}
                     onClick={() => setView('projects')}
                   >
-                    <Library size={16} />
+                    <ArrowLeft size={14} />
                     <span>{t.myProjects}</span>
                   </button>
-
                   <span className="breadcrumb-divider">/</span>
-
                   {view === 'docs' ? (
                     <>
                       <HelpCircle size={17} />
                       <span>{t.tabDocs}</span>
                     </>
-                  ) : view === 'settings' ? (
+                  ) : (
                     <>
                       <Sliders size={17} />
                       <span>{t.tabSettings}</span>
-                    </>
-                  ) : (
-                    <>
-                      {project && <strong>{project.title}</strong>}
                     </>
                   )}
                 </>
