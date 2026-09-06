@@ -31,10 +31,10 @@ export const translations = {
     savedInBrowser: 'Saved in browser',
 
     // Header & Navigation
-    btnExitToDashboard: 'Dashboard',
-    btnExitToDashboardTitle: 'Return to Manuscripts Dashboard',
-    btnExitToWp: 'Exit to WordPress',
-    btnExitToWpTitle: 'Return to WordPress Admin (wp-admin)',
+    btnExitToDashboard: 'Manuscript Studio',
+    btnExitToDashboardTitle: 'Return to Lipishilpo Manuscripts',
+    btnExitToWp: 'WordPress Dashboard',
+    btnExitToWpTitle: 'Return to WordPress Admin Dashboard',
     tabSettings: 'Settings & Info',
     tabDocs: 'User Guide & Docs',
     myProjects: 'My Projects',
@@ -300,10 +300,10 @@ export const translations = {
     savedInBrowser: 'ব্রাউজারে সংরক্ষিত',
 
     // Header & Navigation
-    btnExitToDashboard: 'ড্যাশবোর্ড',
-    btnExitToDashboardTitle: 'পাণ্ডুলিপি ড্যাশবোর্ডে ফিরে যান',
-    btnExitToWp: 'ওয়ার্ডপ্রেসে ফিরুন',
-    btnExitToWpTitle: 'মূল ওয়ার্ডপ্রেস অ্যাডমিন (wp-admin)-এ ফিরে যান',
+    btnExitToDashboard: 'পাণ্ডুলিপি তালিকা',
+    btnExitToDashboardTitle: 'লিপিশিল্পের পাণ্ডুলিপি ড্যাশবোর্ডে ফিরে যান',
+    btnExitToWp: 'WordPress ড্যাশবোর্ড',
+    btnExitToWpTitle: 'মূল ওয়ার্ডপ্রেস ড্যাশবোর্ডে ফিরে যান',
     tabSettings: 'সেটিংস ও তথ্য',
     tabDocs: 'ব্যবহার নির্দেশিকা ও ডক',
     myProjects: 'আমার প্রজেক্ট',

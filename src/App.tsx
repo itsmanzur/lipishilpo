@@ -717,6 +717,15 @@ export default function App() {
             <span>{t.brandName}<small>{t.brandTagline}</small></span>
           </div>
 
+          <a
+            href={wpConfig.adminUrl || '/wp-admin/'}
+            className="sidebar-exit-wp"
+            title={t.btnExitToWpTitle}
+          >
+            <ArrowLeft size={14} />
+            <span>{t.btnExitToWp}</span>
+          </a>
+
           <div className="section-label first-label">{t.workspace}</div>
 
           <button className={'nav ' + (view === 'projects' ? 'active' : '')} onClick={() => setView('projects')}>
@@ -827,41 +836,51 @@ export default function App() {
         {!focusMode && (
           <header>
             <div className="breadcrumb">
-              {view !== 'projects' && (
-                <>
-                  <button
-                    className="exit-to-wp-btn"
-                    onClick={() => setView('projects')}
-                    title={t.btnExitToDashboardTitle}
-                  >
-                    <ArrowLeft size={14} />
-                    <span>{t.btnExitToDashboard}</span>
-                  </button>
-                  <span className="breadcrumb-divider">/</span>
-                </>
-              )}
+              {/* Button to go to WordPress Dashboard */}
+              <a
+                href={wpConfig.adminUrl || '/wp-admin/'}
+                className="exit-to-wp-btn"
+                title={t.btnExitToWpTitle}
+              >
+                <ArrowLeft size={14} />
+                <span>{t.btnExitToWp}</span>
+              </a>
+
+              <span className="breadcrumb-divider">/</span>
+
               {view === 'projects' ? (
                 <>
-                  <Library size={18} />
+                  <Library size={17} />
                   <span>{t.myProjects}</span>
-                </>
-              ) : view === 'docs' ? (
-                <>
-                  <HelpCircle size={18} />
-                  <span>{t.tabDocs}</span>
-                </>
-              ) : view === 'settings' ? (
-                <>
-                  <Sliders size={18} />
-                  <span>{t.tabSettings}</span>
                 </>
               ) : (
                 <>
-                  <button title={t.allProjects} onClick={() => setView('projects')}>
-                    <Library size={18} />
+                  <button
+                    className="breadcrumb-nav-link"
+                    title={t.btnExitToDashboardTitle}
+                    onClick={() => setView('projects')}
+                  >
+                    <Library size={16} />
+                    <span>{t.myProjects}</span>
                   </button>
-                  <span>{t.myProjects}</span>
-                  {project && <><ChevronRight size={14} /><strong>{project.title}</strong></>}
+
+                  <span className="breadcrumb-divider">/</span>
+
+                  {view === 'docs' ? (
+                    <>
+                      <HelpCircle size={17} />
+                      <span>{t.tabDocs}</span>
+                    </>
+                  ) : view === 'settings' ? (
+                    <>
+                      <Sliders size={17} />
+                      <span>{t.tabSettings}</span>
+                    </>
+                  ) : (
+                    <>
+                      {project && <strong>{project.title}</strong>}
+                    </>
+                  )}
                 </>
               )}
             </div>
