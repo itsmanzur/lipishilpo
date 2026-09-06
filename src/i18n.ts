@@ -31,6 +31,8 @@ export const translations = {
     savedInBrowser: 'Saved in browser',
 
     // Header
+    btnExitToDashboard: 'Dashboard',
+    btnExitToDashboardTitle: 'Exit to WordPress Admin Dashboard',
     myProjects: 'My Projects',
     saved: 'Saved',
     saving: 'Saving…',
@@ -294,6 +296,8 @@ export const translations = {
     savedInBrowser: 'ব্রাউজারে সংরক্ষিত',
 
     // Header
+    btnExitToDashboard: 'ড্যাশবোর্ড',
+    btnExitToDashboardTitle: 'মূল ওয়ার্ডপ্রেস ড্যাশবোর্ডে ফিরে যান',
     myProjects: 'আমার প্রজেক্ট',
     saved: 'সংরক্ষিত',
     saving: 'সংরক্ষণ হচ্ছে…',

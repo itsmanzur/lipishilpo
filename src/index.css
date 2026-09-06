@@ -2399,5 +2399,96 @@ body {
   gap: 8px;
 }
 
+/* ── WordPress Admin Fullscreen Studio Integration ── */
+body.lipishilpo-studio-fullscreen {
+  overflow: hidden !important;
+  background: #f5f7f4 !important;
+}
+
+body.lipishilpo-studio-fullscreen #wpadminbar,
+body.lipishilpo-studio-fullscreen #adminmenumain,
+body.lipishilpo-studio-fullscreen #adminmenuback,
+body.lipishilpo-studio-fullscreen #adminmenuwrap,
+body.lipishilpo-studio-fullscreen #wpfooter {
+  display: none !important;
+}
+
+body.lipishilpo-studio-fullscreen #wpcontent,
+body.lipishilpo-studio-fullscreen #wpbody,
+body.lipishilpo-studio-fullscreen #wpbody-content,
+body.lipishilpo-studio-fullscreen .wrap.lipishilpo-admin-editor-wrap {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  z-index: 99990 !important;
+}
+
+body.lipishilpo-studio-fullscreen #lipishilpo-root {
+  width: 100% !important;
+  height: 100vh !important;
+  overflow: hidden !important;
+}
+
+/* ── Exit to WP Dashboard Buttons ── */
+.exit-to-wp-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  background: #e4eee4;
+  border: 1px solid #c8ddc7;
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #1e5944;
+  text-decoration: none;
+  transition: all 0.15s ease;
+  min-height: 28px;
+}
+
+.exit-to-wp-btn:hover {
+  background: #20644f;
+  color: #ffffff;
+  border-color: #20644f;
+}
+
+.sidebar-exit-wp {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 10px;
+  margin: 8px 0 14px 0;
+  background: #e2ece0;
+  border: 1px solid #cedecb;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #295c44;
+  text-decoration: none;
+  transition: all 0.15s ease;
+  min-height: 32px;
+  width: 100%;
+}
+
+.sidebar-exit-wp:hover {
+  background: #20644f;
+  color: #ffffff;
+  border-color: #20644f;
+}
+
+.breadcrumb-divider {
+  color: #cbd8c8;
+  font-size: 13px;
+  margin: 0 4px;
+}
+
+
 
 

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Feather, BookOpen, Plus, FileText, Library, BarChart3,
   LayoutTemplate, ChevronRight, Download, CheckCheck,
-  Sparkles, ArrowRight, Check, X, Undo2, Loader2, Globe,
+  Sparkles, ArrowRight, ArrowLeft, LayoutDashboard, Check, X, Undo2, Loader2, Globe,
   Search, ChevronUp, ChevronDown, Trash2, FileCode, HelpCircle,
   Maximize2, Minimize2, Sun, Moon, Coffee, History, Target,
   MessageSquare, MessageSquarePlus, CheckCircle, Eye, Edit3,
@@ -707,6 +707,11 @@ export default function App() {
             <span>{t.brandName}<small>{t.brandTagline}</small></span>
           </div>
 
+          <a href={wpConfig.adminUrl} className="sidebar-exit-wp" title={t.btnExitToDashboardTitle}>
+            <ArrowLeft size={14} />
+            <span>{t.btnExitToDashboard}</span>
+          </a>
+
           <div className="section-label first-label">{t.workspace}</div>
 
           <button className={'nav ' + (view === 'projects' ? 'active' : '')} onClick={() => setView('projects')}>
@@ -812,6 +817,11 @@ export default function App() {
         {!focusMode && (
           <header>
             <div className="breadcrumb">
+              <a href={wpConfig.adminUrl} className="exit-to-wp-btn" title={t.btnExitToDashboardTitle}>
+                <ArrowLeft size={14} />
+                <span>{t.btnExitToDashboard}</span>
+              </a>
+              <span className="breadcrumb-divider">/</span>
               <button title={t.allProjects} onClick={() => setView('projects')}>
                 <Library size={18} />
               </button>

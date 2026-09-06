@@ -7,6 +7,7 @@
 
 export interface WPConfig {
   restUrl: string;
+  adminUrl: string;
   nonce: string;
   userId: number;
   isPro: boolean;
@@ -18,6 +19,7 @@ export function getWPConfig(): WPConfig {
   const el = document.getElementById('lipishilpo-root');
   return {
     restUrl: el?.dataset.restUrl ?? '/wp-json/lipishilpo/v1',
+    adminUrl: el?.dataset.adminUrl ?? '/wp-admin/',
     nonce: el?.dataset.nonce ?? '',
     userId: parseInt(el?.dataset.userId ?? '0', 10),
     isPro: el?.dataset.pro === '1',

@@ -63,6 +63,7 @@ function lipishilpo_shortcode( $atts ) {
 
 	return '<div id="lipishilpo-root" 
 		data-rest-url="' . esc_attr( get_rest_url( null, LIPISHILPO_REST_NAMESPACE ) ) . '"
+		data-admin-url="' . esc_attr( admin_url() ) . '"
 		data-nonce="' . esc_attr( wp_create_nonce( 'wp_rest' ) ) . '"
 		data-user-id="' . esc_attr( get_current_user_id() ) . '"
 		data-pro="' . esc_attr( $is_pro ) . '"
@@ -162,6 +163,16 @@ function lipishilpo_admin_editor_page() {
 	echo '<div class="wrap lipishilpo-admin-editor-wrap">';
 	echo lipishilpo_shortcode( array() ); // phpcs:ignore
 	echo '</div>';
+}
+
+// ── Fullscreen Admin Body Class for Studio Editor ────────────────────────
+add_filter( 'admin_body_class', 'lipishilpo_admin_body_class' );
+function lipishilpo_admin_body_class( $classes ) {
+	$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+	if ( $screen && ( 'toplevel_page_lipishilpo' === $screen->id || 'lipishilpo_page_lipishilpo' === $screen->id ) ) {
+		$classes .= ' lipishilpo-studio-fullscreen ';
+	}
+	return $classes;
 }
 
 // ── Activation / Deactivation ─────────────────────────────────────────────
