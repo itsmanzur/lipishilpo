@@ -165,21 +165,6 @@ function lipishilpo_admin_editor_page() {
 	echo '</div>';
 }
 
-// ── Fullscreen Admin Body Class for Studio Editor & SPA Pages ────────────
-add_filter( 'admin_body_class', 'lipishilpo_admin_body_class' );
-function lipishilpo_admin_body_class( $classes ) {
-	$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
-	if ( $screen && (
-		'toplevel_page_lipishilpo' === $screen->id ||
-		'lipishilpo_page_lipishilpo' === $screen->id ||
-		'lipishilpo_page_lipishilpo-docs' === $screen->id ||
-		'lipishilpo_page_lipishilpo-settings' === $screen->id
-	) ) {
-		$classes .= ' lipishilpo-studio-fullscreen ';
-	}
-	return $classes;
-}
-
 // ── Activation / Deactivation ─────────────────────────────────────────────
 register_activation_hook( LIPISHILPO_FILE, 'lipishilpo_activate' );
 function lipishilpo_activate() {

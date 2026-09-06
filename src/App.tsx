@@ -177,6 +177,18 @@ export default function App() {
       .finally(() => setLoading(false));
   }, []);
 
+  // ── Dynamic Fullscreen: ONLY active when inside Studio Editor ─────────────
+  useEffect(() => {
+    if (view === 'editor') {
+      document.body.classList.add('lipishilpo-studio-fullscreen');
+    } else {
+      document.body.classList.remove('lipishilpo-studio-fullscreen');
+    }
+    return () => {
+      document.body.classList.remove('lipishilpo-studio-fullscreen');
+    };
+  }, [view]);
+
   // ── Modals ─────────────────────────────────────────────────────────────────
   useEffect(() => {
     if (modal) dialog.current?.showModal();
