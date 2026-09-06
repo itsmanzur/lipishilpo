@@ -11,23 +11,25 @@ import {
 import {
   type Project, type Chapter,
   fetchProjects, createProject, updateProject, deleteProject,
+  fetchPrefs, updatePrefs,
 } from './api';
 import {
-  findIssues, applyFix, applyAllFixes, calculateStats,
+  findIssues, applyAllFixes, calculateStats,
   formatTypography, findLongSentences,
   type ProofMatch, type ManuscriptStats, type RuleCategory,
 } from './proofread';
-import { AudioProofreader } from './components/AudioProofreader';
-import { AIPanel } from './components/AIPanel';
-import { ExportPanel } from './components/ExportPanel';
 import { DocsView } from './components/DocsView';
+import { getLipishilpoPro, type ProTabKey } from './pro-bridge';
 import { SettingsView } from './components/SettingsView';
 import { GoalTracker } from './components/GoalTracker';
 import { PomodoroTimer } from './components/PomodoroTimer';
 import { TypographyControl } from './components/TypographyControl';
 import { PublishModal } from './components/PublishModal';
 import { ConjunctsModal } from './components/ConjunctsModal';
-import { exportProjectToJson, parseProjectBackup } from './lib/project-backup';
+import { exportProjectToJson } from './lib/project-backup';
+import { importManuscriptFile, ManuscriptImportError } from './lib/manuscript-import';
+import { createId } from './lib/id';
+import { clipEditText, diffManualEdits, type ChapterEdit, type EditKind } from './lib/edit-log';
 import { wpConfig } from './api';
 import { translations, getSavedLanguage, saveLanguage, type Language } from './i18n';
 
@@ -50,10 +52,6 @@ export interface ChapterComment {
 export type EditorTheme = 'light' | 'sepia' | 'dark';
 export type EditorMode = 'edit' | 'review';
 
-function wordPattern(word: string) {
-  return new RegExp(`(?<![\\p{L}\\p{M}])${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![\\p{L}\\p{M}])`, 'gu');
-}
-
 export default function App() {
   // ── Language State ─────────────────────────────────────────────────────────
   const [lang, setLang] = useState<Language>(getSavedLanguage());
@@ -65,6 +63,9 @@ export default function App() {
 
   // ── State ──────────────────────────────────────────────────────────────────
   const [projects, setProjects] = useState<Project[]>([]);
+  const [projectPages, setProjectPages] = useState(1);
+  const [projectPage, setProjectPage] = useState(1);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [pid, setPid] = useState<string | null>(null);
   const [cid, setCid] = useState<string | null>(null);
   const [view, setView] = useState<'projects' | 'editor' | 'docs' | 'settings'>(() => {
@@ -77,7 +78,9 @@ export default function App() {
     } catch {}
     return 'projects';
   });
-  const [tabKey, setTabKey] = useState<'proofread' | 'notes' | 'audio' | 'comments' | 'snapshots' | 'aiEdit' | 'analysis' | 'format'>('proofread');
+  const [tabKey, setTabKey] = useState<'proofread' | 'notes' | 'comments' | 'snapshots' | ProTabKey>('proofread');
+  const [proApi, setProApi] = useState(() => getLipishilpoPro());
+  const proSlot = useRef<HTMLDivElement>(null);
   const [modal, setModal] = useState(false);
   const [statsModal, setStatsModal] = useState(false);
   const [showPublishModal, setShowPublishModal] = useState(false);
@@ -95,16 +98,10 @@ export default function App() {
     return 'light';
   });
 
-  // Writing Goal Tracker
-  const [writingGoal, setWritingGoal] = useState<number>(() => {
-    try {
-      const saved = localStorage.getItem('lipishilpo_writing_goal');
-      return saved ? parseInt(saved, 10) : 500;
-    } catch {
-      return 500;
-    }
-  });
-  const [showGoalInput, setShowGoalInput] = useState(false);
+  const [dailyTarget, setDailyTarget] = useState(500);
+  const [goalModalOpen, setGoalModalOpen] = useState(false);
+  const [wordsToday, setWordsToday] = useState(0);
+  const pendingSave = useRef<{ id: string; data: Parameters<typeof updateProject>[1] } | null>(null);
 
   // Comments State
   const [comments, setComments] = useState<ChapterComment[]>([]);
@@ -130,6 +127,13 @@ export default function App() {
   // Proofreading, Category Filter & Live Auto-Check
   const [checked, setChecked] = useState(false);
   const [autoCheck, setAutoCheck] = useState<boolean>(true);
+  const [styleHints, setStyleHints] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('lipishilpo_style_hints') === '1';
+    } catch {
+      return false;
+    }
+  });
   const [issues, setIssues] = useState<ProofMatch[]>([]);
   const [proofFilter, setProofFilter] = useState<RuleCategory | 'all' | 'complexity'>('all');
   const [ignored, setIgnored] = useState<string[]>(() => {
@@ -145,11 +149,15 @@ export default function App() {
   // Snapshots (Version History)
   const [snapshots, setSnapshots] = useState<ChapterSnapshot[]>([]);
   const [newSnapshotName, setNewSnapshotName] = useState('');
+  const [edits, setEdits] = useState<ChapterEdit[]>([]);
+  const [editFilter, setEditFilter] = useState<EditKind | 'all'>('all');
+  const [customTo, setCustomTo] = useState<Record<string, string>>({});
 
   // UI state
   const [notice, setNotice] = useState('');
   const [saveState, setSaveState] = useState<'saved' | 'saving' | 'error'>('saved');
   const [loading, setLoading] = useState(true);
+  const [importing, setImporting] = useState(false);
   const [loadError, setLoadError] = useState('');
   const [font, setFont] = useState(20);
   const [deleting, setDeleting] = useState<string | null>(null);
@@ -159,6 +167,9 @@ export default function App() {
   const editor = useRef<HTMLTextAreaElement>(null);
   const searchInput = useRef<HTMLInputElement>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const trackedTextRef = useRef('');
+  const typedTextRef = useRef('');
+  const manualLogTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── Language Switcher Handler ──────────────────────────────────────────────
   function toggleLanguage() {
@@ -172,15 +183,92 @@ export default function App() {
   const chapter = project?.chapters.find((c) => c.id === cid) ?? project?.chapters[0] ?? null;
   const text = chapter?.text ?? '';
   const stats: ManuscriptStats = calculateStats(text);
+  const manuscriptWords = project
+    ? project.chapters.reduce((n, c) => n + calculateStats(c.text).words, 0)
+    : 0;
 
-  // ── Load projects from WP API ──────────────────────────────────────────────
   useEffect(() => {
-    fetchProjects()
-      .then((list) => {
-        setProjects(list);
-        if (list.length > 0) {
-          setPid(list[0].id);
-          setCid(list[0].chapters[0]?.id ?? null);
+    if (window.LipishilpoPro) {
+      setProApi(window.LipishilpoPro);
+      return;
+    }
+    const onReady = () => setProApi(getLipishilpoPro());
+    window.addEventListener('lipishilpo-pro-ready', onReady);
+    return () => window.removeEventListener('lipishilpo-pro-ready', onReady);
+  }, []);
+
+  useEffect(() => {
+    const api = proApi;
+    if (!api) return;
+    const isHosted = api.tabs.some((tab) => tab.key === tabKey);
+    if (!isHosted || !project || !chapter || !proSlot.current) {
+      if (!isHosted) api.unmount();
+      return;
+    }
+    api.mount(proSlot.current, {
+      tab: tabKey as ProTabKey,
+      project,
+      chapter,
+      text,
+      lang,
+      isPro: wpConfig.isPro,
+      onTxt: downloadTxt,
+      onHtml: downloadHtml,
+      onSentenceHighlight: (sentence) => {
+        if (!sentence || !editor.current) return;
+        const pos = text.indexOf(sentence.trim());
+        if (pos >= 0) {
+          editor.current.focus();
+          editor.current.setSelectionRange(pos, pos + sentence.trim().length);
+        }
+      },
+      onLocate: (id, quote) => {
+        setCid(id);
+        setHistory([]);
+        setTimeout(() => {
+          const current = project.chapters.find((c) => c.id === id);
+          const index = current?.text.indexOf(quote) ?? -1;
+          if (index >= 0) {
+            editor.current?.focus();
+            editor.current?.setSelectionRange(index, index + quote.length);
+            editor.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 0);
+      },
+      onApply: (id, before, after) => {
+        const c = project.chapters.find((ch) => ch.id === id);
+        if (!c || !before || c.text.indexOf(before) < 0 || c.text.indexOf(before) !== c.text.lastIndexOf(before)) {
+          return false;
+        }
+        setCid(id);
+        setHistory([c.text]);
+        const updated = projects.map((p) =>
+          p.id === project.id
+            ? { ...p, chapters: p.chapters.map((ch) => ch.id === id ? { ...ch, text: ch.text.replace(before, () => after) } : ch) }
+            : p
+        );
+        setProjects(updated);
+        autosave(updated);
+        setNotice(t.noticeAiFixAccepted);
+        return true;
+      },
+    });
+  }, [proApi, tabKey, project, chapter, text, lang, projects, t.noticeAiFixAccepted, view, focusMode]);
+
+  // ── Load projects and user prefs from WP API ───────────────────────────────
+  useEffect(() => {
+    Promise.all([fetchProjects(1), fetchPrefs()])
+      .then(([list, prefs]) => {
+        setProjects(list.items);
+        setProjectPage(1);
+        setProjectPages(list.pages);
+        if (list.items.length > 0) {
+          setPid(list.items[0].id);
+          setCid(list.items[0].chapters[0]?.id ?? null);
+        }
+        setDailyTarget(prefs.dailyTarget || 500);
+        if (prefs.dictionary.length) {
+          setIgnored(prefs.dictionary);
         }
       })
       .catch((e) => setLoadError(e.message))
@@ -217,29 +305,59 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [notice]);
 
-  // ── Autosave ───────────────────────────────────────────────────────────────
+  // ── Autosave (explicit project id — no stale-closure race) ─────────────────
   const autosave = useCallback((updatedProjects: Project[]) => {
-    if (!project) return;
+    const projectId = pid;
+    if (!projectId) return;
     if (saveTimer.current) clearTimeout(saveTimer.current);
     setSaveState('saving');
 
-    const current = updatedProjects.find((p) => p.id === project.id);
+    const current = updatedProjects.find((p) => p.id === projectId);
     if (!current) return;
 
+    pendingSave.current = {
+      id: projectId,
+      data: {
+        chapters: current.chapters,
+        snapshots: current.snapshots,
+        comments: current.comments,
+        edits: current.edits,
+      },
+    };
+
     saveTimer.current = setTimeout(async () => {
+      const pending = pendingSave.current;
+      if (!pending) return;
       try {
-        await updateProject(current.id, { chapters: current.chapters });
+        await updateProject(pending.id, pending.data);
+        pendingSave.current = null;
         setSaveState('saved');
       } catch {
         setSaveState('error');
       }
     }, 1500);
-  }, [project]);
+  }, [pid]);
 
-  // ── Snapshots Lifecycle ───────────────────────────────────────────────────
   useEffect(() => {
-    if (!chapter) {
+    return () => {
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+      const pending = pendingSave.current;
+      if (pending) {
+        updateProject(pending.id, pending.data).catch(() => {});
+        pendingSave.current = null;
+      }
+    };
+  }, [pid]);
+
+  // ── Snapshots Lifecycle (server first, localStorage migrate) ───────────────
+  useEffect(() => {
+    if (!chapter || !project) {
       setSnapshots([]);
+      return;
+    }
+    const server = (project.snapshots?.[chapter.id] as ChapterSnapshot[] | undefined) ?? [];
+    if (server.length > 0) {
+      setSnapshots(server);
       return;
     }
     try {
@@ -248,14 +366,14 @@ export default function App() {
     } catch {
       setSnapshots([]);
     }
-  }, [chapter?.id]);
+  }, [chapter?.id, project?.id]);
 
   function handleSaveSnapshot(e?: React.FormEvent) {
     if (e) e.preventDefault();
     if (!chapter || !text.trim()) return;
     const name = newSnapshotName.trim() || `${t.draft} (${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`;
     const snap: ChapterSnapshot = {
-      id: crypto.randomUUID(),
+      id: createId(),
       name,
       date: new Date().toLocaleString(lang === 'bn' ? 'bn-BD' : 'en-US', {
         month: 'short',
@@ -268,9 +386,7 @@ export default function App() {
     };
     const updated = [snap, ...snapshots];
     setSnapshots(updated);
-    try {
-      localStorage.setItem(`lipishilpo_snapshots_${chapter.id}`, JSON.stringify(updated));
-    } catch {}
+    persistChapterMeta('snapshots', chapter.id, updated);
     setNewSnapshotName('');
     setNotice(lang === 'bn' ? 'স্ন্যাপশট সংরক্ষিত হয়েছে' : 'Snapshot saved');
   }
@@ -287,15 +403,18 @@ export default function App() {
     if (!chapter) return;
     const updated = snapshots.filter((s) => s.id !== snapId);
     setSnapshots(updated);
-    try {
-      localStorage.setItem(`lipishilpo_snapshots_${chapter.id}`, JSON.stringify(updated));
-    } catch {}
+    persistChapterMeta('snapshots', chapter.id, updated);
   }
 
-  // ── Comments Lifecycle ────────────────────────────────────────────────────
+  // ── Comments Lifecycle (server first, localStorage migrate) ────────────────
   useEffect(() => {
-    if (!chapter) {
+    if (!chapter || !project) {
       setComments([]);
+      return;
+    }
+    const server = (project.comments?.[chapter.id] as ChapterComment[] | undefined) ?? [];
+    if (server.length > 0) {
+      setComments(server);
       return;
     }
     try {
@@ -304,13 +423,98 @@ export default function App() {
     } catch {
       setComments([]);
     }
-  }, [chapter?.id]);
+  }, [chapter?.id, project?.id]);
+
+  useEffect(() => {
+    if (!chapter || !project) {
+      setEdits([]);
+      setCustomTo({});
+      trackedTextRef.current = '';
+      typedTextRef.current = '';
+      return;
+    }
+    trackedTextRef.current = chapter.text;
+    typedTextRef.current = chapter.text;
+    const server = project.edits?.[chapter.id] as ChapterEdit[] | undefined;
+    if (Array.isArray(server)) {
+      setEdits(server);
+      return;
+    }
+    try {
+      const saved = localStorage.getItem(`lipishilpo_edits_${chapter.id}`);
+      setEdits(saved ? JSON.parse(saved) : []);
+    } catch {
+      setEdits([]);
+    }
+  }, [chapter?.id, project?.id]);
+
+  function editStamp() {
+    return new Date().toLocaleString(lang === 'bn' ? 'bn-BD' : 'en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  }
+
+  function recordEdits(items: Omit<ChapterEdit, 'id' | 'date'>[]) {
+    if (!chapter || items.length === 0) return;
+    const date = editStamp();
+    const next = [
+      ...items.map((item) => ({
+        ...item,
+        id: createId(),
+        date,
+        from: clipEditText(item.from),
+        to: clipEditText(item.to),
+        why: item.why ? clipEditText(item.why, 240) : '',
+      })),
+      ...edits,
+    ].slice(0, 200);
+    setEdits(next);
+    persistChapterMeta('edits', chapter.id, next);
+    try {
+      localStorage.setItem(`lipishilpo_edits_${chapter.id}`, JSON.stringify(next));
+    } catch {}
+  }
+
+  function flushManualEdits() {
+    if (manualLogTimer.current) {
+      clearTimeout(manualLogTimer.current);
+      manualLogTimer.current = null;
+    }
+    const before = trackedTextRef.current;
+    const after = typedTextRef.current;
+    const items = diffManualEdits(before, after, t.manualEditWhy);
+    trackedTextRef.current = after;
+    if (items.length) recordEdits(items);
+  }
+
+  function scheduleManualLog() {
+    if (manualLogTimer.current) clearTimeout(manualLogTimer.current);
+    manualLogTimer.current = setTimeout(flushManualEdits, 900);
+  }
+
+  function kindFromIssue(issue: ProofMatch): EditKind {
+    if (issue.id === '__spaces' || issue.id === '__dari_space' || issue.category === 'punctuation' || issue.category === 'typography') {
+      return 'punctuation';
+    }
+    if (issue.category === 'grammar') return 'grammar';
+    if (issue.category === 'style') return 'style';
+    return 'spelling';
+  }
+
+  function resolvedTo(issue: ProofMatch): { to: string; customized: boolean } {
+    const typed = (customTo[issue.id] ?? '').trim();
+    if (typed && typed !== issue.to) return { to: typed, customized: true };
+    return { to: issue.to, customized: false };
+  }
 
   function handleAddComment(e?: React.FormEvent) {
     if (e) e.preventDefault();
     if (!chapter || !newCommentText.trim()) return;
     const newComment: ChapterComment = {
-      id: crypto.randomUUID(),
+      id: createId(),
       quote: selectedQuote.trim(),
       comment: newCommentText.trim(),
       date: new Date().toLocaleString(lang === 'bn' ? 'bn-BD' : 'en-US', {
@@ -323,9 +527,7 @@ export default function App() {
     };
     const updated = [newComment, ...comments];
     setComments(updated);
-    try {
-      localStorage.setItem(`lipishilpo_comments_${chapter.id}`, JSON.stringify(updated));
-    } catch {}
+    persistChapterMeta('comments', chapter.id, updated);
     setNewCommentText('');
     setSelectedQuote('');
     setShowCommentDialog(false);
@@ -337,18 +539,14 @@ export default function App() {
     if (!chapter) return;
     const updated = comments.map((c) => (c.id === commentId ? { ...c, resolved: !c.resolved } : c));
     setComments(updated);
-    try {
-      localStorage.setItem(`lipishilpo_comments_${chapter.id}`, JSON.stringify(updated));
-    } catch {}
+    persistChapterMeta('comments', chapter.id, updated);
   }
 
   function handleDeleteComment(commentId: string) {
     if (!chapter) return;
     const updated = comments.filter((c) => c.id !== commentId);
     setComments(updated);
-    try {
-      localStorage.setItem(`lipishilpo_comments_${chapter.id}`, JSON.stringify(updated));
-    } catch {}
+    persistChapterMeta('comments', chapter.id, updated);
     setNotice(t.noticeCommentDeleted);
   }
 
@@ -372,29 +570,53 @@ export default function App() {
     } catch {}
   }
 
-  // ── Writing Goal ───────────────────────────────────────────────────────────
+  function persistChapterMeta(
+    kind: 'snapshots' | 'comments' | 'edits',
+    chapterId: string,
+    items: ChapterSnapshot[] | ChapterComment[] | ChapterEdit[]
+  ) {
+    if (!pid) return;
+    const updated = projects.map((p) =>
+      p.id === pid
+        ? { ...p, [kind]: { ...(p[kind] ?? {}), [chapterId]: items } }
+        : p
+    );
+    setProjects(updated);
+    autosave(updated);
+  }
+
   function handleSaveGoal(target: number) {
     const valid = Math.max(50, target);
-    setWritingGoal(valid);
-    setShowGoalInput(false);
+    setDailyTarget(valid);
+    setGoalModalOpen(false);
     try {
+      localStorage.setItem('lipishilpo_daily_target', String(valid));
       localStorage.setItem('lipishilpo_writing_goal', String(valid));
     } catch {}
+    updatePrefs({ dailyTarget: valid }).catch(() => {});
   }
 
   // ── Force immediate save ───────────────────────────────────────────────────
   const forceSave = useCallback(async () => {
-    if (!project) return;
+    if (!pid) return;
+    const current = projects.find((p) => p.id === pid);
+    if (!current) return;
     if (saveTimer.current) clearTimeout(saveTimer.current);
     setSaveState('saving');
     try {
-      await updateProject(project.id, { chapters: project.chapters });
+      await updateProject(pid, {
+        chapters: current.chapters,
+        snapshots: current.snapshots,
+        comments: current.comments,
+        edits: current.edits,
+      });
+      pendingSave.current = null;
       setSaveState('saved');
       setNotice(t.saved);
     } catch {
       setSaveState('error');
     }
-  }, [project, t.saved]);
+  }, [pid, projects, t.saved]);
 
   // ── Keyboard Shortcuts (Ctrl+S, Ctrl+F, F11, Esc) ───────────────────────────
   useEffect(() => {
@@ -464,8 +686,15 @@ export default function App() {
   function handleReplaceOne() {
     if (activeMatchIndex < 0 || activeMatchIndex >= searchMatches.length) return;
     const start = searchMatches[activeMatchIndex];
+    const found = text.slice(start, start + searchTerm.length);
     const newText = text.slice(0, start) + replaceTerm + text.slice(start + searchTerm.length);
     updateText(newText);
+    recordEdits([{
+      kind: 'replace',
+      from: found || searchTerm,
+      to: replaceTerm,
+      count: 1,
+    }]);
   }
 
   function handleReplaceAll() {
@@ -474,12 +703,28 @@ export default function App() {
     const regex = new RegExp(searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
     const newText = text.replace(regex, replaceTerm);
     updateText(newText);
+    if (count > 0) {
+      recordEdits([{
+        kind: 'replace',
+        from: searchTerm,
+        to: replaceTerm,
+        count,
+      }]);
+    }
     setNotice(t.replacedCount(count));
   }
 
   // ── Update helpers ─────────────────────────────────────────────────────────
-  function updateText(value: string) {
+  function updateText(value: string, source: 'type' | 'tool' = 'tool') {
     if (!project || !chapter) return;
+    if (source === 'tool') {
+      trackedTextRef.current = value;
+      typedTextRef.current = value;
+      if (manualLogTimer.current) {
+        clearTimeout(manualLogTimer.current);
+        manualLogTimer.current = null;
+      }
+    }
     const updated = projects.map((p) =>
       p.id === project.id
         ? { ...p, chapters: p.chapters.map((c) => c.id === chapter.id ? { ...c, text: value } : c) }
@@ -501,17 +746,19 @@ export default function App() {
   }
 
   function selectChapter(id: string) {
+    flushManualEdits();
     setCid(id);
     setHistory([]);
     setChecked(false);
     setIssues([]);
+    setCustomTo({});
     setShowSearch(false);
     setView('editor');
   }
 
   function addChapter() {
     if (!project) return;
-    const id = crypto.randomUUID();
+    const id = createId();
     const defaultTitle = `${t.chapterLabel(project.chapters.length + 1)}`;
     const updated = projects.map((p) =>
       p.id === project.id
@@ -626,6 +873,50 @@ export default function App() {
     setNotice(t.noticeDownloaded);
   }
 
+  function escapeHtml(value: string) {
+    return value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function downloadHtml() {
+    if (!project) return;
+    const chaptersHtml = project.chapters.map((c) => {
+      const paras = (c.text || '')
+        .split(/\n{2,}/)
+        .map((p) => `<p>${escapeHtml(p).replace(/\n/g, '<br/>')}</p>`)
+        .join('\n');
+      return `<section>\n<h2>${escapeHtml(c.title || '')}</h2>\n${paras}\n</section>`;
+    }).join('\n');
+    const html = `<!DOCTYPE html>
+<html lang="${project.language === 'English' ? 'en' : 'bn'}">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>${escapeHtml(project.title)}</title>
+<style>
+  body { max-width: 42rem; margin: 2rem auto; padding: 0 1.25rem; font: 1.05rem/1.7 Georgia, "Noto Serif Bengali", serif; color: #1c1917; }
+  h1 { font-size: 2rem; margin-bottom: 2rem; }
+  h2 { font-size: 1.35rem; margin-top: 2.5rem; }
+</style>
+</head>
+<body>
+<h1>${escapeHtml(project.title)}</h1>
+${chaptersHtml}
+</body>
+</html>`;
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = project.title + '.html';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    setNotice(t.noticeDownloaded);
+  }
+
   function handleInsertConjunct(char: string) {
     if (!editor.current) return;
     const el = editor.current;
@@ -640,38 +931,62 @@ export default function App() {
     }, 50);
   }
 
+  function importErrorMessage(err: unknown): string {
+    if (err instanceof ManuscriptImportError) {
+      const map = {
+        too_large: t.importErrTooLarge,
+        legacy_doc: t.importErrLegacyDoc,
+        unsupported: t.importErrUnsupported,
+        empty: t.importErrEmpty,
+        invalid_json: t.importErrInvalidJson,
+        parse_failed: t.importErrParse,
+        too_long: t.importErrTooLong,
+      } as const;
+      return map[err.code];
+    }
+    return err instanceof Error ? err.message : t.importBackupError;
+  }
+
   async function handleImportBackup(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    setLoading(true);
+    setImporting(true);
     try {
-      const parsed = await parseProjectBackup(file);
+      const parsed = await importManuscriptFile(file);
       const created = await createProject({
         title: parsed.title,
         genre: parsed.genre,
         language: parsed.language,
       });
-      if (parsed.chapters && parsed.chapters.length > 0) {
+      if (parsed.chapters.length > 0) {
         await updateProject(created.id, { chapters: parsed.chapters });
       }
-      const updatedList = await fetchProjects();
-      setProjects(updatedList);
+      const updatedList = await fetchProjects(1);
+      setProjects(updatedList.items);
+      setProjectPages(updatedList.pages);
+      setProjectPage(1);
       setPid(created.id);
-      setCid(parsed.chapters?.[0]?.id || null);
+      setCid(parsed.chapters[0]?.id || null);
       setView('editor');
-      setNotice(t.importBackupSuccess);
-    } catch (err: any) {
-      alert(err.message || t.importBackupError);
+      setNotice(
+        parsed.source === 'docx'
+          ? t.importDocxSuccess(parsed.chapters.length)
+          : t.importBackupSuccess
+      );
+    } catch (err: unknown) {
+      alert(importErrorMessage(err));
     } finally {
-      setLoading(false);
+      setImporting(false);
       if (e.target) e.target.value = '';
     }
   }
 
   // ── Proofreading ───────────────────────────────────────────────────────────
-  function runProofread() {
+  async function runProofread() {
     if (!text.trim()) return;
-    const found = findIssues(text, lang, project?.language || 'all', ignored);
+    const found = await findIssues(text, lang, project?.language || 'all', ignored, {
+      includeOptionalStyle: styleHints,
+    });
     setIssues(found);
     setChecked(true);
     setNotice(t.noticeChecked);
@@ -682,15 +997,21 @@ export default function App() {
   useEffect(() => {
     if (!autoCheck || !text.trim()) return;
     if (autoCheckTimer.current) clearTimeout(autoCheckTimer.current);
+    let cancelled = false;
     autoCheckTimer.current = setTimeout(() => {
-      const found = findIssues(text, lang, project?.language || 'all', ignored);
-      setIssues(found);
-      setChecked(true);
+      void findIssues(text, lang, project?.language || 'all', ignored, {
+        includeOptionalStyle: styleHints,
+      }).then((found) => {
+        if (cancelled) return;
+        setIssues(found);
+        setChecked(true);
+      });
     }, 1200);
     return () => {
+      cancelled = true;
       if (autoCheckTimer.current) clearTimeout(autoCheckTimer.current);
     };
-  }, [text, autoCheck, lang, project?.language, ignored]);
+  }, [text, autoCheck, lang, project?.language, ignored, styleHints]);
 
   // ── Smart Typography Formatter ─────────────────────────────────────────────
   function handleFormatTypography() {
@@ -698,26 +1019,51 @@ export default function App() {
     setHistory((h) => [...h.slice(-49), text]);
     const formatted = formatTypography(text);
     updateText(formatted);
+    if (formatted !== text) {
+      recordEdits([{
+        kind: 'punctuation',
+        from: t.typographyLogFrom,
+        to: t.typographyLogTo,
+        count: 1,
+      }]);
+    }
     setNotice(t.btnFixTypographyNotice);
   }
 
   function acceptFix(issue: ProofMatch) {
     if (!chapter) return;
+    const { to, customized } = resolvedTo(issue);
     setHistory((h) => [...h.slice(-49), text]);
-    const fixed = applyFix(text, issue.from, issue.to);
+    const match: ProofMatch = {
+      ...issue,
+      to,
+      optional: false,
+      occurrences: (issue.occurrences || []).map((o) => ({ ...o, to })),
+    };
+    const fixed = applyAllFixes(text, [match]);
     updateText(fixed);
-    setNotice(t.noticeFixAccepted);
+    recordEdits([{
+      kind: customized ? 'custom' : kindFromIssue(issue),
+      from: issue.from,
+      to,
+      why: issue.why,
+      count: issue.count || issue.occurrences?.length || 1,
+      customized,
+    }]);
+    setNotice(customized ? t.noticeFixCustomized : t.noticeFixAccepted);
   }
 
-  function ignoreIssue(from: string) {
+  function ignoreIssue(from: string, id?: string) {
+    const extra = [from, ...(id ? [id] : [])];
     setIgnored((prev) => {
-      const next = [...prev, from];
+      const next = [...prev, ...extra].filter((v, i, arr) => arr.indexOf(v) === i);
       try {
         localStorage.setItem('lipishilpo_personal_dict', JSON.stringify(next));
       } catch {}
+      updatePrefs({ dictionary: next }).catch(() => {});
       return next;
     });
-    setIssues((prev) => prev.filter((i) => i.from !== from));
+    setIssues((prev) => prev.filter((i) => !extra.includes(i.from) && !extra.includes(i.id)));
     setNotice(t.noticeWordIgnored);
   }
 
@@ -740,35 +1086,59 @@ export default function App() {
     );
   }
 
-  const visibleIssues = issues.filter((i) => !ignored.includes(i.from));
-  const filteredIssues = visibleIssues.filter((i) => proofFilter === 'all' || i.category === proofFilter);
+  const visibleIssues = issues.filter((i) => !ignored.includes(i.from) && !ignored.includes(i.id));
+  const filteredIssues = visibleIssues.filter((i) =>
+    i.id !== '__spaces' &&
+    i.id !== '__dari_space' &&
+    (proofFilter === 'all' || i.category === proofFilter)
+  );
   const longSentences = tabKey === 'proofread' || proofFilter === 'complexity' ? findLongSentences(text, 35) : [];
-  const hasSpaces = checked && /[^\S\n]{2,}/.test(text) && !ignored.includes('__spaces');
-  const hasDariSpace = checked && /[^\S\n]+[।]/.test(text) && !ignored.includes('__dari_space');
-  const safeFixesCount = visibleIssues.filter((i) => !i.optional).length;
+  const hasSpaces = visibleIssues.some((i) => i.id === '__spaces');
+  const hasDariSpace = visibleIssues.some((i) => i.id === '__dari_space');
+  const safeFixesCount = visibleIssues.filter((i) => !i.optional && i.id !== '__guruchandali').length;
 
   function handleAcceptAllFixes() {
     if (!chapter || !text.trim()) return;
     const safeFixes = visibleIssues.filter((i) => !i.optional);
     if (safeFixes.length === 0) return;
+    const prepared = safeFixes.map((issue) => {
+      const { to, customized } = resolvedTo(issue);
+      return {
+        issue: {
+          ...issue,
+          to,
+          optional: false,
+          occurrences: (issue.occurrences || []).map((o) => ({ ...o, to })),
+        } as ProofMatch,
+        customized,
+      };
+    });
     setHistory((h) => [...h.slice(-49), text]);
-    const fixedText = applyAllFixes(text, safeFixes);
+    const fixedText = applyAllFixes(text, prepared.map((p) => p.issue));
     updateText(fixedText);
+    recordEdits(prepared.map(({ issue, customized }) => ({
+      kind: customized ? 'custom' : kindFromIssue(issue),
+      from: issue.from,
+      to: issue.to,
+      why: issue.why,
+      count: issue.count || issue.occurrences?.length || 1,
+      customized,
+    })));
     setIssues((prev) => prev.filter((i) => i.optional));
     setNotice(t.allFixedNotice);
   }
 
-  // Tabs definitions
-  const tabsList = [
-    { key: 'proofread' as const, label: t.tabProofread },
-    { key: 'notes' as const, label: t.tabNotes },
-    { key: 'comments' as const, label: t.tabComments },
-    { key: 'audio' as const, label: t.tabAudio },
-    { key: 'snapshots' as const, label: t.tabSnapshots },
-    { key: 'aiEdit' as const, label: t.tabAiEdit },
-    { key: 'analysis' as const, label: t.tabAnalysis },
-    { key: 'format' as const, label: t.tabFormat },
+  const freeTabs = [
+    { key: 'proofread' as const, label: t.tabProofread, pro: false },
+    { key: 'notes' as const, label: t.tabNotes, pro: false },
+    { key: 'comments' as const, label: t.tabComments, pro: false },
+    { key: 'snapshots' as const, label: t.tabSnapshots, pro: false },
   ];
+  const tabsList = [
+    ...freeTabs,
+    ...(proApi?.tabs.map((tab) => ({ key: tab.key, label: tab.label[lang], pro: true })) ?? []),
+  ];
+  const isProTab = !!proApi?.tabs.some((tab) => tab.key === tabKey);
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
@@ -847,12 +1217,16 @@ export default function App() {
           <hr />
           <div className="section-label">{t.nextSteps}</div>
 
-          <button className="nav" onClick={() => { setTabKey('analysis'); setView('editor'); }}>
-            <BarChart3 size={18} /> {t.textAnalysis}
-          </button>
-          <button className="nav" onClick={() => { setTabKey('format'); setView('editor'); }}>
-            <LayoutTemplate size={18} /> {t.bookFormatting}
-          </button>
+          {proApi?.sidebar.map((item) => (
+            <button
+              key={item.key}
+              className="nav"
+              onClick={() => { setTabKey(item.key); setView('editor'); }}
+            >
+              {item.key === 'format' ? <LayoutTemplate size={18} /> : <BarChart3 size={18} />}
+              {item.label[lang]}
+            </button>
+          ))}
 
           <button className={'nav ' + (view === 'docs' ? 'active' : '')} onClick={() => setView('docs')}>
             <HelpCircle size={18} /> {t.tabDocs}
@@ -957,7 +1331,15 @@ export default function App() {
 
               {/* Goal Tracker */}
               {view === 'editor' && (
-                <GoalTracker currentWords={stats.words} lang={lang} />
+                <GoalTracker
+                  currentWords={manuscriptWords}
+                  lang={lang}
+                  target={dailyTarget}
+                  onTargetChange={handleSaveGoal}
+                  isOpen={goalModalOpen}
+                  onOpenChange={setGoalModalOpen}
+                  onProgress={setWordsToday}
+                />
               )}
 
               {/* Pomodoro Timer */}
@@ -1072,7 +1454,14 @@ export default function App() {
 
               {project && (
                 <>
-                  <button className="export" onClick={() => { setView('editor'); setTabKey('format'); }}>
+                  <button className="export" onClick={() => {
+                    if (proApi) {
+                      setView('editor');
+                      setTabKey('format');
+                    } else {
+                      downloadTxt();
+                    }
+                  }}>
                     <Download size={16} /> {t.export}
                   </button>
                   <button className="mobile-new" onClick={() => setModal(true)} title={t.newProject}>
@@ -1098,15 +1487,20 @@ export default function App() {
                   type="file"
                   ref={importFileRef}
                   style={{ display: 'none' }}
-                  accept=".json,.lipishilpo.json"
+                  accept=".json,.lipishilpo.json,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                   onChange={handleImportBackup}
                 />
                 <button
-                  className="secondary-outline-btn"
+                  className="secondary-outline-btn import-btn"
                   onClick={() => importFileRef.current?.click()}
-                  title={t.btnImportBackup}
+                  title={t.btnImportBackupTitle}
+                  disabled={importing}
                 >
-                  <FileUp size={16} /> {t.btnImportBackup}
+                  {importing ? <Loader2 size={16} className="spin" /> : <FileUp size={16} />}
+                  <span className="import-btn-copy">
+                    <strong>{t.btnImportBackup}</strong>
+                    <small>JSON · Word (.docx)</small>
+                  </span>
                 </button>
                 <button className="primary" onClick={() => setModal(true)}>
                   <Plus size={18} /> {t.newProject}
@@ -1118,9 +1512,23 @@ export default function App() {
               <div className="empty">
                 <Feather size={48} />
                 <p>{t.emptyProjects}</p>
-                <button className="primary" onClick={() => setModal(true)}>
-                  <Plus size={18} /> {t.createFirstProject}
-                </button>
+                <div className="page-heading-actions">
+                  <button
+                    className="secondary-outline-btn import-btn"
+                    onClick={() => importFileRef.current?.click()}
+                    title={t.btnImportBackupTitle}
+                    disabled={importing}
+                  >
+                    {importing ? <Loader2 size={16} className="spin" /> : <FileUp size={16} />}
+                    <span className="import-btn-copy">
+                      <strong>{t.btnImportBackup}</strong>
+                      <small>JSON · Word (.docx)</small>
+                    </span>
+                  </button>
+                  <button className="primary" onClick={() => setModal(true)}>
+                    <Plus size={18} /> {t.createFirstProject}
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="project-grid">
@@ -1167,6 +1575,34 @@ export default function App() {
                 ))}
               </div>
             )}
+            {projectPage < projectPages && (
+              <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
+                <button
+                  className="secondary"
+                  disabled={loadingMore}
+                  onClick={async () => {
+                    setLoadingMore(true);
+                    try {
+                      const next = projectPage + 1;
+                      const list = await fetchProjects(next);
+                      setProjects((prev) => {
+                        const seen = new Set(prev.map((p) => p.id));
+                        return [...prev, ...list.items.filter((p) => !seen.has(p.id))];
+                      });
+                      setProjectPage(next);
+                      setProjectPages(list.pages);
+                    } catch (e) {
+                      setNotice(e instanceof Error ? e.message : t.saveFailed);
+                    } finally {
+                      setLoadingMore(false);
+                    }
+                  }}
+                >
+                  {loadingMore ? <Loader2 size={16} className="spin" /> : null}
+                  {t.loadMoreProjects}
+                </button>
+              </div>
+            )}
           </section>
 
         ) : project && chapter ? (
@@ -1174,10 +1610,12 @@ export default function App() {
           <>
             {!focusMode && (
               <div className="document-heading">
-                <div>
+                <div className="document-heading-copy">
                   <div className="eyebrow">{t.manuscript} <span>/</span> {project.genre}</div>
-                  <h1>{project.title}</h1>
-                  <p>{t.documentTagline}</p>
+                  <div className="document-heading-title-row">
+                    <h1>{project.title}</h1>
+                    <p>{t.documentTagline}</p>
+                  </div>
                 </div>
                 <span className="badge">{project.language} <span>•</span> {t.draft}</span>
               </div>
@@ -1352,10 +1790,14 @@ export default function App() {
                       onKeyUp={handleSelectTextInEditor}
                       onSelect={handleSelectTextInEditor}
                       onChange={(e) => {
+                        const next = e.target.value;
                         setHistory((h) => [...h.slice(-49), text]);
-                        updateText(e.target.value);
+                        typedTextRef.current = next;
+                        updateText(next, 'type');
+                        scheduleManualLog();
                         setChecked(false);
                       }}
+                      onBlur={flushManualEdits}
                     />
                   ) : (
                     /* Mode 2: Interactive Visual Markup Review */
@@ -1376,13 +1818,11 @@ export default function App() {
 
                         // 1. Issues
                         for (const issue of visibleIssues) {
-                          if (issue.from === '__spaces' || issue.from === ' ।') continue;
-                          const regex = wordPattern(issue.from);
-                          let m: RegExpExecArray | null;
-                          while ((m = regex.exec(text)) !== null) {
+                          if (issue.id === '__spaces' || issue.id === '__dari_space' || issue.id === '__guruchandali') continue;
+                          for (const occ of issue.occurrences || []) {
                             segs.push({
-                              start: m.index,
-                              end: m.index + issue.from.length,
+                              start: occ.start,
+                              end: occ.end,
                               issue,
                             });
                           }
@@ -1490,7 +1930,17 @@ export default function App() {
                       <div className="intext-popover-change">
                         <del>{activePopover.match.from}</del>
                         <ArrowRight size={14} />
-                        <strong>{activePopover.match.to}</strong>
+                        <input
+                          className="custom-fix-input"
+                          aria-label={t.customizeFixLabel}
+                          title={t.customizeFixHint}
+                          value={customTo[activePopover.match.id] ?? activePopover.match.to}
+                          onChange={(e) => {
+                            const id = activePopover.match.id;
+                            const value = e.target.value;
+                            setCustomTo((prev) => ({ ...prev, [id]: value }));
+                          }}
+                        />
                       </div>
                       <p className="intext-popover-why">{activePopover.match.why}</p>
                       <div className="intext-popover-actions">
@@ -1506,7 +1956,7 @@ export default function App() {
                         <button
                           className="secondary"
                           onClick={() => {
-                            ignoreIssue(activePopover.match.from);
+                            ignoreIssue(activePopover.match.from, activePopover.match.id);
                             setActivePopover(null);
                           }}
                         >
@@ -1525,17 +1975,17 @@ export default function App() {
                   {/* Session Target Progress Bar */}
                   <div
                     className="goal-tracker"
-                    title={t.goalProgress(stats.words, writingGoal)}
-                    onClick={() => setShowGoalInput(true)}
+                    title={t.goalProgress(wordsToday, dailyTarget)}
+                    onClick={() => setGoalModalOpen(true)}
                   >
                     <Target size={13} />
                     <div className="goal-bar-bg">
                       <div
                         className="goal-bar-fill"
-                        style={{ width: `${Math.min(100, Math.round((stats.words / writingGoal) * 100))}%` }}
+                        style={{ width: `${Math.min(100, Math.round((wordsToday / dailyTarget) * 100))}%` }}
                       />
                     </div>
-                    <span>{formatNumber(stats.words)} / {formatNumber(writingGoal)}</span>
+                    <span>{formatNumber(wordsToday)} / {formatNumber(dailyTarget)}</span>
                   </div>
 
                   <span>{t.readingTime(stats.readingTimeMinutes)}</span>
@@ -1551,16 +2001,20 @@ export default function App() {
                   </div>
 
                   <div className="tabs">
-                    {tabsList.map(({ key, label }) => (
+                    {tabsList.map(({ key, label, pro }) => (
                       <button
                         key={key}
-                        className={key === tabKey ? 'selected' : ''}
-                        onClick={() => setTabKey(key)}
+                        className={(key === tabKey ? 'selected' : '') + (pro ? ' pro-tab' : '')}
+                        onClick={() => {
+                          if (key === 'snapshots') flushManualEdits();
+                          setTabKey(key);
+                        }}
                       >
                         {label}
                       </button>
                     ))}
                   </div>
+                  <div className="inspector-body">
 
                   {/* ── Tab 1: Proofreading (Free) ── */}
                   {tabKey === 'proofread' && (
@@ -1576,6 +2030,17 @@ export default function App() {
                           >
                             <Sparkles size={16} /> {t.btnCheckText} <ArrowRight size={16} />
                           </button>
+                          {edits.length > 0 && (
+                            <button
+                              className="secondary full"
+                              onClick={() => {
+                                flushManualEdits();
+                                setTabKey('snapshots');
+                              }}
+                            >
+                              <History size={15} /> {t.editLogView} ({formatNumber(edits.length)})
+                            </button>
+                          )}
                         </div>
                         <div className="proof-toolbar-row">
                           <label className="auto-check-toggle" title={t.autoCheckLabel}>
@@ -1585,6 +2050,20 @@ export default function App() {
                               onChange={(e) => setAutoCheck(e.target.checked)}
                             />
                             <span>{t.autoCheckLabel}</span>
+                          </label>
+                          <label className="auto-check-toggle" title={t.styleHintsLabel}>
+                            <input
+                              type="checkbox"
+                              checked={styleHints}
+                              onChange={(e) => {
+                                const on = e.target.checked;
+                                setStyleHints(on);
+                                try {
+                                  localStorage.setItem('lipishilpo_style_hints', on ? '1' : '0');
+                                } catch {}
+                              }}
+                            />
+                            <span>{t.styleHintsLabel}</span>
                           </label>
                           <button
                             className="typography-quick-btn"
@@ -1704,12 +2183,12 @@ export default function App() {
                                 {r.optional && <span className="optional-badge">{t.optionalBadge}</span>}
                                 <button
                                   onClick={() => {
-                                    const m = wordPattern(r.from).exec(text);
-                                    if (m) {
+                                    const occ = r.occurrences?.[0];
+                                    if (occ) {
                                       setEditorMode('edit');
                                       setTimeout(() => {
                                         editor.current?.focus();
-                                        editor.current?.setSelectionRange(m.index, m.index + r.from.length);
+                                        editor.current?.setSelectionRange(occ.start, occ.end);
                                       }, 50);
                                     }
                                   }}
@@ -1720,7 +2199,16 @@ export default function App() {
                               <div className="replacement">
                                 <del>{r.from}</del>
                                 <ArrowRight size={16} />
-                                <strong>{r.to}</strong>
+                                <input
+                                  className="custom-fix-input"
+                                  aria-label={t.customizeFixLabel}
+                                  title={t.customizeFixHint}
+                                  value={customTo[r.id] ?? r.to}
+                                  onChange={(e) => {
+                                    const value = e.target.value;
+                                    setCustomTo((prev) => ({ ...prev, [r.id]: value }));
+                                  }}
+                                />
                                 {r.count && r.count > 1 && <span className="count-badge">×{formatNumber(r.count)}</span>}
                               </div>
                               <p>{r.why}</p>
@@ -1728,7 +2216,7 @@ export default function App() {
                                 <button onClick={() => acceptFix(r)}>
                                   <Check size={14} /> {t.btnAccept}
                                 </button>
-                                <button onClick={() => ignoreIssue(r.from)} title={t.btnAddToDictionary}>
+                                <button onClick={() => ignoreIssue(r.from, r.id)} title={t.btnAddToDictionary}>
                                   <X size={14} /> {t.btnIgnore}
                                 </button>
                               </div>
@@ -1744,6 +2232,12 @@ export default function App() {
                                 onClick={() => {
                                   setHistory((h) => [...h, text]);
                                   updateText(text.replace(/[^\S\n]+[।]/g, '।'));
+                                  recordEdits([{
+                                    kind: 'punctuation',
+                                    from: t.dariLogFrom,
+                                    to: '।',
+                                    count: 1,
+                                  }]);
                                   ignoreIssue('__dari_space');
                                 }}
                               >
@@ -1761,6 +2255,12 @@ export default function App() {
                                 onClick={() => {
                                   setHistory((h) => [...h, text]);
                                   updateText(text.replace(/[^\S\n]{2,}/g, ' '));
+                                  recordEdits([{
+                                    kind: 'punctuation',
+                                    from: t.spacesLogFrom,
+                                    to: ' ',
+                                    count: 1,
+                                  }]);
                                   ignoreIssue('__spaces');
                                 }}
                               >
@@ -1818,29 +2318,6 @@ export default function App() {
                             autosave(updated);
                             return updated;
                           });
-                        }}
-                      />
-                    </div>
-                  )}
-
-                  {/* ── Tab: Audio Proofreading (Pro) ── */}
-                  {tabKey === 'audio' && (
-                    <div className="audio-tab-panel">
-                      <div className="check-intro">
-                        <strong>{t.audioTitle}</strong>
-                        <p>{t.audioSubtitle}</p>
-                      </div>
-                      <AudioProofreader
-                        text={text}
-                        isPro={wpConfig.isPro}
-                        lang={lang}
-                        onSentenceHighlight={(sentence) => {
-                          if (!sentence) return;
-                          const pos = text.indexOf(sentence.trim());
-                          if (pos >= 0 && editor.current) {
-                            editor.current.focus();
-                            editor.current.setSelectionRange(pos, pos + sentence.trim().length);
-                          }
                         }}
                       />
                     </div>
@@ -1921,6 +2398,119 @@ export default function App() {
                   {tabKey === 'snapshots' && (
                     <div className="snapshots-panel">
                       <div className="check-intro">
+                        <strong>{t.editLogHeading}</strong>
+                        <p>{t.editLogSubtitle}</p>
+                        {edits.length > 0 && (
+                          <button
+                            className="secondary full"
+                            onClick={() => {
+                              if (!chapter) return;
+                              if (!confirm(t.editLogClearConfirm)) return;
+                              setEdits([]);
+                              persistChapterMeta('edits', chapter.id, []);
+                              try {
+                                localStorage.removeItem(`lipishilpo_edits_${chapter.id}`);
+                              } catch {}
+                            }}
+                          >
+                            <Trash2 size={14} /> {t.editLogClear}
+                          </button>
+                        )}
+                      </div>
+
+                      {edits.length > 0 && (
+                        <div className="filter-pills edit-log-filters">
+                          {([
+                            ['all', t.filterAll] as const,
+                            ['spelling', t.editKindSpelling] as const,
+                            ['punctuation', t.editKindPunctuation] as const,
+                            ['replace', t.editKindReplace] as const,
+                            ['custom', t.editKindCustom] as const,
+                          ]).map(([key, label]) => (
+                            <button
+                              key={key}
+                              className={'pill-btn ' + (editFilter === key ? 'active' : '')}
+                              onClick={() => setEditFilter(key)}
+                            >
+                              {label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="result-label">
+                        <span>{formatNumber(edits.length)}</span>
+                        <small>{t.thisChapter}</small>
+                      </div>
+
+                      {edits.length === 0 ? (
+                        <div className="empty">
+                          <History size={28} />
+                          <p>{t.editLogEmpty}</p>
+                        </div>
+                      ) : (
+                        <div className="edit-log-list">
+                          {edits
+                            .filter((item) => editFilter === 'all' || item.kind === editFilter)
+                            .map((item) => (
+                              <article key={item.id} className={'edit-log-card kind-' + item.kind}>
+                                <div className="edit-log-top">
+                                  <span className={'edit-kind-pill kind-' + item.kind}>
+                                    {item.kind === 'spelling' && t.editKindSpelling}
+                                    {item.kind === 'grammar' && t.editKindGrammar}
+                                    {item.kind === 'style' && t.editKindStyle}
+                                    {item.kind === 'punctuation' && t.editKindPunctuation}
+                                    {item.kind === 'replace' && t.editKindReplace}
+                                    {item.kind === 'custom' && t.editKindCustom}
+                                  </span>
+                                  {item.customized && <span className="optional-badge">{t.editCustomBadge}</span>}
+                                  {item.count > 1 && <span className="count-badge">{t.editCount(item.count)}</span>}
+                                  <button
+                                    className="delete-snap-btn"
+                                    onClick={() => {
+                                      if (!chapter) return;
+                                      const next = edits.filter((e) => e.id !== item.id);
+                                      setEdits(next);
+                                      persistChapterMeta('edits', chapter.id, next);
+                                      try {
+                                        localStorage.setItem(`lipishilpo_edits_${chapter.id}`, JSON.stringify(next));
+                                      } catch {}
+                                    }}
+                                    title={t.btnDeleteComment}
+                                  >
+                                    <X size={13} />
+                                  </button>
+                                </div>
+                                <div className="replacement">
+                                  <del>{item.from || '—'}</del>
+                                  <ArrowRight size={14} />
+                                  <strong>{item.to || '—'}</strong>
+                                </div>
+                                {item.why ? <p>{item.why}</p> : null}
+                                <footer className="edit-log-meta">
+                                  <span>{item.date}</span>
+                                  <button
+                                    onClick={() => {
+                                      const needle = item.to.trim();
+                                      if (!needle) return;
+                                      const index = text.indexOf(needle);
+                                      if (index < 0) return;
+                                      setEditorMode('edit');
+                                      setTimeout(() => {
+                                        editor.current?.focus();
+                                        editor.current?.setSelectionRange(index, index + needle.length);
+                                      }, 50);
+                                    }}
+                                  >
+                                    {t.viewInText} <ChevronRight size={13} />
+                                  </button>
+                                </footer>
+                              </article>
+                            ))}
+                        </div>
+                      )}
+
+                      <div className="check-intro snapshot-split">
                         <strong>{t.snapshotsHeading}</strong>
                         <p>{t.snapshotsSubtitle}</p>
                         <form className="snapshot-form" onSubmit={handleSaveSnapshot}>
@@ -1976,57 +2566,8 @@ export default function App() {
                     </div>
                   )}
 
-                  {/* ── Tab 3 & 4: AI Edit & Analysis (Pro) ── */}
-                  {(tabKey === 'aiEdit' || tabKey === 'analysis') && (
-                  <AIPanel
-                    key={project.id + tabKey + lang}
-                    project={project}
-                    chapter={chapter}
-                    defaultMode={tabKey === 'aiEdit' ? 'proofread' : 'chapter'}
-                    isPro={wpConfig.isPro}
-                    lang={lang}
-                    onLocate={(id, quote) => {
-                      setCid(id);
-                      setHistory([]);
-                      setTimeout(() => {
-                        const current = project.chapters.find((c) => c.id === id);
-                        const index = current?.text.indexOf(quote) ?? -1;
-                        if (index >= 0) {
-                          editor.current?.focus();
-                          editor.current?.setSelectionRange(index, index + quote.length);
-                          editor.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        }
-                      }, 0);
-                    }}
-                    onApply={(id, before, after) => {
-                      const c = project.chapters.find((c) => c.id === id);
-                      if (!c || !before || c.text.indexOf(before) < 0 || c.text.indexOf(before) !== c.text.lastIndexOf(before))
-                        return false;
-                      setCid(id);
-                      setHistory([c.text]);
-                      const updated = projects.map((p) =>
-                        p.id === project.id
-                          ? { ...p, chapters: p.chapters.map((ch) => ch.id === id ? { ...ch, text: ch.text.replace(before, () => after) } : ch) }
-                          : p
-                      );
-                      setProjects(updated);
-                      autosave(updated);
-                      setNotice(t.noticeAiFixAccepted);
-                      return true;
-                    }}
-                  />
-                )}
-
-                {/* ── Tab 4: Format / Export (Pro) ── */}
-                {tabKey === 'format' && (
-                  <ExportPanel
-                    key={project.id + lang}
-                    project={project}
-                    isPro={wpConfig.isPro}
-                    lang={lang}
-                    onTxt={downloadTxt}
-                  />
-                )}
+                  {isProTab && <div ref={proSlot} className="pro-studio-slot" />}
+                  </div>
               </aside>
             )}
             </div>
@@ -2091,6 +2632,9 @@ export default function App() {
             <button className="secondary" onClick={downloadMarkdown}>
               <FileCode size={15} /> {t.btnExportMarkdown}
             </button>
+            <button className="secondary" onClick={downloadHtml}>
+              <FileCode size={15} /> {t.btnExportHtml}
+            </button>
           </div>
         </div>
       </dialog>
@@ -2146,47 +2690,6 @@ export default function App() {
           </button>
         </form>
       </dialog>
-
-      {/* ── Writing Goal Setting Modal ── */}
-      {showGoalInput && (
-        <div className="modal-backdrop" onClick={() => setShowGoalInput(false)}>
-          <div className="modal goal-modal" onClick={(e) => e.stopPropagation()}>
-            <button type="button" className="close" onClick={() => setShowGoalInput(false)}>
-              <X size={20} />
-            </button>
-            <span className="brandmark"><Target size={24} /></span>
-            <h2>{t.goalLabel}</h2>
-            <p>{t.projectsSubtitle}</p>
-
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              const input = (e.currentTarget.elements.namedItem('goalInput') as HTMLInputElement).value;
-              handleSaveGoal(parseInt(input, 10) || 500);
-            }}>
-              <label>
-                {t.goalLabel} ({lang === 'bn' ? 'শব্দ' : 'words'})
-                <input
-                  name="goalInput"
-                  type="number"
-                  defaultValue={writingGoal}
-                  min={50}
-                  step={50}
-                  required
-                />
-              </label>
-              <div className="goal-preset-btns">
-                <button type="button" onClick={() => handleSaveGoal(250)}>250</button>
-                <button type="button" onClick={() => handleSaveGoal(500)}>500</button>
-                <button type="button" onClick={() => handleSaveGoal(1000)}>1,000</button>
-                <button type="button" onClick={() => handleSaveGoal(2000)}>2,000</button>
-              </div>
-              <button className="primary full" type="submit" style={{ marginTop: '16px' }}>
-                {t.btnSetGoal}
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* ── Add Comment / Annotation Modal ── */}
       {showCommentDialog && (

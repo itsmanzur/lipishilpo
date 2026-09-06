@@ -9,6 +9,8 @@
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: lipishilpo
  * Domain Path: /languages
+ * Requires at least: 6.0
+ * Requires PHP: 7.4
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -24,17 +26,15 @@ define( 'LIPISHILPO_REST_NAMESPACE', 'lipishilpo/v1' );
 // ── Include Free Classes ──────────────────────────────────────────────────
 require_once LIPISHILPO_DIR . 'includes/class-admin.php';
 require_once LIPISHILPO_DIR . 'includes/class-projects.php';
-require_once LIPISHILPO_DIR . 'includes/class-proofread.php';
-require_once LIPISHILPO_DIR . 'includes/class-docs.php';
 
 // ── Plugin Init ───────────────────────────────────────────────────────────
 add_action( 'plugins_loaded', 'lipishilpo_init', 10 );
 
 function lipishilpo_init() {
+	load_plugin_textdomain( 'lipishilpo', false, dirname( plugin_basename( LIPISHILPO_FILE ) ) . '/languages' );
+
 	Lipishilpo_Admin::init();
 	Lipishilpo_Projects::init();
-	Lipishilpo_Proofread::init();
-	Lipishilpo_Docs::init();
 
 	// Hook for Pro addon or external extensions
 	do_action( 'lipishilpo_loaded' );
@@ -56,6 +56,12 @@ function lipishilpo_shortcode( $atts ) {
 			'</p>';
 	}
 
+	if ( ! current_user_can( 'edit_posts' ) ) {
+		return '<p class="lipishilpo-login-notice">' .
+			esc_html__( 'You need permission to create or edit posts to use Lipishilpo.', 'lipishilpo' ) .
+			'</p>';
+	}
+
 	lipishilpo_enqueue_assets();
 
 	$is_pro    = lipishilpo_is_pro() ? '1' : '0';
@@ -69,6 +75,7 @@ function lipishilpo_shortcode( $atts ) {
 		data-pro="' . esc_attr( $is_pro ) . '"
 		data-version="' . esc_attr( LIPISHILPO_VERSION ) . '"
 		data-fonts-url="' . esc_attr( $fonts_url ) . '"
+		data-dicts-url="' . esc_attr( LIPISHILPO_URL . 'assets/dicts' ) . '"
 	></div>';
 }
 
@@ -85,17 +92,20 @@ function lipishilpo_enqueue_assets() {
 		);
 	}
 
-	wp_enqueue_style(
-		'lipishilpo-google-fonts',
-		'https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@400;500;600;700&family=Noto+Serif+Bengali:wght@400;500;600;700&family=Tiro+Bangla:ital@0;1&display=swap',
-		array(),
-		null
-	);
+	$font_css = LIPISHILPO_DIR . 'assets/css/lipishilpo-fonts.css';
+	if ( file_exists( $font_css ) ) {
+		wp_enqueue_style(
+			'lipishilpo-fonts',
+			LIPISHILPO_URL . 'assets/css/lipishilpo-fonts.css',
+			array(),
+			$asset['version']
+		);
+	}
 
 	wp_enqueue_style(
 		'lipishilpo-editor',
 		LIPISHILPO_URL . 'assets/css/lipishilpo-editor.css',
-		array( 'lipishilpo-google-fonts' ),
+		file_exists( $font_css ) ? array( 'lipishilpo-fonts' ) : array(),
 		$asset['version']
 	);
 
@@ -127,7 +137,7 @@ function lipishilpo_admin_page_menu() {
 	add_menu_page(
 		__( 'Lipishilpo', 'lipishilpo' ),
 		__( 'Lipishilpo', 'lipishilpo' ),
-		'read',
+		'edit_posts',
 		'lipishilpo',
 		'lipishilpo_admin_editor_page',
 		'dashicons-edit-page',
@@ -138,7 +148,7 @@ function lipishilpo_admin_page_menu() {
 		'lipishilpo',
 		__( 'Studio Editor', 'lipishilpo' ),
 		__( 'Studio Editor', 'lipishilpo' ),
-		'read',
+		'edit_posts',
 		'lipishilpo',
 		'lipishilpo_admin_editor_page'
 	);
@@ -147,7 +157,7 @@ function lipishilpo_admin_page_menu() {
 		'lipishilpo',
 		__( 'User Guide & Docs', 'lipishilpo' ),
 		__( 'User Guide & Docs', 'lipishilpo' ),
-		'read',
+		'edit_posts',
 		'lipishilpo-docs',
 		'lipishilpo_admin_editor_page'
 	);
@@ -158,12 +168,12 @@ function lipishilpo_admin_page_menu() {
 		__( 'Settings & Info', 'lipishilpo' ),
 		'manage_options',
 		'lipishilpo-settings',
-		'lipishilpo_admin_editor_page'
+		array( 'Lipishilpo_Admin', 'render_settings_page' )
 	);
 }
 
 function lipishilpo_admin_editor_page() {
-	if ( ! current_user_can( 'read' ) ) {
+	if ( ! current_user_can( 'edit_posts' ) ) {
 		wp_die( esc_html__( 'Permission denied.', 'lipishilpo' ) );
 	}
 	lipishilpo_enqueue_assets();

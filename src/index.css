@@ -1,5 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700&family=Noto+Serif+Bengali:wght@400;500;600;700&display=swap');
-/* Tailwind removed for WordPress plugin build */
+/* Local Bengali fonts are loaded via assets/css/lipishilpo-fonts.css */
 :root {
   --ink: #263e38;
   --green: #20644f;
@@ -73,6 +72,8 @@ select {
 .app {
   display: flex;
   min-height: 100vh;
+  height: 100%;
+  overflow: hidden;
 }
 .sidebar {
   width: 250px;
@@ -82,6 +83,8 @@ select {
   background: #eef3ed;
   border-right: 1px solid #dce4d9;
   padding: 32px 20px 0;
+  min-height: 0;
+  overflow-y: auto;
 }
 .brand {
   display: flex;
@@ -255,16 +258,19 @@ hr {
 main {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 header {
-  height: 76px;
+  height: 52px;
   background: #fff;
   border-bottom: 1px solid var(--line);
-  padding: 0 32px;
+  padding: 0 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 15px;
+  gap: 12px;
 }
 .breadcrumb,
 .header-actions {
@@ -298,18 +304,27 @@ header {
   display: none;
 }
 .document-heading {
-  padding: 30px 34px 26px;
+  padding: 7px 16px 6px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
+  flex-shrink: 0;
+  border-bottom: 1px solid #e8eee4;
+  background: #fbfcf9;
+}
+.document-heading-copy {
+  min-width: 0;
+  flex: 1;
 }
 .eyebrow {
-  font-size: 12px;
+  font-size: 11px;
   color: #929b88;
-  margin-bottom: 10px;
+  margin-bottom: 1px;
+  line-height: 1.3;
 }
 .eyebrow span {
-  margin: 0 9px;
+  margin: 0 6px;
   color: #b4bbaa;
 }
 h1 {
@@ -317,18 +332,33 @@ h1 {
     600 29px/1.6 'Noto Serif Bengali',
     serif;
 }
-.document-heading p {
+.document-heading h1 {
+  font:
+    600 17px/1.3 'Noto Serif Bengali',
+    serif;
+}
+.document-heading-title-row {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0 10px;
+}
+.document-heading p,
+.document-heading-copy p {
   color: #919987;
-  font-size: 13px;
-  margin-top: 4px;
+  font-size: 12px !important;
+  line-height: 1.4;
+  margin: 0;
 }
 .badge {
   border: 1px solid #dce5d5;
   border-radius: 5px;
   background: #fff;
-  padding: 6px 11px;
-  font-size: 12px;
+  padding: 3px 8px;
+  font-size: 11px;
   color: #768769;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 .badge span {
   margin: 0 6px;
@@ -336,10 +366,13 @@ h1 {
 }
 .editor-layout {
   display: grid;
-  grid-template-columns: minmax(330px, 1fr) 326px;
-  align-items: start;
-  gap: 23px;
-  margin: 0 28px 25px 34px;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 34%);
+  align-items: stretch;
+  gap: 14px;
+  margin: 0 12px 12px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 .writing {
   background: white;
@@ -347,9 +380,14 @@ h1 {
   border-radius: 9px;
   overflow: hidden;
   box-shadow: 0 3px 12px #263e1803;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
 }
 .toolbar {
   height: 53px;
+  flex-shrink: 0;
   border-bottom: 1px solid #e6ebe0;
   padding: 0 20px;
   display: flex;
@@ -378,14 +416,19 @@ h1 {
   margin: 0 8px;
 }
 .paper {
-  padding: 35px 43px 20px;
-  min-height: 570px;
+  padding: 16px 32px 12px;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 .chapter-kicker {
   font-size: 11px;
   letter-spacing: 2px;
   color: #98a18e;
   margin-bottom: 10px;
+  flex-shrink: 0;
 }
 .chapter-title {
   font:
@@ -396,24 +439,29 @@ h1 {
   color: #30472f;
   background: transparent;
   padding: 5px 0;
+  flex-shrink: 0;
 }
 .paper-rule {
   height: 2px;
   width: 36px;
   background: #d2dfc5;
   margin: 18px 0 25px;
+  flex-shrink: 0;
 }
 .paper textarea {
   display: block;
   width: 100%;
-  min-height: 470px;
-  resize: vertical;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  resize: none;
+  overflow-y: auto;
   border: 0;
   background: transparent;
   font-family: 'Noto Serif Bengali', serif;
   line-height: 2.05;
   color: #505d49;
-  padding: 0;
+  padding: 0 8px 24px 0;
 }
 .paper textarea::placeholder {
   color: #acb39f;
@@ -421,6 +469,7 @@ h1 {
 .writing-footer {
   display: flex;
   justify-content: space-between;
+  flex-shrink: 0;
   border-top: 1px solid #edf0e6;
   padding: 14px 20px;
   color: #96a088;
@@ -431,6 +480,15 @@ h1 {
   border: 1px solid #e0e6da;
   border-radius: 9px;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: calc(100vh - 160px);
+}
+.inspector-body {
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
 }
 .inspector-heading {
   display: flex;
@@ -455,22 +513,30 @@ h1 {
   margin-top: 2px;
 }
 .tabs {
-  display: flex;
-  gap: 8px;
-  padding: 0 15px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 8px 12px 10px;
   border-bottom: 1px solid var(--line);
+  overflow: visible;
 }
 .tabs button {
-  flex: 1;
-  padding: 10px 0;
-  font-size: 13px;
-  color: #929b88;
-  border-bottom: 2px solid transparent;
+  width: 100%;
+  padding: 8px 6px;
+  font-size: 12px;
+  line-height: 1.3;
+  color: #6d7a66;
+  white-space: normal;
+  text-align: center;
+  border: 1px solid #e2ead9;
+  border-radius: 7px;
+  background: #f7faf4;
 }
 .tabs .selected {
-  color: #306d49;
-  border-bottom-color: #306d49;
+  color: #1e5944;
   font-weight: 600;
+  background: #e7f3ea;
+  border-color: #2a7a56;
 }
 .check-intro {
   padding: 21px 18px 17px;
@@ -620,6 +686,10 @@ h1 {
   font-size: 13px;
   margin-top: 12px;
 }
+.empty .page-heading-actions {
+  justify-content: center;
+  margin-top: 16px;
+}
 .analysis {
   padding: 22px 18px;
 }
@@ -696,6 +766,9 @@ h1 {
 }
 .projects-view {
   padding: 45px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 .page-heading {
   display: flex;
@@ -836,17 +909,13 @@ h1 {
 }
 @media (min-width: 1500px) {
   .editor-layout {
-    grid-template-columns: minmax(500px, 1fr) 355px;
-    max-width: 1350px;
-    margin-left: auto;
-    margin-right: auto;
-    padding: 0 34px;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    max-width: none;
+    margin: 0 12px 12px;
+    padding: 0;
   }
   .paper {
-    padding: 45px 65px;
-  }
-  .paper textarea {
-    min-height: 540px;
+    padding: 28px 40px 16px;
   }
 }
 @media (max-width: 1150px) {
@@ -855,18 +924,18 @@ h1 {
     padding: 28px 12px 0;
   }
   .editor-layout {
-    grid-template-columns: minmax(300px, 1fr) 295px;
-    gap: 15px;
-    margin: 0 20px 20px;
+    grid-template-columns: minmax(0, 1fr) 280px;
+    gap: 12px;
+    margin: 0 10px 12px;
   }
   .paper {
-    padding: 28px 25px;
+    padding: 14px 22px 10px;
   }
   .save-state {
     display: none;
   }
   .document-heading {
-    padding: 25px 22px;
+    padding: 6px 12px;
   }
   .breadcrumb {
     gap: 7px;
@@ -888,12 +957,15 @@ h1 {
   }
   .editor-layout {
     grid-template-columns: 1fr;
+    overflow: auto;
   }
   .inspector {
     margin-bottom: 20px;
   }
-  .paper textarea {
-    min-height: 400px;
+  .writing {
+    height: auto;
+    min-height: 280px;
+    flex: 1;
   }
   .sidebar-bottom {
     padding-top: 30px;
@@ -911,8 +983,8 @@ h1 {
     display: none;
   }
   header {
-    height: 64px;
-    padding: 0 12px;
+    height: 48px;
+    padding: 0 10px;
   }
   .export {
     padding: 6px 9px;
@@ -924,13 +996,14 @@ h1 {
     gap: 5px;
   }
   .document-heading {
-    padding: 24px 18px;
+    padding: 6px 10px;
   }
   .document-heading h1 {
-    font-size: 25px;
+    font-size: 16px;
   }
-  .document-heading p {
-    font-size: 12px;
+  .document-heading p,
+  .document-heading-copy p {
+    font-size: 11px !important;
   }
   .badge {
     white-space: nowrap;
@@ -1065,6 +1138,108 @@ body {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0 12px;
+}
+.export-fieldset {
+  border: 1px solid #dce6d6;
+  border-radius: 8px;
+  margin: 12px 0 0;
+  padding: 6px 12px 10px;
+}
+.export-fieldset legend {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: #5d7464;
+  padding: 0 6px;
+}
+.field-label input[type='color'] {
+  min-height: 36px;
+  padding: 3px;
+}
+.book-preview {
+  margin: 8px 0 4px;
+}
+.book-preview-cover {
+  margin: 0 auto 10px;
+  border-radius: 3px 10px 10px 3px;
+  color: #f4efe4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 16px 10px;
+  text-align: center;
+  box-shadow: 4px 5px 0 #c5cbb8;
+}
+.book-preview-cover small {
+  letter-spacing: 0.16em;
+  font-size: 9px;
+  opacity: 0.7;
+}
+.book-preview-cover strong {
+  font:
+    600 15px/1.35 'Noto Serif Bengali',
+    serif;
+}
+.book-preview-cover em,
+.book-preview-cover span {
+  font-size: 11px;
+  opacity: 0.88;
+}
+.book-preview-spread {
+  display: flex;
+  justify-content: center;
+  gap: 0;
+}
+.book-page {
+  background: #fffdf6;
+  border: 1px solid #d3d8c6;
+  box-shadow: 0 2px 8px #263e1808;
+  overflow: hidden;
+  position: relative;
+  font-family: 'Noto Serif Bengali', serif;
+  color: #2a3328;
+}
+.book-page.verso {
+  border-right-width: 0;
+}
+.book-page header,
+.book-page footer {
+  font-size: 7px;
+  color: #7a8570;
+  letter-spacing: 0.02em;
+}
+.book-page header {
+  margin-bottom: 4px;
+  border-bottom: 1px solid #ece6d4;
+  padding-bottom: 2px;
+}
+.book-page footer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 4px;
+  text-align: center;
+}
+.book-page h4 {
+  font-size: 9px;
+  margin: 0 0 4px;
+}
+.book-page p {
+  margin: 0;
+  font-size: inherit;
+  line-height: inherit;
+}
+.imprint-preview {
+  font-size: 8px !important;
+  color: #5c6654;
+}
+.book-preview-meta {
+  display: block;
+  text-align: center;
+  font-size: 10px;
+  color: #7a8a74;
+  margin-top: 6px;
 }
 .checkbox-label {
   display: flex;
@@ -1207,14 +1382,15 @@ body {
   color: #2b7347;
   padding: 15px 0;
 }
-.tabs {
-  padding: 0 8px;
-  gap: 3px;
-  flex-wrap: wrap;
-}
-.tabs button {
-  min-width: 60px;
-  font-size: 13px !important;
+.tabs button.pro-tab::after {
+  content: 'Pro';
+  display: block;
+  margin-top: 2px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #20644f;
+  opacity: 0.75;
 }
 .inspector {
   overflow-wrap: anywhere;
@@ -1363,9 +1539,10 @@ body {
   border: 1px solid #ccd8c7;
   border-radius: 6px;
   padding: 8px 12px;
-  margin: 10px 0 14px 0;
+  margin: 10px 16px 0;
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
   gap: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
@@ -1832,6 +2009,103 @@ body {
   padding: 5px 8px;
   font-size: 12px;
 }
+.custom-fix-input {
+  min-width: 0;
+  flex: 1;
+  max-width: 160px;
+  padding: 3px 7px;
+  border: 1px solid #c8d8c4;
+  border-radius: 4px;
+  background: #f4f8f1;
+  color: #2f6b45;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 500;
+}
+.custom-fix-input:focus {
+  outline: none;
+  border-color: #4f8a62;
+  background: #fff;
+}
+.intext-popover .custom-fix-input {
+  max-width: 130px;
+  font-size: 14px;
+}
+.edit-log-filters {
+  padding: 0 16px 8px;
+}
+.edit-log-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 16px 8px;
+}
+.edit-log-card {
+  border: 1px solid #d8e4d4;
+  border-radius: 6px;
+  background: #fcfdfe;
+  padding: 10px 12px;
+}
+.edit-log-card p {
+  font-size: 12px;
+  line-height: 1.7;
+  color: #89967c;
+  margin: 0;
+}
+.edit-log-card .replacement {
+  margin: 8px 0 6px;
+  font-size: 16px;
+}
+.edit-log-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.edit-log-top .delete-snap-btn {
+  margin-left: auto;
+}
+.edit-kind-pill {
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: #eef4ea;
+  color: #4a6d55;
+}
+.edit-kind-pill.kind-punctuation {
+  background: #f3efe4;
+  color: #8a6d3b;
+}
+.edit-kind-pill.kind-replace,
+.edit-kind-pill.kind-custom {
+  background: #e8eef6;
+  color: #3d5a80;
+}
+.edit-log-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 11px;
+  color: #6a8576;
+}
+.edit-log-meta button {
+  background: none;
+  border: none;
+  color: #4f7a61;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0;
+  font-size: 11px;
+}
+.snapshot-split {
+  margin-top: 8px;
+  padding-top: 16px;
+  border-top: 1px solid #dce6d8;
+}
 
 /* ── Mode Switcher Group (Edit vs Visual Review) ── */
 .mode-switcher-group {
@@ -1910,13 +2184,15 @@ body {
 
 /* ── Interactive Visual Review Paper Surface ── */
 .paper-review-surface {
-  min-height: 470px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
   font-family: 'Noto Serif Bengali', serif;
   line-height: 2.2;
   color: #45523f;
   white-space: pre-wrap;
   word-break: break-word;
-  padding: 5px 0;
+  padding: 5px 8px 24px 0;
   outline: none;
 }
 .empty-review {
@@ -2455,6 +2731,7 @@ body.lipishilpo-studio-fullscreen .wrap.lipishilpo-admin-editor-wrap .app {
   border: none !important;
   box-shadow: none !important;
   min-height: 100vh !important;
+  height: 100vh !important;
 }
 
 body.lipishilpo-studio-fullscreen #lipishilpo-root {
@@ -3838,6 +4115,32 @@ body.lipishilpo-studio-fullscreen #lipishilpo-root {
   background: #edf6eb;
   border-color: #20644f;
 }
+.import-btn {
+  align-items: center;
+  padding: 6px 14px;
+  min-height: 42px;
+}
+.import-btn-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  line-height: 1.2;
+}
+.import-btn-copy strong {
+  font-size: 13px;
+  font-weight: 700;
+}
+.import-btn-copy small {
+  font-size: 10px;
+  font-weight: 500;
+  color: #6d7a66;
+  letter-spacing: 0.01em;
+}
+.import-btn:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
 .card-top-actions {
   position: absolute;
   top: 10px;
@@ -3864,6 +4167,108 @@ body.lipishilpo-studio-fullscreen #lipishilpo-root {
   background: #20644f;
   color: #fff;
   border-color: #20644f;
+}
+
+.export-fieldset {
+  border: 1px solid #dce6d6;
+  border-radius: 8px;
+  margin: 12px 0 0;
+  padding: 6px 12px 10px;
+}
+.export-fieldset legend {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: #5d7464;
+  padding: 0 6px;
+}
+.field-label input[type='color'] {
+  min-height: 36px;
+  padding: 3px;
+}
+.book-preview {
+  margin: 8px 0 4px;
+}
+.book-preview-cover {
+  margin: 0 auto 10px;
+  border-radius: 3px 10px 10px 3px;
+  color: #f4efe4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 16px 10px;
+  text-align: center;
+  box-shadow: 4px 5px 0 #c5cbb8;
+}
+.book-preview-cover small {
+  letter-spacing: 0.16em;
+  font-size: 9px;
+  opacity: 0.7;
+}
+.book-preview-cover strong {
+  font:
+    600 15px/1.35 'Noto Serif Bengali',
+    serif;
+}
+.book-preview-cover em,
+.book-preview-cover span {
+  font-size: 11px;
+  opacity: 0.88;
+}
+.book-preview-spread {
+  display: flex;
+  justify-content: center;
+  gap: 0;
+}
+.book-page {
+  background: #fffdf6;
+  border: 1px solid #d3d8c6;
+  box-shadow: 0 2px 8px #263e1808;
+  overflow: hidden;
+  position: relative;
+  font-family: 'Noto Serif Bengali', serif;
+  color: #2a3328;
+}
+.book-page.verso {
+  border-right-width: 0;
+}
+.book-page header,
+.book-page footer {
+  font-size: 7px;
+  color: #7a8570;
+}
+.book-page header {
+  margin-bottom: 4px;
+  border-bottom: 1px solid #ece6d4;
+  padding-bottom: 2px;
+}
+.book-page footer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 4px;
+  text-align: center;
+}
+.book-page h4 {
+  font-size: 9px;
+  margin: 0 0 4px;
+}
+.book-page p {
+  margin: 0;
+  font-size: inherit;
+  line-height: inherit;
+}
+.imprint-preview {
+  font-size: 8px !important;
+  color: #5c6654;
+}
+.book-preview-meta {
+  display: block;
+  text-align: center;
+  font-size: 10px;
+  color: #7a8a74;
+  margin-top: 6px;
 }
 
 

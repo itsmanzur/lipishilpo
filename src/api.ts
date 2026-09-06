@@ -1,8 +1,5 @@
 /**
  * WordPress REST API client — লিপিশিল্প
- *
- * WordPress-এর root element থেকে configuration নেওয়া হয়।
- * Profder-এর Cloudflare fetch এবং localStorage replace করে।
  */
 
 export interface WPConfig {
@@ -12,9 +9,9 @@ export interface WPConfig {
   userId: number;
   isPro: boolean;
   version: string;
+  dictsUrl: string;
 }
 
-/** WordPress root element থেকে config পড়া */
 export function getWPConfig(): WPConfig {
   const el = document.getElementById('lipishilpo-root');
   return {
@@ -24,12 +21,12 @@ export function getWPConfig(): WPConfig {
     userId: parseInt(el?.dataset.userId ?? '0', 10),
     isPro: el?.dataset.pro === '1',
     version: el?.dataset.version ?? '1.0.0',
+    dictsUrl: el?.dataset.dictsUrl ?? '',
   };
 }
 
 const config = getWPConfig();
 
-/** WordPress REST API-তে নিরাপদ fetch */
 async function wpFetch(
   path: string,
   options: RequestInit = {}
@@ -51,17 +48,42 @@ async function wpFetch(
   return fetch(url, { ...options, headers });
 }
 
-// ── Types ──────────────────────────────────────────────────────────────────
+function normalizeProject(p: Project): Project {
+  return {
+    ...p,
+    id: String(p.id),
+    snapshots: p.snapshots ?? {},
+    comments: p.comments ?? {},
+    edits: p.edits ?? {},
+  };
+}
+
 export type Chapter = { id: string; title: string; text: string; notes?: string };
 export type Project = {
-  id: string;  // WP API থেকে number আসে — fetchProjects()-এ String() করা হয়
+  id: string;
   title: string;
   genre: string;
   language: string;
   chapters: Chapter[];
+  snapshots?: Record<string, unknown[]>;
+  comments?: Record<string, unknown[]>;
+  edits?: Record<string, unknown[]>;
   created?: string;
   modified?: string;
 };
+
+export interface ProjectList {
+  items: Project[];
+  total: number;
+  pages: number;
+}
+
+export interface UserPrefs {
+  dictionary: string[];
+  dailyTarget: number;
+  streak: number;
+  lastStreakDate: string;
+}
 
 export interface PublishParams {
   title: string;
@@ -78,14 +100,15 @@ export interface PublishResult {
   status: string;
 }
 
-// ── Projects API ───────────────────────────────────────────────────────────
-
-export async function fetchProjects(): Promise<Project[]> {
-  const r = await wpFetch('projects');
+export async function fetchProjects(page = 1, perPage = 40): Promise<ProjectList> {
+  const r = await wpFetch(`projects?page=${page}&per_page=${perPage}`);
   if (!r.ok) throw new Error('প্রজেক্ট লোড হয়নি।');
   const list = await r.json() as Project[];
-  // WP API numeric id → string
-  return list.map((p) => ({ ...p, id: String(p.id) }));
+  return {
+    items: list.map(normalizeProject),
+    total: parseInt(r.headers.get('X-WP-Total') ?? String(list.length), 10),
+    pages: parseInt(r.headers.get('X-WP-TotalPages') ?? '1', 10),
+  };
 }
 
 export async function createProject(data: {
@@ -101,13 +124,12 @@ export async function createProject(data: {
     const err = await r.json().catch(() => ({}));
     throw new Error(err.message || 'প্রজেক্ট তৈরি হয়নি।');
   }
-  const p = await r.json() as Project;
-  return { ...p, id: String(p.id) };
+  return normalizeProject(await r.json() as Project);
 }
 
 export async function updateProject(
   id: number | string,
-  data: Partial<Pick<Project, 'title' | 'genre' | 'language' | 'chapters'>>
+  data: Partial<Pick<Project, 'title' | 'genre' | 'language' | 'chapters' | 'snapshots' | 'comments' | 'edits'>>
 ): Promise<Project> {
   const r = await wpFetch(`projects/${id}`, {
     method: 'PUT',
@@ -117,7 +139,7 @@ export async function updateProject(
     const err = await r.json().catch(() => ({}));
     throw new Error(err.message || 'প্রজেক্ট আপডেট হয়নি।');
   }
-  return r.json();
+  return normalizeProject(await r.json() as Project);
 }
 
 export async function deleteProject(id: number | string): Promise<void> {
@@ -125,73 +147,29 @@ export async function deleteProject(id: number | string): Promise<void> {
   if (!r.ok) throw new Error('প্রজেক্ট মুছে ফেলা যায়নি।');
 }
 
-// ── Proofread API (Free) ───────────────────────────────────────────────────
-
-export interface ProofIssue {
-  from: string;
-  to: string;
-  why: string;
-  kind: string;
-  optional?: boolean;
-  count?: number;
+export async function fetchPrefs(): Promise<UserPrefs> {
+  const fallback: UserPrefs = { dictionary: [], dailyTarget: 500, streak: 0, lastStreakDate: '' };
+  try {
+    const r = await wpFetch('prefs');
+    if (!r.ok) return fallback;
+    return await r.json() as UserPrefs;
+  } catch {
+    return fallback;
+  }
 }
 
-export async function proofread(
-  text: string,
-  language: string
-): Promise<ProofIssue[]> {
-  const r = await wpFetch('proofread', {
-    method: 'POST',
-    body: JSON.stringify({ text, language }),
+export async function updatePrefs(data: Partial<UserPrefs>): Promise<UserPrefs> {
+  const r = await wpFetch('prefs', {
+    method: 'PUT',
+    body: JSON.stringify(data),
   });
-  if (!r.ok) throw new Error('প্রুফরিডিং করা যায়নি।');
-  const data = await r.json();
-  return data.issues ?? [];
+  if (!r.ok) {
+    const err = await r.json().catch(() => ({}));
+    throw new Error(err.message || 'সেটিংস সংরক্ষণ হয়নি।');
+  }
+  return await r.json() as UserPrefs;
 }
 
-// ── Analyze API (Pro) ──────────────────────────────────────────────────────
-
-export interface AnalyzeStatus {
-  configured: boolean;
-  pro: boolean;
-  model: string;
-  maxPartChars: number;
-}
-
-export async function fetchAnalyzeStatus(): Promise<AnalyzeStatus> {
-  const r = await wpFetch('analyze');
-  if (!r.ok) return { configured: false, pro: false, model: '', maxPartChars: 12000 };
-  return r.json();
-}
-
-export async function analyzeChapter(body: unknown, signal?: AbortSignal): Promise<unknown> {
-  const r = await wpFetch('analyze', {
-    method: 'POST',
-    body: JSON.stringify(body),
-    signal,
-  } as RequestInit);
-  const data = await r.json();
-  if (!r.ok) throw new Error(data.message || data.error || 'বিশ্লেষণ করা যায়নি।');
-  return data;
-}
-
-// ── Export Status (Pro) ────────────────────────────────────────────────────
-
-export interface ExportStatus {
-  pro: boolean;
-  docx: boolean;
-  pdf: boolean;
-  epub: boolean;
-  txt: boolean;
-}
-
-export async function fetchExportStatus(): Promise<ExportStatus> {
-  const r = await wpFetch('export/status');
-  if (!r.ok) return { pro: false, docx: false, pdf: false, epub: false, txt: true };
-  return r.json();
-}
-
-/** ১-ক্লিকে ওয়ার্ডপ্রেসের ড্রাফট বা পাবলিশড পোস্টে পাঠানো */
 export async function publishToWordPress(params: PublishParams): Promise<PublishResult> {
   const r = await wpFetch('publish', {
     method: 'POST',
@@ -202,30 +180,6 @@ export async function publishToWordPress(params: PublishParams): Promise<Publish
     throw new Error(err.message || 'পোস্ট তৈরি করা যায়নি।');
   }
   return await r.json() as PublishResult;
-}
-
-// ── Helpers ────────────────────────────────────────────────────────────────
-
-/** অটোসেভ — debounce দিয়ে API কল */
-export function createAutosave(
-  projectId: number | string,
-  onSaved: () => void,
-  onError: (msg: string) => void,
-  delayMs = 1500
-) {
-  let timer: ReturnType<typeof setTimeout> | null = null;
-
-  return function save(chapters: Chapter[]) {
-    if (timer) clearTimeout(timer);
-    timer = setTimeout(async () => {
-      try {
-        await updateProject(projectId, { chapters });
-        onSaved();
-      } catch (e) {
-        onError(e instanceof Error ? e.message : 'সংরক্ষণ হয়নি।');
-      }
-    }, delayMs);
-  };
 }
 
 export { config as wpConfig };

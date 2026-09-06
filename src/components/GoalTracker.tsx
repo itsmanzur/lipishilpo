@@ -1,68 +1,79 @@
 import React, { useState, useEffect } from 'react';
-import { Target, Flame, CheckCircle, Trophy, Sparkles, X, Edit2 } from 'lucide-react';
+import { Target, Flame, CheckCircle, Trophy, X } from 'lucide-react';
 import { type Language } from '../i18n';
+import { updatePrefs } from '../api';
 
 interface GoalTrackerProps {
   currentWords: number;
   lang: Language;
+  target: number;
+  onTargetChange: (n: number) => void;
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  onProgress?: (wordsToday: number) => void;
 }
 
-export const GoalTracker: React.FC<GoalTrackerProps> = ({ currentWords, lang }) => {
-  const [target, setTarget] = useState<number>(() => {
-    try {
-      const saved = localStorage.getItem('lipishilpo_daily_target');
-      return saved ? parseInt(saved, 10) : 500;
-    } catch {
-      return 500;
-    }
-  });
-
-  const [isOpen, setIsOpen] = useState(false);
+export const GoalTracker: React.FC<GoalTrackerProps> = ({
+  currentWords,
+  lang,
+  target,
+  onTargetChange,
+  isOpen,
+  onOpenChange,
+  onProgress,
+}) => {
   const [customInput, setCustomInput] = useState(String(target));
   const [streak, setStreak] = useState<number>(() => {
     try {
       const saved = localStorage.getItem('lipishilpo_streak_count');
-      return saved ? parseInt(saved, 10) : 1;
+      return saved ? parseInt(saved, 10) : 0;
     } catch {
-      return 1;
+      return 0;
     }
   });
 
-  // Calculate words written today
   const todayStr = new Date().toISOString().slice(0, 10);
   const [wordsToday, setWordsToday] = useState<number>(0);
 
   useEffect(() => {
-    try {
-      const startRecord = localStorage.getItem(`lipishilpo_start_words_${todayStr}`);
-      if (startRecord === null) {
-        localStorage.setItem(`lipishilpo_start_words_${todayStr}`, String(currentWords));
-        setWordsToday(0);
-      } else {
-        const start = parseInt(startRecord, 10) || 0;
-        const diff = Math.max(0, currentWords - start);
-        setWordsToday(diff);
+    setCustomInput(String(target));
+  }, [target]);
 
-        // Update streak if target met
-        if (diff >= target && target > 0) {
-          const lastStreakDate = localStorage.getItem('lipishilpo_last_streak_date');
-          if (lastStreakDate !== todayStr) {
-            const newStreak = streak + 1;
-            setStreak(newStreak);
-            localStorage.setItem('lipishilpo_streak_count', String(newStreak));
-            localStorage.setItem('lipishilpo_last_streak_date', todayStr);
-          }
+  useEffect(() => {
+    try {
+      const key = `lipishilpo_start_words_${todayStr}`;
+      const startRecord = localStorage.getItem(key);
+      if (startRecord === null) {
+        localStorage.setItem(key, String(currentWords));
+        setWordsToday(0);
+        onProgress?.(0);
+        return;
+      }
+      const start = parseInt(startRecord, 10) || 0;
+      const diff = Math.max(0, currentWords - start);
+      setWordsToday(diff);
+      onProgress?.(diff);
+
+      if (diff >= target && target > 0) {
+        const lastStreakDate = localStorage.getItem('lipishilpo_last_streak_date');
+        if (lastStreakDate !== todayStr) {
+          const newStreak = streak + 1;
+          setStreak(newStreak);
+          localStorage.setItem('lipishilpo_streak_count', String(newStreak));
+          localStorage.setItem('lipishilpo_last_streak_date', todayStr);
+          updatePrefs({ streak: newStreak, lastStreakDate: todayStr }).catch(() => {});
         }
       }
     } catch {}
-  }, [currentWords, target, todayStr, streak]);
+  }, [currentWords, target, todayStr, streak, onProgress]);
 
   function handleSaveTarget(newVal: number) {
-    setTarget(newVal);
+    const valid = Math.max(50, newVal);
+    onTargetChange(valid);
     try {
-      localStorage.setItem('lipishilpo_daily_target', String(newVal));
+      localStorage.setItem('lipishilpo_daily_target', String(valid));
     } catch {}
-    setIsOpen(false);
+    onOpenChange(false);
   }
 
   const percent = target > 0 ? Math.min(100, Math.round((wordsToday / target) * 100)) : 0;
@@ -77,7 +88,7 @@ export const GoalTracker: React.FC<GoalTrackerProps> = ({ currentWords, lang }) 
       <button
         type="button"
         className={'goal-widget-btn ' + (isGoalMet ? 'goal-met' : '')}
-        onClick={() => setIsOpen(true)}
+        onClick={() => onOpenChange(true)}
         title={lang === 'bn' ? `আজকের লক্ষ্য: ${toBn(wordsToday)} / ${toBn(target)} শব্দ` : `Today's Goal: ${toBn(wordsToday)} / ${toBn(target)} words`}
       >
         <div className="goal-ring-mini">
@@ -106,16 +117,15 @@ export const GoalTracker: React.FC<GoalTrackerProps> = ({ currentWords, lang }) 
         )}
       </button>
 
-      {/* Goal Setting Modal */}
       {isOpen && (
-        <div className="modal-backdrop" onClick={() => setIsOpen(false)}>
+        <div className="modal-backdrop" onClick={() => onOpenChange(false)}>
           <div className="modal-box goal-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <div className="modal-title-flex">
                 <Target size={20} color="#20644f" />
                 <h3>{lang === 'bn' ? 'দৈনিক লেখার লক্ষ্য ও স্ট্রিক' : 'Daily Writing Goal & Streak'}</h3>
               </div>
-              <button className="close-btn" onClick={() => setIsOpen(false)}><X size={18} /></button>
+              <button className="close-btn" onClick={() => onOpenChange(false)}><X size={18} /></button>
             </div>
 
             <div className="goal-progress-card">

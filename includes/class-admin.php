@@ -34,7 +34,8 @@ class Lipishilpo_Admin {
 			wp_die( esc_html__( 'Permission denied.', 'lipishilpo' ) );
 		}
 
-		$is_pro = lipishilpo_is_pro();
+		$is_pro         = lipishilpo_is_pro();
+		$pro_installed  = defined( 'LIPISHILPO_PRO_VERSION' );
 		?>
 		<div class="wrap lipishilpo-settings-wrap">
 			<h1>
@@ -45,6 +46,10 @@ class Lipishilpo_Admin {
 			<?php if ( $is_pro ) : ?>
 				<div class="notice notice-success inline" style="margin-top: 15px;">
 					<p>✅ <strong><?php esc_html_e( 'Lipishilpo Pro is active.', 'lipishilpo' ); ?></strong> <?php esc_html_e( 'AI editorial analysis, character tracking, and advanced book formatting are unlocked.', 'lipishilpo' ); ?></p>
+				</div>
+			<?php elseif ( $pro_installed ) : ?>
+				<div class="notice notice-warning inline" style="margin-top: 15px;">
+					<p><strong><?php esc_html_e( 'Lipishilpo Pro is installed but not licensed.', 'lipishilpo' ); ?></strong> <?php esc_html_e( 'Enter a license key below to unlock Pro features.', 'lipishilpo' ); ?></p>
 				</div>
 			<?php else : ?>
 				<div class="notice notice-info inline" style="margin-top: 15px; border-left-color: #20644f;">
@@ -60,7 +65,7 @@ class Lipishilpo_Admin {
 				settings_fields( 'lipishilpo_settings' );
 				do_settings_sections( 'lipishilpo-settings' );
 
-				if ( $is_pro ) {
+				if ( $pro_installed ) {
 					submit_button( __( 'Save Settings', 'lipishilpo' ) );
 				}
 				?>

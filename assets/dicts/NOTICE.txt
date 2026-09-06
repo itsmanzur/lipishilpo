@@ -1,0 +1,6 @@
+Bengali (bn-BD) Hunspell dictionary
+Source: Bangla Type Foundry / Jacob Thomas
+https://banglatypefoundry.com/spellchecker/
+Mirrored via https://github.com/mm-crj/bangla-hunspell
+License: GNU GPL v2
+Used by Lipishilpo for offline dictionary proofreading.

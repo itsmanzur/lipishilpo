@@ -3,6 +3,7 @@
  * Allows 100% full fidelity backup and cross-site migration of manuscripts.
  */
 import { type Project } from '../api';
+import { createId } from './id';
 
 export interface LipishilpoBackupFile {
   version: string;
@@ -75,7 +76,7 @@ export async function parseProjectBackup(file: File): Promise<{
       genre: parsed.project.genre || 'General Writing',
       language: parsed.project.language || 'Bengali',
       chapters: parsed.project.chapters.map((c: any, i: number) => ({
-        id: c.id || crypto.randomUUID(),
+        id: c.id || createId(),
         title: c.title || `Chapter ${i + 1}`,
         text: c.text || '',
         notes: c.notes || '',
@@ -90,7 +91,7 @@ export async function parseProjectBackup(file: File): Promise<{
       genre: 'General Writing',
       language: 'Bengali',
       chapters: parsed.map((c: any, i: number) => ({
-        id: c.id || crypto.randomUUID(),
+        id: c.id || createId(),
         title: c.title || `Chapter ${i + 1}`,
         text: c.text || '',
         notes: c.notes || '',

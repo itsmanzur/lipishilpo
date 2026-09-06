@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  Sparkles, Check, Copy, BookOpen, Trash2,
+  Check, Copy, BookOpen, Trash2,
   Globe, Sliders
 } from 'lucide-react';
 import { type Language } from '../i18n';
+import { fetchPrefs, updatePrefs } from '../api';
 
 interface SettingsViewProps {
   isPro: boolean;
@@ -28,6 +29,25 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     }
   });
 
+  useEffect(() => {
+    fetchPrefs().then((prefs) => {
+      if (prefs.dictionary.length) {
+        setDict(prefs.dictionary);
+        try {
+          localStorage.setItem('lipishilpo_personal_dict', JSON.stringify(prefs.dictionary));
+        } catch {}
+      }
+    }).catch(() => {});
+  }, []);
+
+  function persistDict(updated: string[]) {
+    setDict(updated);
+    try {
+      localStorage.setItem('lipishilpo_personal_dict', JSON.stringify(updated));
+    } catch {}
+    updatePrefs({ dictionary: updated }).catch(() => {});
+  }
+
   function handleCopyShortcode() {
     navigator.clipboard.writeText('[lipishilpo]');
     setCopied(true);
@@ -35,16 +55,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   }
 
   function handleRemoveWord(word: string) {
-    const updated = dict.filter((w) => w !== word);
-    setDict(updated);
-    try {
-      localStorage.setItem('lipishilpo_personal_dict', JSON.stringify(updated));
-    } catch {}
+    persistDict(dict.filter((w) => w !== word));
   }
 
   function handleClearDict() {
     if (!confirm(lang === 'bn' ? 'ব্যক্তিগত ডিকশনারি কি খালি করতে চান?' : 'Clear all words from personal dictionary?')) return;
-    setDict([]);
+    persistDict([]);
     try {
       localStorage.removeItem('lipishilpo_personal_dict');
     } catch {}
@@ -88,6 +104,30 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               </p>
             </div>
           </div>
+
+          {isPro && (
+            <p className="settings-admin-hint">
+              {lang === 'bn'
+                ? 'OpenAI কী ও প্রো লাইসেন্স ওয়ার্ডপ্রেস অ্যাডমিনের Settings পেজে সংরক্ষণ করুন।'
+                : 'Save your OpenAI key and Pro license on the WordPress admin Settings page.'}
+              {' '}
+              <a href="/wp-admin/admin.php?page=lipishilpo-settings">
+                {lang === 'bn' ? 'সেটিংস খুলুন' : 'Open Settings'}
+              </a>
+            </p>
+          )}
+
+          {!isPro && (
+            <p className="settings-admin-hint">
+              {lang === 'bn'
+                ? 'প্রো ইনস্টল থাকলে লাইসেন্স কী সেভ করতে অ্যাডমিন সেটিংস খুলুন।'
+                : 'If Pro is installed, save a license key on the admin Settings page to unlock features.'}
+              {' '}
+              <a href="/wp-admin/admin.php?page=lipishilpo-settings">
+                {lang === 'bn' ? 'সেটিংস খুলুন' : 'Open Settings'}
+              </a>
+            </p>
+          )}
 
           {!isPro && (
             <div className="pro-upgrade-box">

@@ -15,13 +15,13 @@ interface DocsViewProps {
 export const DocsView: React.FC<DocsViewProps> = ({ lang, onOpenEditor, onOpenSettings }) => {
   const [activeTab, setActiveTab] = useState<'intro' | 'proofread' | 'continuity' | 'ai' | 'export' | 'faq'>('intro');
   const [playgroundText, setPlaygroundText] = useState<string>(
-    'আমি গতকালকে বাজারে গিয়েছিলাম কিন্তু কোন ফল পেলাম না। তিনি অনেকক্ষণ যাবত অপেক্ষা করছিলেন।'
+    'আমি গতকালকে বাজারে গিয়েছিলাম। সরকারী সিদ্ধান্তে ধারনা ভুল ছিল। তিনি অনেকক্ষণ যাবত অপেক্ষা করিতেছিল এবং চলে গেছে।'
   );
   const [testResults, setTestResults] = useState<string[] | null>(null);
   const [expandedFaq, setExpandedFaq] = useState<number | null>(0);
 
-  function runTest() {
-    const issues = findIssues(playgroundText, 'bn', lang, []);
+  async function runTest() {
+    const issues = await findIssues(playgroundText, 'bn', lang, []);
     const msgs = issues.map((iss: ProofMatch) => {
       const fromDisplay = iss.from === '__spaces' ? (lang === 'bn' ? 'অতিরিক্ত স্পেস' : 'Extra space') : iss.from;
       return `${fromDisplay} ➔ ${iss.to} (${iss.why})`;
@@ -47,6 +47,12 @@ export const DocsView: React.FC<DocsViewProps> = ({ lang, onOpenEditor, onOpenSe
       a: lang === 'bn'
         ? 'লিপিশিলপো বাংলা একাডেমির প্রমিত বানানরীতি, বাহুল্য দোষ, সাধু ও চলিত ভাষার মিশ্রণ (গুরুচণ্ডালী দোষ), অপ্রয়োজনীয় ইংরেজি স্পেস ও যতিচিহ্নের নিয়মাবলি মেনে রিয়েল-টাইমে লেখা বিশ্লেষণ করে পরামর্শ দেয়।'
         : 'Lipishilpo analyzes text in real-time according to standard Bangla Academy orthography, redundancy linting (বাহুল্য দোষ), Sadhu-Cholit mixing checks, and proper Bengali punctuation.'
+    },
+    {
+      q: lang === 'bn' ? 'Word বা ডক ফাইল থেকে কীভাবে পাণ্ডুলিপি ইমপোর্ট করব?' : 'How do I import a Word document?',
+      a: lang === 'bn'
+        ? 'পাণ্ডুলিপি পাতার «ইমপোর্ট» বাটনে ক্লিক করে .docx ফাইল দিন। Heading 1/2 অথবা «অধ্যায় ১» লেখা থাকলে সেগুলো আলাদা অধ্যায় হয়ে যায়। পুরনো .doc ফাইল আগে Word বা Google Docs-এ .docx করে সেভ করুন। JSON ব্যাকআপও একই বাটন দিয়ে ফিরে আনে। ফাইল আপনার ব্রাউজারেই পড়া হয়।'
+        : 'On the manuscripts page, click Import and choose a .docx file. Heading 1/2 styles or lines such as “Chapter 1” become separate chapters. Older .doc files must first be saved as .docx in Word or Google Docs. The same button also restores a Lipishilpo JSON backup. The file is read in your browser only.'
     },
     {
       q: lang === 'bn' ? 'আমার পান্ডুলিপির গোপনীয়তা কতটা সুরক্ষিত?' : 'How secure is my manuscript privacy?',
