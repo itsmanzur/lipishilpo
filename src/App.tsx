@@ -6,6 +6,7 @@ import {
   Search, ChevronUp, ChevronDown, Trash2, FileCode, HelpCircle, Sliders, LogOut,
   Maximize2, Minimize2, Sun, Moon, Coffee, History, Target,
   MessageSquare, MessageSquarePlus, CheckCircle, Eye, Edit3,
+  BookA, Share2, StickyNote, FileUp,
 } from 'lucide-react';
 import {
   type Project, type Chapter,
@@ -21,6 +22,12 @@ import { AIPanel } from './components/AIPanel';
 import { ExportPanel } from './components/ExportPanel';
 import { DocsView } from './components/DocsView';
 import { SettingsView } from './components/SettingsView';
+import { GoalTracker } from './components/GoalTracker';
+import { PomodoroTimer } from './components/PomodoroTimer';
+import { TypographyControl } from './components/TypographyControl';
+import { PublishModal } from './components/PublishModal';
+import { ConjunctsModal } from './components/ConjunctsModal';
+import { exportProjectToJson, parseProjectBackup } from './lib/project-backup';
 import { wpConfig } from './api';
 import { translations, getSavedLanguage, saveLanguage, type Language } from './i18n';
 
@@ -70,9 +77,12 @@ export default function App() {
     } catch {}
     return 'projects';
   });
-  const [tabKey, setTabKey] = useState<'proofread' | 'audio' | 'comments' | 'snapshots' | 'aiEdit' | 'analysis' | 'format'>('proofread');
+  const [tabKey, setTabKey] = useState<'proofread' | 'notes' | 'audio' | 'comments' | 'snapshots' | 'aiEdit' | 'analysis' | 'format'>('proofread');
   const [modal, setModal] = useState(false);
   const [statsModal, setStatsModal] = useState(false);
+  const [showPublishModal, setShowPublishModal] = useState(false);
+  const [showConjuncts, setShowConjuncts] = useState(false);
+  const importFileRef = useRef<HTMLInputElement>(null);
 
   // Focus mode & Theme & Mode (Edit vs Visual Review)
   const [focusMode, setFocusMode] = useState(false);
@@ -616,6 +626,48 @@ export default function App() {
     setNotice(t.noticeDownloaded);
   }
 
+  function handleInsertConjunct(char: string) {
+    if (!editor.current) return;
+    const el = editor.current;
+    const start = el.selectionStart ?? text.length;
+    const end = el.selectionEnd ?? text.length;
+    const updated = text.slice(0, start) + char + text.slice(end);
+    updateText(updated);
+    setNotice(lang === 'bn' ? `"${char}" যুক্ত করা হয়েছে` : `Inserted "${char}"`);
+    setTimeout(() => {
+      el.focus();
+      el.setSelectionRange(start + char.length, start + char.length);
+    }, 50);
+  }
+
+  async function handleImportBackup(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLoading(true);
+    try {
+      const parsed = await parseProjectBackup(file);
+      const created = await createProject({
+        title: parsed.title,
+        genre: parsed.genre,
+        language: parsed.language,
+      });
+      if (parsed.chapters && parsed.chapters.length > 0) {
+        await updateProject(created.id, { chapters: parsed.chapters });
+      }
+      const updatedList = await fetchProjects();
+      setProjects(updatedList);
+      setPid(created.id);
+      setCid(parsed.chapters?.[0]?.id || null);
+      setView('editor');
+      setNotice(t.importBackupSuccess);
+    } catch (err: any) {
+      alert(err.message || t.importBackupError);
+    } finally {
+      setLoading(false);
+      if (e.target) e.target.value = '';
+    }
+  }
+
   // ── Proofreading ───────────────────────────────────────────────────────────
   function runProofread() {
     if (!text.trim()) return;
@@ -709,8 +761,9 @@ export default function App() {
   // Tabs definitions
   const tabsList = [
     { key: 'proofread' as const, label: t.tabProofread },
-    { key: 'audio' as const, label: t.tabAudio },
+    { key: 'notes' as const, label: t.tabNotes },
     { key: 'comments' as const, label: t.tabComments },
+    { key: 'audio' as const, label: t.tabAudio },
     { key: 'snapshots' as const, label: t.tabSnapshots },
     { key: 'aiEdit' as const, label: t.tabAiEdit },
     { key: 'analysis' as const, label: t.tabAnalysis },
@@ -902,6 +955,46 @@ export default function App() {
                 <Sliders size={15} />
               </button>
 
+              {/* Goal Tracker */}
+              {view === 'editor' && (
+                <GoalTracker currentWords={stats.words} lang={lang} />
+              )}
+
+              {/* Pomodoro Timer */}
+              {view === 'editor' && (
+                <PomodoroTimer lang={lang} />
+              )}
+
+              {/* Typography Suite */}
+              {view === 'editor' && (
+                <TypographyControl lang={lang} />
+              )}
+
+              {/* Bangla Conjuncts Cheat Sheet */}
+              {view === 'editor' && (
+                <button
+                  type="button"
+                  className={'header-icon-btn ' + (showConjuncts ? 'active' : '')}
+                  onClick={() => setShowConjuncts(true)}
+                  title={t.btnConjunctsTitle}
+                >
+                  <BookA size={16} />
+                </button>
+              )}
+
+              {/* 1-Click Publish to WordPress */}
+              {view === 'editor' && (
+                <button
+                  type="button"
+                  className="header-publish-wp-btn"
+                  onClick={() => setShowPublishModal(true)}
+                  title={t.btnPublishWpTitle}
+                >
+                  <Share2 size={14} />
+                  <span className="btn-text-hide-mobile">{t.btnPublishWp}</span>
+                </button>
+              )}
+
               {/* Theme Switcher */}
               {view === 'editor' && (
                 <div className="theme-switcher">
@@ -1000,9 +1093,25 @@ export default function App() {
                 <h1>{t.projectsTitle}</h1>
                 <p>{t.projectsSubtitle}</p>
               </div>
-              <button className="primary" onClick={() => setModal(true)}>
-                <Plus size={18} /> {t.newProject}
-              </button>
+              <div className="page-heading-actions">
+                <input
+                  type="file"
+                  ref={importFileRef}
+                  style={{ display: 'none' }}
+                  accept=".json,.lipishilpo.json"
+                  onChange={handleImportBackup}
+                />
+                <button
+                  className="secondary-outline-btn"
+                  onClick={() => importFileRef.current?.click()}
+                  title={t.btnImportBackup}
+                >
+                  <FileUp size={16} /> {t.btnImportBackup}
+                </button>
+                <button className="primary" onClick={() => setModal(true)}>
+                  <Plus size={18} /> {t.newProject}
+                </button>
+              </div>
             </div>
 
             {projects.length === 0 ? (
@@ -1032,14 +1141,28 @@ export default function App() {
                         {t.chaptersCount(p.chapters.length)} <ArrowRight size={18} />
                       </footer>
                     </button>
-                    <button
-                      className="delete-project"
-                      disabled={deleting === p.id}
-                      onClick={() => handleDeleteProject(p.id)}
-                      title={t.deleteProjectTitle}
-                    >
-                      {deleting === p.id ? <Loader2 size={14} className="spin" /> : <X size={14} />}
-                    </button>
+                    <div className="card-top-actions">
+                      <button
+                        type="button"
+                        className="backup-project-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          exportProjectToJson(p);
+                          setNotice(t.btnExportBackup);
+                        }}
+                        title={t.btnExportBackup}
+                      >
+                        <Download size={13} />
+                      </button>
+                      <button
+                        className="delete-project"
+                        disabled={deleting === p.id}
+                        onClick={() => handleDeleteProject(p.id)}
+                        title={t.deleteProjectTitle}
+                      >
+                        {deleting === p.id ? <Loader2 size={13} className="spin" /> : <X size={13} />}
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1662,6 +1785,44 @@ export default function App() {
                     </>
                   )}
 
+                  {/* ── Tab: Scratchpad / Research Notes (Free) ── */}
+                  {tabKey === 'notes' && (
+                    <div className="scratchpad-panel">
+                      <div className="check-intro">
+                        <div className="scratchpad-header-row">
+                          <StickyNote size={18} color="#20644f" />
+                          <div>
+                            <strong>{t.tabNotes}</strong>
+                            <p>{t.scratchpadSaved}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <textarea
+                        className="scratchpad-textarea"
+                        placeholder={t.scratchpadPlaceholder}
+                        value={chapter?.notes || ''}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (!chapter) return;
+                          setProjects((prev) => {
+                            const updated = prev.map((p) => {
+                              if (p.id !== project?.id) return p;
+                              return {
+                                ...p,
+                                chapters: p.chapters.map((c) =>
+                                  c.id === chapter.id ? { ...c, notes: val } : c
+                                ),
+                              };
+                            });
+                            autosave(updated);
+                            return updated;
+                          });
+                        }}
+                      />
+                    </div>
+                  )}
+
                   {/* ── Tab: Audio Proofreading (Pro) ── */}
                   {tabKey === 'audio' && (
                     <div className="audio-tab-panel">
@@ -2078,6 +2239,25 @@ export default function App() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* ── 1-Click Publish to WordPress Modal ── */}
+      {showPublishModal && (
+        <PublishModal
+          project={project}
+          currentChapter={chapter}
+          lang={lang}
+          onClose={() => setShowPublishModal(false)}
+        />
+      )}
+
+      {/* ── Bangla Conjuncts Cheat Sheet Modal ── */}
+      {showConjuncts && (
+        <ConjunctsModal
+          lang={lang}
+          onInsert={handleInsertConjunct}
+          onClose={() => setShowConjuncts(false)}
+        />
       )}
     </div>
   );

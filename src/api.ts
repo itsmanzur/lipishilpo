@@ -52,7 +52,7 @@ async function wpFetch(
 }
 
 // ── Types ──────────────────────────────────────────────────────────────────
-export type Chapter = { id: string; title: string; text: string };
+export type Chapter = { id: string; title: string; text: string; notes?: string };
 export type Project = {
   id: string;  // WP API থেকে number আসে — fetchProjects()-এ String() করা হয়
   title: string;
@@ -62,6 +62,21 @@ export type Project = {
   created?: string;
   modified?: string;
 };
+
+export interface PublishParams {
+  title: string;
+  content: string;
+  status: 'draft' | 'publish';
+  post_type: 'post' | 'page';
+}
+
+export interface PublishResult {
+  success: boolean;
+  postId: number;
+  editUrl: string;
+  viewUrl: string;
+  status: string;
+}
 
 // ── Projects API ───────────────────────────────────────────────────────────
 
@@ -174,6 +189,19 @@ export async function fetchExportStatus(): Promise<ExportStatus> {
   const r = await wpFetch('export/status');
   if (!r.ok) return { pro: false, docx: false, pdf: false, epub: false, txt: true };
   return r.json();
+}
+
+/** ১-ক্লিকে ওয়ার্ডপ্রেসের ড্রাফট বা পাবলিশড পোস্টে পাঠানো */
+export async function publishToWordPress(params: PublishParams): Promise<PublishResult> {
+  const r = await wpFetch('publish', {
+    method: 'POST',
+    body: JSON.stringify(params),
+  });
+  if (!r.ok) {
+    const err = await r.json().catch(() => ({}));
+    throw new Error(err.message || 'পোস্ট তৈরি করা যায়নি।');
+  }
+  return await r.json() as PublishResult;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────

@@ -53,6 +53,20 @@ export const translations = {
     themeSepia: 'Sepia (Parchment)',
     themeDark: 'Dark Mode (Night)',
 
+    // 7 Free Upgrade Features
+    tabScratchpad: 'Scratchpad',
+    tabNotes: 'Research Notes',
+    scratchpadPlaceholder: 'Type quick ideas, character memos, plot points, or research links for this chapter here…',
+    scratchpadSaved: 'Notes saved automatically with this chapter.',
+    btnPublishWp: 'Publish to WordPress',
+    btnPublishWpTitle: '1-Click publish or draft to WordPress post/page',
+    btnConjuncts: 'Bangla Conjuncts (যুক্তবর্ণ)',
+    btnConjunctsTitle: 'Search and insert Bangla conjuncts & Avro typing cheatsheet',
+    btnImportBackup: 'Import Project (.json)',
+    btnExportBackup: 'Export Project Backup (.json)',
+    importBackupSuccess: 'Project imported successfully!',
+    importBackupError: 'Failed to import project.',
+
     // Projects View
     projectsEyebrow: 'Unlock New Writing Possibilities',
     projectsTitle: 'Your Manuscripts',
@@ -321,6 +335,20 @@ export const translations = {
     themeLight: 'সাদা কাগজ (Light)',
     themeSepia: 'বাদামি কাগজ (Sepia)',
     themeDark: 'রাতের মোড (Dark)',
+
+    // 7 Free Upgrade Features
+    tabScratchpad: 'স্ক্র্যাচপ্যাড',
+    tabNotes: 'রিসার্চ নোট',
+    scratchpadPlaceholder: 'এই অধ্যায়ের প্লট আইডিয়া, চরিত্রের মেমো, গুরুত্বপূর্ণ তথ্য বা লিংক এখানে টুকে রাখুন…',
+    scratchpadSaved: 'নোট স্বয়ংক্রিয়ভাবে অধ্যায়ের সাথে সংরক্ষিত হয়।',
+    btnPublishWp: 'ওয়ার্ডপ্রেসে পোস্ট করুন',
+    btnPublishWpTitle: '১-ক্লিকে ওয়ার্ডপ্রেসের ড্রাফট বা পেজে প্রকাশ করুন',
+    btnConjuncts: 'যুক্তবর্ণ সহায়িকা',
+    btnConjunctsTitle: 'যুক্তবর্ণ ও অভ্র টাইপিং রেফারেন্স সার্চ ও ইনসার্ট করুন',
+    btnImportBackup: 'প্রজেক্ট ইমপোর্ট (.json)',
+    btnExportBackup: 'প্রজেক্ট ব্যাকআপ ডাউনলোড (.json)',
+    importBackupSuccess: 'প্রজেক্ট সফলভাবে ইমপোর্ট হয়েছে!',
+    importBackupError: 'প্রজেক্ট ফাইল ইমপোর্ট করা সম্ভব হয়নি।',
 
     // Projects View
     projectsEyebrow: 'লেখার নতুন সম্ভাবনা',

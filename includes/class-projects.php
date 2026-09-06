@@ -90,6 +90,18 @@ class Lipishilpo_Projects {
 				),
 			)
 		);
+
+		register_rest_route(
+			LIPISHILPO_REST_NAMESPACE,
+			'/publish',
+			array(
+				array(
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => array( __CLASS__, 'publish_to_wordpress' ),
+					'permission_callback' => array( __CLASS__, 'require_publish_permission' ),
+				),
+			)
+		);
 	}
 
 	// ── Permission ─────────────────────────────────────────────────────────
@@ -147,6 +159,7 @@ class Lipishilpo_Projects {
 				'id'    => isset( $c['id'] ) ? sanitize_text_field( $c['id'] ) : wp_generate_uuid4(),
 				'title' => isset( $c['title'] ) ? sanitize_text_field( $c['title'] ) : '',
 				'text'  => isset( $c['text'] ) ? wp_kses_post( $c['text'] ) : '',
+				'notes' => isset( $c['notes'] ) ? wp_kses_post( $c['notes'] ) : '',
 			);
 		}, $chapters );
 
@@ -275,6 +288,40 @@ class Lipishilpo_Projects {
 		}
 
 		return rest_ensure_response( array( 'deleted' => true, 'id' => $id ) );
+	}
+
+	public static function require_publish_permission() {
+		if ( ! is_user_logged_in() || ! current_user_can( 'edit_posts' ) ) {
+			return new WP_Error( 'lipishilpo_auth', __( 'Permission denied to create or edit posts.', 'lipishilpo' ), array( 'status' => 403 ) );
+		}
+		return true;
+	}
+
+	public static function publish_to_wordpress( $request ) {
+		$title     = sanitize_text_field( $request->get_param( 'title' ) ?: 'Untitled Draft' );
+		$content   = wp_kses_post( $request->get_param( 'content' ) ?: '' );
+		$status    = $request->get_param( 'status' ) === 'publish' ? 'publish' : 'draft';
+		$post_type = $request->get_param( 'post_type' ) === 'page' ? 'page' : 'post';
+
+		$post_id = wp_insert_post( array(
+			'post_title'   => $title,
+			'post_content' => $content,
+			'post_status'  => $status,
+			'post_type'    => $post_type,
+			'post_author'  => get_current_user_id(),
+		), true );
+
+		if ( is_wp_error( $post_id ) ) {
+			return $post_id;
+		}
+
+		return rest_ensure_response( array(
+			'success' => true,
+			'postId'  => $post_id,
+			'editUrl' => get_edit_post_link( $post_id, 'raw' ) ?: admin_url( 'post.php?post=' . $post_id . '&action=edit' ),
+			'viewUrl' => get_permalink( $post_id ) ?: admin_url( 'post.php?post=' . $post_id . '&action=edit' ),
+			'status'  => $status,
+		) );
 	}
 
 	public static function create_tables() {

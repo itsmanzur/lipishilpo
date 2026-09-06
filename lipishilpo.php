@@ -86,9 +86,16 @@ function lipishilpo_enqueue_assets() {
 	}
 
 	wp_enqueue_style(
+		'lipishilpo-google-fonts',
+		'https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@400;500;600;700&family=Noto+Serif+Bengali:wght@400;500;600;700&family=Tiro+Bangla:ital@0;1&display=swap',
+		array(),
+		null
+	);
+
+	wp_enqueue_style(
 		'lipishilpo-editor',
 		LIPISHILPO_URL . 'assets/css/lipishilpo-editor.css',
-		array(),
+		array( 'lipishilpo-google-fonts' ),
 		$asset['version']
 	);
 
