@@ -6,7 +6,7 @@
  */
 
 import { BENGALI_RULES, ENGLISH_RULES } from './lib/proof-lexicon';
-import { addPersonalWords, getBengaliSpell } from './lib/bn-spell';
+import { addPersonalWords, getBengaliSpell, getEnglishSpell } from './lib/bn-spell';
 import type { ProofRule, RuleCategory } from './proofread-types';
 
 export type { ProofRule, RuleCategory };
@@ -303,7 +303,16 @@ function findGuruchandali(
 }
 
 const BN_TOKEN = /[\u0980-\u09FF]{2,}/gu;
+const EN_TOKEN = /[A-Za-z][A-Za-z'-]{1,}/gu;
 const MAX_DICT_FLAGS = 40;
+
+function wantsBengaliDict(manuscriptLang: string) {
+  return manuscriptLang !== 'English';
+}
+
+function wantsEnglishDict(manuscriptLang: string) {
+  return manuscriptLang !== 'বাংলা' && manuscriptLang !== 'Bengali';
+}
 
 async function findDictionaryIssues(
   text: string,
@@ -370,6 +379,71 @@ async function findDictionaryIssues(
   }
 }
 
+async function findEnglishDictionaryIssues(
+  text: string,
+  uiLang: 'en' | 'bn',
+  ignored: string[],
+  map: Map<string, ProofMatch>
+) {
+  if (ignored.includes('__dictionary') || ignored.includes('__en_dictionary')) return;
+  const spell = await getEnglishSpell();
+  if (!spell) return;
+  addPersonalWords(spell, ignored, 'en');
+
+  const grouped = new Map<string, ProofOccurrence[]>();
+  EN_TOKEN.lastIndex = 0;
+  let m: RegExpExecArray | null;
+  while ((m = EN_TOKEN.exec(text)) !== null) {
+    const word = m[0];
+    if (/^[A-Z]{2,5}$/.test(word)) continue;
+    if (ignored.includes(word) || ignored.includes(`en_hunspell:${word}`)) continue;
+    if (alreadyCovered(map, m.index, m.index + word.length)) continue;
+    let ok = false;
+    try {
+      ok = spell.correct(word);
+    } catch {
+      ok = true;
+    }
+    if (ok) continue;
+    const list = grouped.get(word) ?? [];
+    list.push({ start: m.index, end: m.index + word.length, from: word, to: word });
+    grouped.set(word, list);
+  }
+
+  let added = 0;
+  for (const [word, occs] of grouped) {
+    if (added >= MAX_DICT_FLAGS) break;
+    let suggestions: string[] = [];
+    try {
+      suggestions = spell.suggest(word).filter((s) => s && s !== word).slice(0, 3);
+    } catch {
+      suggestions = [];
+    }
+    if (suggestions.length === 0) continue;
+    const to = suggestions[0];
+    const why =
+      uiLang === 'bn'
+        ? `ইংরেজি অভিধানে শব্দটি নেই। সম্ভাব্য শুদ্ধ রূপ: ${suggestions.join(' / ')}`
+        : `Not in the English dictionary. Suggested: ${suggestions.join(' / ')}`;
+    for (const occ of occs) {
+      pushOccurrence(
+        map,
+        {
+          id: `en_hunspell:${word}`,
+          from: word,
+          to,
+          why,
+          kind: kindLabels[uiLang].spelling,
+          category: 'spelling',
+        },
+        { ...occ, to },
+        true
+      );
+    }
+    added += 1;
+  }
+}
+
 export async function findIssues(
   text: string,
   uiLang: 'en' | 'bn' = 'en',
@@ -381,7 +455,7 @@ export async function findIssues(
   const includeOptionalStyle = options.includeOptionalStyle === true;
   const map = new Map<string, ProofMatch>();
   findLexiconIssues(text, uiLang, manuscriptLang, ignored, includeOptionalStyle, map);
-  if (manuscriptLang !== 'English') {
+  if (wantsBengaliDict(manuscriptLang)) {
     findPatternIssues(text, uiLang, ignored, map);
     findGuruchandali(text, uiLang, ignored, map);
     await findDictionaryIssues(text, uiLang, ignored, map);
@@ -392,6 +466,9 @@ export async function findIssues(
       [...ignored, '__double_plural', '__ita_suffix', '__final_visarga'],
       map
     );
+  }
+  if (wantsEnglishDict(manuscriptLang)) {
+    await findEnglishDictionaryIssues(text, uiLang, ignored, map);
   }
   return [...map.values()].sort((a, b) => (a.occurrences[0]?.start ?? 0) - (b.occurrences[0]?.start ?? 0));
 }

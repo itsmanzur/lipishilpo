@@ -6,7 +6,7 @@ import {
   Search, ChevronUp, ChevronDown, Trash2, FileCode, HelpCircle, Sliders, LogOut,
   Maximize2, Minimize2, Sun, Moon, Coffee, History, Target,
   MessageSquare, MessageSquarePlus, CheckCircle, Eye, Edit3,
-  BookA, Share2, StickyNote, FileUp,
+  BookA, Share2, StickyNote, FileUp, Keyboard, Compass,
   Bold, Italic, Heading2, Quote, List, Box, Bookmark, GripVertical, Replace,
 } from 'lucide-react';
 import {
@@ -32,6 +32,9 @@ import { ProofreadWalkthroughBar } from './components/ProofreadWalkthroughBar';
 import { PersonalDictionaryModal } from './components/PersonalDictionaryModal';
 import { renderFormattedSpan } from './lib/render-review';
 import { GlobalFindReplaceModal } from './components/GlobalFindReplaceModal';
+import { ShortcutsModal } from './components/ShortcutsModal';
+import { OnboardingTour } from './components/OnboardingTour';
+import { SnapshotDiffModal } from './components/SnapshotDiffModal';
 import { CodexPanel, type ProjectCodex } from './components/CodexPanel';
 import { analyzeManuscript } from './lib/analytics';
 import { handleSmartKeyDown } from './lib/smart-typography';
@@ -102,6 +105,10 @@ export default function App() {
   const [showWalkthrough, setShowWalkthrough] = useState(false);
   const [walkthroughIndex, setWalkthroughIndex] = useState(0);
   const [showDictModal, setShowDictModal] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const [tourOpen, setTourOpen] = useState(false);
+  const [tourStep, setTourStep] = useState(0);
+  const [diffSnapId, setDiffSnapId] = useState<string | null>(null);
 
   const [theme, setTheme] = useState<EditorTheme>(() => {
     try {
@@ -382,6 +389,14 @@ export default function App() {
       }
     }, 1500);
   }, [pid]);
+
+  const commitProjects = useCallback((updater: (prev: Project[]) => Project[]) => {
+    setProjects((prev) => {
+      const updated = updater(prev);
+      autosave(updated);
+      return updated;
+    });
+  }, [autosave]);
 
   useEffect(() => {
     return () => {
@@ -750,13 +765,13 @@ export default function App() {
     items: ChapterSnapshot[] | ChapterComment[] | ChapterEdit[]
   ) {
     if (!pid) return;
-    const updated = projects.map((p) =>
-      p.id === pid
-        ? { ...p, [kind]: { ...(p[kind] ?? {}), [chapterId]: items } }
-        : p
+    commitProjects((prev) =>
+      prev.map((p) =>
+        p.id === pid
+          ? { ...p, [kind]: { ...(p[kind] ?? {}), [chapterId]: items } }
+          : p
+      )
     );
-    setProjects(updated);
-    autosave(updated);
   }
 
   function handleSaveGoal(target: number) {
@@ -792,9 +807,34 @@ export default function App() {
     }
   }, [pid, projects, t.saved]);
 
-  // ── Keyboard Shortcuts (Ctrl+S, Ctrl+F, F11, Esc) ───────────────────────────
+  // ── Keyboard Shortcuts (Ctrl+S, Ctrl+F, F11, Esc, ?) ────────────────────────
   useEffect(() => {
+    function isTypingTarget(el: EventTarget | null) {
+      if (!(el instanceof HTMLElement)) return false;
+      const tag = el.tagName;
+      return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el.isContentEditable;
+    }
     function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape' && showShortcuts) {
+        e.preventDefault();
+        setShowShortcuts(false);
+        return;
+      }
+      if (e.key === 'Escape' && tourOpen) {
+        e.preventDefault();
+        finishTour();
+        return;
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === '/') {
+        e.preventDefault();
+        setShowShortcuts((prev) => !prev);
+        return;
+      }
+      if (e.key === '?' && !e.ctrlKey && !e.metaKey && !e.altKey && !isTypingTarget(e.target)) {
+        e.preventDefault();
+        setShowShortcuts((prev) => !prev);
+        return;
+      }
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
         forceSave();
@@ -838,7 +878,23 @@ export default function App() {
     }
 window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [forceSave, view, focusMode]);
+  }, [forceSave, view, focusMode, showShortcuts, tourOpen]);
+
+  useEffect(() => {
+    if (view !== 'editor' || !project) return;
+    try {
+      if (localStorage.getItem(TOUR_KEY) === '1') return;
+    } catch {
+      return;
+    }
+    const timer = window.setTimeout(() => setTourOpen(true), 650);
+    return () => window.clearTimeout(timer);
+  }, [view, project?.id]);
+
+  useEffect(() => {
+    if (!tourOpen) return;
+    if (tourStep === 2) setTabKey('proofread');
+  }, [tourOpen, tourStep]);
 
   // ── Find & Replace logic ───────────────────────────────────────────────────
   useEffect(() => {
@@ -922,24 +978,28 @@ window.addEventListener('keydown', handleKeyDown);
         manualLogTimer.current = null;
       }
     }
-    const updated = projects.map((p) =>
-      p.id === project.id
-        ? { ...p, chapters: p.chapters.map((c) => c.id === chapter.id ? { ...c, text: value } : c) }
-        : p
+    const projectId = project.id;
+    const chapterId = chapter.id;
+    commitProjects((prev) =>
+      prev.map((p) =>
+        p.id === projectId
+          ? { ...p, chapters: p.chapters.map((c) => c.id === chapterId ? { ...c, text: value } : c) }
+          : p
+      )
     );
-    setProjects(updated);
-    autosave(updated);
   }
 
   function updateChapterTitle(value: string) {
     if (!project || !chapter) return;
-    const updated = projects.map((p) =>
-      p.id === project.id
-        ? { ...p, chapters: p.chapters.map((c) => c.id === chapter.id ? { ...c, title: value } : c) }
-        : p
+    const projectId = project.id;
+    const chapterId = chapter.id;
+    commitProjects((prev) =>
+      prev.map((p) =>
+        p.id === projectId
+          ? { ...p, chapters: p.chapters.map((c) => c.id === chapterId ? { ...c, title: value } : c) }
+          : p
+      )
     );
-    setProjects(updated);
-    autosave(updated);
   }
 
   function applyFormatting(format: 'bold' | 'italic' | 'heading' | 'quote' | 'callout' | 'citation' | 'list' | 'divider') {
@@ -1010,17 +1070,49 @@ window.addEventListener('keydown', handleKeyDown);
     setView('editor');
   }
 
+  const TOUR_KEY = 'lipishilpo_tour_done';
+
+  function finishTour() {
+    try {
+      localStorage.setItem(TOUR_KEY, '1');
+    } catch {}
+    setTourOpen(false);
+    setTourStep(0);
+  }
+
+  function startTour() {
+    if (!project) {
+      setNotice(t.tourNeedProject);
+      setView('projects');
+      return;
+    }
+    setFocusMode(false);
+    setShowShortcuts(false);
+    setView('editor');
+    setTourStep(0);
+    setTourOpen(true);
+  }
+
+  function insertSampleParagraph() {
+    if (text.trim()) return;
+    setHistory((h) => [...h.slice(-49), text]);
+    typedTextRef.current = t.tourSampleText;
+    updateText(t.tourSampleText, 'type');
+    setChecked(false);
+  }
+
   function addChapter() {
-    if (!project) return;
+    if (!pid) return;
     const id = createId();
-    const defaultTitle = `${t.chapterLabel(project.chapters.length + 1)}`;
-    const updated = projects.map((p) =>
-      p.id === project.id
-        ? { ...p, chapters: [...p.chapters, { id, title: defaultTitle, text: '' }] }
-        : p
+    commitProjects((prev) =>
+      prev.map((p) => {
+        if (p.id !== pid) return p;
+        return {
+          ...p,
+          chapters: [...p.chapters, { id, title: t.chapterLabel(p.chapters.length + 1), text: '' }],
+        };
+      })
     );
-    setProjects(updated);
-    autosave(updated);
     selectChapter(id);
   }
 
@@ -1622,7 +1714,7 @@ ${chaptersHtml}
                     </div>
                   );
                 })}
-                <button className="add" onClick={addChapter}>
+                <button className="add" data-tour="chapter" onClick={addChapter}>
                   <Plus size={15} /> {t.addChapter}
                 </button>
               </div>
@@ -1726,7 +1818,20 @@ ${chaptersHtml}
             </div>
 
             <div className="header-actions">
-              {/* User Guide Docs button */}
+              <button
+                className={'header-icon-btn ' + (tourOpen ? 'active' : '')}
+                onClick={startTour}
+                title={t.tourReplay}
+              >
+                <Compass size={15} />
+              </button>
+              <button
+                className={'header-icon-btn ' + (showShortcuts ? 'active' : '')}
+                onClick={() => setShowShortcuts(true)}
+                title={`${t.shortcutHelp} (?)`}
+              >
+                <Keyboard size={15} />
+              </button>
               <button
                 className={'header-icon-btn ' + (view === 'docs' ? 'active' : '')}
                 onClick={() => setView(view === 'docs' ? (project ? 'editor' : 'projects') : 'docs')}
@@ -2062,6 +2167,7 @@ ${chaptersHtml}
             lang={lang}
             onOpenEditor={() => setView(project ? 'editor' : 'projects')}
             onOpenSettings={() => setView('settings')}
+            onStartTour={startTour}
           />
         ) : view === 'settings' ? (
           <SettingsView
@@ -2069,6 +2175,7 @@ ${chaptersHtml}
             lang={lang}
             onToggleLang={toggleLanguage}
             onOpenEditor={() => setView(project ? 'editor' : 'projects')}
+            onStartTour={startTour}
           />
         ) : project && chapter ? (
           /* ── Editor View ── */
@@ -2100,7 +2207,7 @@ ${chaptersHtml}
                     </option>
                   ))}
                 </select>
-                <button onClick={addChapter}><Plus size={17} /> {t.addChapter}</button>
+                <button data-tour="chapter" onClick={addChapter}><Plus size={17} /> {t.addChapter}</button>
               </div>
             )}
 
@@ -2367,7 +2474,7 @@ ${chaptersHtml}
                   </div>
                 )}
 
-                <div className={`paper ${typewriterMode ? 'typewriter-mode' : ''}`}>
+                <div className={`paper ${typewriterMode ? 'typewriter-mode' : ''}`} data-tour="write">
                   <div className="chapter-kicker">
                     {t.chapterKicker(project.chapters.findIndex((c) => c.id === chapter.id) + 1)}
                   </div>
@@ -2383,6 +2490,7 @@ ${chaptersHtml}
                   {/* Mode 1: Direct Edit Textarea */}
                   {editorMode === 'edit' ? (
                     <textarea
+                      key={chapter.id}
                       ref={editor}
                       aria-label={t.editorPlaceholder}
                       style={{ fontSize: font }}
@@ -2535,6 +2643,16 @@ ${chaptersHtml}
                     </div>
                   )}
 
+                  {editorMode === 'edit' && !text.trim() && (
+                    <div className="paper-empty-hint">
+                      <p>{t.tourEmptyHint}</p>
+                      <div>
+                        <button type="button" className="secondary" onClick={startTour}>{t.tourStart}</button>
+                        <button type="button" className="secondary" onClick={insertSampleParagraph}>{t.tourInsertSample}</button>
+                      </div>
+                    </div>
+                  )}
+
                   {/* ── In-Text Popover for Flagged Issue ── */}
                   {activePopover && (
                     <div
@@ -2660,6 +2778,7 @@ ${chaptersHtml}
                         <div className="proof-intro-actions">
                           <button
                             className="primary full"
+                            data-tour="proof"
                             disabled={!text.trim()}
                             onClick={runProofread}
                           >
@@ -3257,6 +3376,13 @@ ${chaptersHtml}
                               >
                                 <Undo2 size={13} /> {t.btnRestore}
                               </button>
+                              <button
+                                type="button"
+                                className="secondary full"
+                                onClick={() => setDiffSnapId(snap.id)}
+                              >
+                                {t.btnCompareSnapshot}
+                              </button>
                             </div>
                           ))}
                         </div>
@@ -3512,6 +3638,84 @@ ${chaptersHtml}
           currentChapter={chapter}
           lang={lang}
           onClose={() => setShowPublishModal(false)}
+        />
+      )}
+
+      {showShortcuts && (
+        <ShortcutsModal
+          title={t.shortcutHelpTitle}
+          hint={t.shortcutHelpHint}
+          closeLabel={t.btnClose}
+          replayLabel={t.tourReplay}
+          replayHint={t.tourReplayHint}
+          onReplayTour={startTour}
+          onClose={() => setShowShortcuts(false)}
+          groups={[
+            {
+              heading: t.shortcutGroupWrite,
+              rows: [
+                { keys: ['Ctrl', 'S'], label: t.shortcutSave },
+                { keys: ['F11'], label: t.shortcutFocus },
+                { keys: ['?', 'Ctrl+/'], label: t.shortcutHelpOpen },
+              ],
+            },
+            {
+              heading: t.shortcutGroupFind,
+              rows: [
+                { keys: ['Ctrl', 'F'], label: t.shortcutFind },
+                { keys: ['Ctrl', 'Shift', 'F'], label: t.shortcutFindGlobal },
+              ],
+            },
+            {
+              heading: t.shortcutGroupProof,
+              rows: [
+                { keys: ['Tab'], label: t.shortcutWalkNext },
+                { keys: ['Shift', 'Tab'], label: t.shortcutWalkPrev },
+                { keys: ['Enter'], label: t.shortcutWalkFix },
+                { keys: ['Esc'], label: t.shortcutWalkClose },
+              ],
+            },
+          ]}
+        />
+      )}
+
+      {tourOpen && view === 'editor' && project && (
+        <OnboardingTour
+          step={tourStep}
+          steps={[
+            { target: 'write', title: t.tourWriteTitle, body: t.tourWriteBody },
+            { target: 'chapter', title: t.tourChapterTitle, body: t.tourChapterBody },
+            { target: 'proof', title: t.tourProofTitle, body: t.tourProofBody },
+          ]}
+          nextLabel={t.tourNext}
+          backLabel={t.tourBack}
+          skipLabel={t.tourSkip}
+          doneLabel={t.tourDone}
+          stepLabel={t.tourStep}
+          onNext={() => {
+            if (tourStep >= 2) finishTour();
+            else setTourStep((s) => s + 1);
+          }}
+          onBack={() => setTourStep((s) => Math.max(0, s - 1))}
+          onSkip={finishTour}
+        />
+      )}
+
+      {diffSnapId && (
+        <SnapshotDiffModal
+          currentText={text}
+          snapshots={snapshots}
+          initialId={diffSnapId}
+          title={t.snapshotDiffTitle}
+          fromLabel={t.snapshotDiffFrom}
+          toLabel={t.snapshotDiffTo}
+          currentOption={t.snapshotDiffCurrent}
+          emptyLabel={t.snapshotDiffEmpty}
+          addedLabel={t.snapshotDiffAdded}
+          removedLabel={t.snapshotDiffRemoved}
+          identicalLabel={t.snapshotDiffIdentical}
+          closeLabel={t.btnClose}
+          onClose={() => setDiffSnapId(null)}
         />
       )}
 

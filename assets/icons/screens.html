@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="utf-8" />
+  <style>
+    @font-face { font-family: "Noto Serif Bengali"; src: url("../fonts/NotoSerifBengali-Regular.ttf") format("truetype"); }
+    @font-face { font-family: "Hind Siliguri"; src: url("../fonts/HindSiliguri-Regular.woff2") format("woff2"); }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 1280px; height: 720px; overflow: hidden; font-family: "Hind Siliguri", sans-serif; background: #e8efe6; color: #243830; }
+    .shot { width: 1280px; height: 720px; display: none; padding: 36px 40px; }
+    .shot.on { display: block; }
+    .chrome { background: #fbfcf8; border: 1px solid #d5e2d2; border-radius: 16px; height: 648px; display: grid; grid-template-columns: 240px 1fr 280px; overflow: hidden; box-shadow: 0 18px 40px #1a332c14; }
+    .side, .insp { background: #eef3ed; padding: 18px 16px; }
+    .brand { font-family: "Noto Serif Bengali", serif; font-size: 26px; color: #1a3d34; margin-bottom: 16px; }
+    .ch { padding: 8px 10px; border-radius: 8px; margin-bottom: 6px; background: #fff; font-size: 14px; }
+    .ch.on { background: #22644e; color: #fff; }
+    .paper { padding: 28px 40px; }
+    .paper h1 { font-family: "Noto Serif Bengali", serif; font-size: 28px; margin-bottom: 14px; }
+    .paper p { font-family: "Noto Serif Bengali", serif; font-size: 18px; line-height: 1.75; color: #33443b; margin-bottom: 12px; }
+    .mark { border-bottom: 2px solid #c45c4e; }
+    .chip { display: inline-block; background: #fff; border: 1px solid #d5e2d2; border-radius: 999px; padding: 4px 10px; font-size: 12px; margin: 0 6px 8px 0; }
+    .card { background: #fff; border: 1px solid #d5e2d2; border-radius: 10px; padding: 12px; margin-bottom: 10px; }
+    .bar { height: 8px; background: #dce8da; border-radius: 99px; overflow: hidden; margin-top: 6px; }
+    .bar > i { display: block; height: 100%; background: #22644e; width: 38%; }
+    .caption { margin-top: 10px; font-size: 13px; color: #5a6d62; }
+  </style>
+</head>
+<body>
+  <div class="shot" id="s1">
+    <div class="chrome">
+      <div class="side"><div class="brand">লিপিশিল্প</div><div class="ch on">প্রথম অধ্যায়</div><div class="ch">দ্বিতীয় অধ্যায়</div><div class="ch">তৃতীয় অধ্যায়</div></div>
+      <div class="paper">
+        <h1>প্রথম অধ্যায়</h1>
+        <p>আপনার শব্দ। আপনার স্বর। একটু যত্ন, প্রতিটি খসড়ায়।</p>
+        <p>লিপিশিল্পে লিখুন নির্ভয়ে, সংশোধন করুন নিরিবিলি। টাইপরাইটার স্ক্রল সক্রিয় লাইনটিকে মাঝখানে রাখে।</p>
+      </div>
+      <div class="insp"><div class="chip">প্রুফরিড</div><div class="chip">কোডেক্স</div><div class="card">স্বাস্থ্য স্কোর ৮৬</div></div>
+    </div>
+    <p class="caption">Zen Studio — typewriter focus and paper themes</p>
+  </div>
+  <div class="shot" id="s2">
+    <div class="chrome">
+      <div class="side">
+        <div class="brand">লিপিশিল্প</div>
+        <div class="ch on">খসড়া · প্রথম</div>
+        <div class="ch">চলমান · দ্বিতীয়</div>
+        <div class="ch">সংশোধিত · তৃতীয়</div>
+        <div class="ch">চূড়ান্ত · উপসংহার</div>
+      </div>
+      <div class="paper"><h1>অধ্যায় সাজানো</h1><p>ড্র্যাগ অ্যান্ড ড্রপ করে অধ্যায়ের ক্রম বদলান। স্ট্যাটাস: খসড়া, চলমান, সংশোধিত, চূড়ান্ত।</p></div>
+      <div class="insp"><div class="card">৪ অধ্যায়</div><div class="card">১২,৪৮০ শব্দ</div></div>
+    </div>
+    <p class="caption">Manuscript outliner with workflow badges</p>
+  </div>
+  <div class="shot" id="s3">
+    <div class="chrome">
+      <div class="side"><div class="brand">লিপিশিল্প</div><div class="ch on">প্রথম অধ্যায়</div></div>
+      <div class="paper"><h1>কোডেক্স</h1><p>চরিত্র ও জগত এক জায়গায়। নাম, ভূমিকা, লক্ষ্য — লেখার সময় এক ক্লিকে বসান।</p></div>
+      <div class="insp">
+        <div class="card"><strong>আয়েশা</strong><br/>নায়িকা · ২৭</div>
+        <div class="card"><strong>পুরনো ঢাকা</strong><br/>স্থান · ১৯৭১</div>
+      </div>
+    </div>
+    <p class="caption">Character and world-building codex</p>
+  </div>
+  <div class="shot" id="s4">
+    <div class="chrome">
+      <div class="side"><div class="brand">লিপিশিল্প</div></div>
+      <div class="paper">
+        <h1>লেখার ছন্দ</h1>
+        <p>সংলাপ ৩৮% · বর্ণনা ৬২%</p>
+        <div class="bar"><i></i></div>
+        <p style="margin-top:16px">অতিব্যবহৃত: খুব, আসলে, কিন্তু</p>
+      </div>
+      <div class="insp"><div class="card">ছোট বাক্য ৪১%</div><div class="card">মাঝারি ৩৭%</div><div class="card">দীর্ঘ ২২%</div></div>
+    </div>
+    <p class="caption">Literary analytics — dialogue, cadence, overused words</p>
+  </div>
+  <div class="shot" id="s5">
+    <div class="chrome">
+      <div class="side"><div class="brand">লিপিশিল্প</div></div>
+      <div class="paper">
+        <h1>খুঁজে বদলাও</h1>
+        <p>সরকারী → সরকারি · Ctrl+Shift+F দিয়ে পুরো বই।</p>
+        <p>অভিধানে নেই: <span class="mark">জুগড</span> মর্নিং</p>
+      </div>
+      <div class="insp"><div class="card">৩ অধ্যায়ে ৫ মিল</div><div class="card">Hunspell bn + en</div></div>
+    </div>
+    <p class="caption">Project-wide find & replace and bilingual spellcheck</p>
+  </div>
+  <script>
+    const n = new URLSearchParams(location.search).get("n") || "1";
+    const el = document.getElementById("s" + n);
+    if (el) el.classList.add("on");
+  </script>
+</body>
+</html>

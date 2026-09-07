@@ -57,9 +57,14 @@ Lipishilpo Pro unlocks the full Book Get-Up Studio (print-ready PDF & EPUB layou
 2. **Manuscript Outliner** – Drag-and-drop chapter organizer with 4-stage workflow status badges.
 3. **World-Building Codex** – Character profiles and lore notes manager.
 4. **Writing Analytics** – Dialogue vs Narrative ratio bar and sentence rhythm cadence analyzer.
-5. **Global Find & Replace** – Project-wide search modal scanning all chapters simultaneously.
+5. **Find, replace, and bilingual spellcheck** – Project-wide search plus offline Bengali and English Hunspell.
 
 == Changelog ==
+
+= 1.0.1 =
+* Offline English Hunspell spellcheck alongside Bengali.
+* Keyboard shortcut cheat sheet (? or Ctrl+/).
+* WordPress.org plugin icons and banners.
 
 = 1.0.0 =
 * Initial international release of LipiShilpo Free Studio.

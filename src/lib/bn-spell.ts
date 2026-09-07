@@ -3,7 +3,8 @@ import { getWPConfig } from '../api';
 
 type Spell = ReturnType<typeof nspell>;
 
-let spellPromise: Promise<Spell | null> | null = null;
+let bnSpellPromise: Promise<Spell | null> | null = null;
+let enSpellPromise: Promise<Spell | null> | null = null;
 
 function dictsBaseUrl(): string {
   const fromConfig = getWPConfig().dictsUrl;
@@ -24,37 +25,42 @@ async function loadGzipText(url: string): Promise<string> {
   return new Response(stream).text();
 }
 
-export async function getBengaliSpell(): Promise<Spell | null> {
-  if (spellPromise) return spellPromise;
+async function loadSpell(affName: string, dicName: string): Promise<Spell | null> {
   const base = dictsBaseUrl();
-  if (!base) {
-    spellPromise = Promise.resolve(null);
-    return spellPromise;
+  if (!base) return null;
+  try {
+    const [aff, dic] = await Promise.all([
+      loadGzipText(`${base}/${affName}`),
+      loadGzipText(`${base}/${dicName}`),
+    ]);
+    return nspell({ aff, dic });
+  } catch {
+    return null;
   }
-
-  spellPromise = (async () => {
-    try {
-      const [aff, dic] = await Promise.all([
-        loadGzipText(`${base}/bn-BD.aff.gz`),
-        loadGzipText(`${base}/bn-BD.dic.gz`),
-      ]);
-      return nspell({ aff, dic });
-    } catch {
-      return null;
-    }
-  })();
-
-  return spellPromise;
 }
 
-export function addPersonalWords(spell: Spell, words: string[]) {
+export async function getBengaliSpell(): Promise<Spell | null> {
+  if (!bnSpellPromise) bnSpellPromise = loadSpell('bn-BD.aff.gz', 'bn-BD.dic.gz');
+  return bnSpellPromise;
+}
+
+export async function getEnglishSpell(): Promise<Spell | null> {
+  if (!enSpellPromise) enSpellPromise = loadSpell('en-US.aff.gz', 'en-US.dic.gz');
+  return enSpellPromise;
+}
+
+export function addPersonalWords(spell: Spell, words: string[], script: 'bn' | 'en' = 'bn') {
   for (const word of words) {
-    if (/[\u0980-\u09FF]/.test(word) && word.length >= 2 && !word.startsWith('__')) {
-      spell.add(word);
-    }
+    if (word.startsWith('__') || word.length < 2) continue;
+    if (script === 'bn' && /[\u0980-\u09FF]/.test(word)) spell.add(word);
+    if (script === 'en' && /^[A-Za-z][A-Za-z'-]*$/.test(word)) spell.add(word);
   }
 }
 
 export function isBengaliToken(word: string): boolean {
   return /^[\u0980-\u09FF]{2,}$/.test(word);
+}
+
+export function isEnglishToken(word: string): boolean {
+  return /^[A-Za-z][A-Za-z'-]{1,}$/.test(word);
 }

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import {
   Check, Copy, BookOpen, Trash2,
-  Globe, Sliders
+  Globe, Sliders, Compass
 } from 'lucide-react';
-import { type Language } from '../i18n';
+import { translations, type Language } from '../i18n';
 import { fetchPrefs, updatePrefs } from '../api';
 
 interface SettingsViewProps {
@@ -11,6 +11,7 @@ interface SettingsViewProps {
   lang: Language;
   onToggleLang: () => void;
   onOpenEditor: () => void;
+  onStartTour: () => void;
 }
 
 export const SettingsView: React.FC<SettingsViewProps> = ({
@@ -18,7 +19,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   lang,
   onToggleLang,
   onOpenEditor,
+  onStartTour,
 }) => {
+  const t = translations[lang];
   const [copied, setCopied] = useState(false);
   const [dict, setDict] = useState<string[]>(() => {
     try {
@@ -185,6 +188,16 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               {lang === 'bn' ? 'Switch to English' : 'বাংলায় পরিবর্তন করুন'}
             </button>
           </div>
+        </div>
+
+        <div className="settings-card">
+          <h2>
+            <Compass size={16} /> {t.tourReplay}
+          </h2>
+          <p>{t.tourReplayHint}</p>
+          <button type="button" className="secondary" onClick={onStartTour}>
+            <Compass size={16} /> {t.tourStart}
+          </button>
         </div>
 
         {/* Card 4: Personal Ignored Words */}
