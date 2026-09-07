@@ -7,10 +7,10 @@ import {
   Maximize2, Minimize2, Sun, Moon, Coffee, History, Target,
   MessageSquare, MessageSquarePlus, CheckCircle, Eye, Edit3,
   BookA, Share2, StickyNote, FileUp,
-  Bold, Italic, Heading2, Quote, List, Box, Bookmark,
+  Bold, Italic, Heading2, Quote, List, Box, Bookmark, GripVertical, Replace,
 } from 'lucide-react';
 import {
-  type Project, type Chapter,
+  type Project, type Chapter, type ChapterStatus,
   fetchProjects, createProject, updateProject, deleteProject,
   fetchPrefs, updatePrefs,
 } from './api';
@@ -28,6 +28,7 @@ import { TypographyControl } from './components/TypographyControl';
 import { PublishModal } from './components/PublishModal';
 import { ConjunctsModal } from './components/ConjunctsModal';
 import { FloatingBubbleToolbar } from './components/FloatingBubbleToolbar';
+import { GlobalFindReplaceModal } from './components/GlobalFindReplaceModal';
 import { handleSmartKeyDown } from './lib/smart-typography';
 import { exportProjectToJson } from './lib/project-backup';
 import { importManuscriptFile, ManuscriptImportError } from './lib/manuscript-import';
@@ -119,6 +120,8 @@ export default function App() {
   });
 
   const [bubblePosition, setBubblePosition] = useState<{ top: number; left: number } | null>(null);
+  const [showGlobalFindModal, setShowGlobalFindModal] = useState(false);
+  const [draggedChapterIndex, setDraggedChapterIndex] = useState<number | null>(null);
   const paperContainerRef = useRef<HTMLDivElement>(null);
 
   const [dailyTarget, setDailyTarget] = useState(500);
@@ -776,6 +779,9 @@ export default function App() {
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
         forceSave();
+      } else if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'F' || e.key === 'f') && view === 'editor') {
+        e.preventDefault();
+        setShowGlobalFindModal(true);
       } else if ((e.ctrlKey || e.metaKey) && e.key === 'f' && view === 'editor') {
         e.preventDefault();
         setShowSearch((prev) => {
@@ -993,6 +999,54 @@ export default function App() {
     );
     setProjects(updated);
     autosave(updated);
+  }
+
+  function reorderChapters(fromIndex: number, toIndex: number) {
+    if (!project || fromIndex === toIndex) return;
+    if (fromIndex < 0 || fromIndex >= project.chapters.length || toIndex < 0 || toIndex >= project.chapters.length) return;
+
+    const newChapters = [...project.chapters];
+    const [moved] = newChapters.splice(fromIndex, 1);
+    newChapters.splice(toIndex, 0, moved);
+
+    const updated = projects.map((p) =>
+      p.id === project.id ? { ...p, chapters: newChapters } : p
+    );
+    setProjects(updated);
+    autosave(updated);
+  }
+
+  function updateChapterStatus(chapterId: string, status: ChapterStatus) {
+    if (!project) return;
+    const newChapters = project.chapters.map((c) =>
+      c.id === chapterId ? { ...c, status } : c
+    );
+    const updated = projects.map((p) =>
+      p.id === project.id ? { ...p, chapters: newChapters } : p
+    );
+    setProjects(updated);
+    autosave(updated);
+  }
+
+  function handleGlobalReplaceAll(updatedChapters: Chapter[], replaceCount: number) {
+    if (!project) return;
+    const updated = projects.map((p) =>
+      p.id === project.id ? { ...p, chapters: updatedChapters } : p
+    );
+    setProjects(updated);
+    autosave(updated);
+
+    // If current chapter was updated, update local text state too
+    const currentUpdated = updatedChapters.find((c) => c.id === cid);
+    if (currentUpdated) {
+      typedTextRef.current = currentUpdated.text;
+      updateText(currentUpdated.text, 'tool');
+    }
+    setNotice(
+      lang === 'bn'
+        ? `সমগ্র বইয়ের ${replaceCount} টি জায়গায় প্রতিস্থাপন সম্পন্ন হয়েছে!`
+        : `Replaced ${replaceCount} instance(s) across entire book!`
+    );
   }
 
   function handleDeleteChapter(chapterId: string) {
@@ -1388,34 +1442,74 @@ ${chaptersHtml}
               </button>
 
               <div className="chapters">
-                {project.chapters.map((c, i) => (
-                  <div key={c.id} className={'chapter-item ' + (c.id === chapter?.id ? 'selected' : '')}>
-                    <button
-                      className="chapter-btn"
-                      onClick={() => selectChapter(c.id)}
+                {project.chapters.map((c, i) => {
+                  const status = c.status || 'draft';
+                  const nextStatusMap: Record<ChapterStatus, ChapterStatus> = {
+                    draft: 'in_progress',
+                    in_progress: 'revised',
+                    revised: 'final',
+                    final: 'draft',
+                  };
+                  const statusLabel = status === 'in_progress' ? t.statusInProgress : status === 'revised' ? t.statusRevised : status === 'final' ? t.statusFinal : t.statusDraft;
+
+                  return (
+                    <div
+                      key={c.id}
+                      draggable
+                      onDragStart={() => setDraggedChapterIndex(i)}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        if (draggedChapterIndex !== null && draggedChapterIndex !== i) {
+                          reorderChapters(draggedChapterIndex, i);
+                          setDraggedChapterIndex(null);
+                        }
+                      }}
+                      onDragEnd={() => setDraggedChapterIndex(null)}
+                      className={'chapter-item ' + (c.id === chapter?.id ? 'selected ' : '') + (draggedChapterIndex === i ? 'dragging ' : '')}
                     >
-                      <FileText size={15} />
-                      <span>{formatNumber(i + 1)}. {c.title || t.untitledChapter}</span>
-                    </button>
-                    <div className="chapter-actions">
-                      {i > 0 && (
-                        <button title={t.moveChapterUp} onClick={() => moveChapter(i, 'up')}>
-                          <ChevronUp size={13} />
-                        </button>
-                      )}
-                      {i < project.chapters.length - 1 && (
-                        <button title={t.moveChapterDown} onClick={() => moveChapter(i, 'down')}>
-                          <ChevronDown size={13} />
-                        </button>
-                      )}
-                      {project.chapters.length > 1 && (
-                        <button title={t.deleteChapter} onClick={() => handleDeleteChapter(c.id)}>
-                          <Trash2 size={13} />
-                        </button>
-                      )}
+                      <span className="drag-handle" title={lang === 'bn' ? 'টেনে অধ্যায় সাজান' : 'Drag to reorder'}>
+                        <GripVertical size={13} />
+                      </span>
+                      <button
+                        className="chapter-btn"
+                        onClick={() => selectChapter(c.id)}
+                      >
+                        <FileText size={15} />
+                        <span>{formatNumber(i + 1)}. {c.title || t.untitledChapter}</span>
+                      </button>
+
+                      {/* Status indicator dot */}
+                      <button
+                        type="button"
+                        className={`chapter-status-dot status-${status}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          updateChapterStatus(c.id, nextStatusMap[status]);
+                        }}
+                        title={`${lang === 'bn' ? 'স্ট্যাটাস পরিবর্তন করুন' : 'Change Status'}: ${statusLabel}`}
+                      />
+
+                      <div className="chapter-actions">
+                        {i > 0 && (
+                          <button title={t.moveChapterUp} onClick={() => moveChapter(i, 'up')}>
+                            <ChevronUp size={13} />
+                          </button>
+                        )}
+                        {i < project.chapters.length - 1 && (
+                          <button title={t.moveChapterDown} onClick={() => moveChapter(i, 'down')}>
+                            <ChevronDown size={13} />
+                          </button>
+                        )}
+                        {project.chapters.length > 1 && (
+                          <button title={t.deleteChapter} onClick={() => handleDeleteChapter(c.id)}>
+                            <Trash2 size={13} />
+                          </button>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
                 <button className="add" onClick={addChapter}>
                   <Plus size={15} /> {t.addChapter}
                 </button>
@@ -1650,7 +1744,7 @@ ${chaptersHtml}
                 </button>
               )}
 
-              {/* Find & Replace toggle */}
+              {/* Find & Replace toggle (Chapter) */}
               {view === 'editor' && (
                 <button
                   className={'header-icon-btn ' + (showSearch ? 'active' : '')}
@@ -1658,6 +1752,17 @@ ${chaptersHtml}
                   title={t.btnFindReplace}
                 >
                   <Search size={15} />
+                </button>
+              )}
+
+              {/* Global Project-Wide Search & Replace */}
+              {view === 'editor' && (
+                <button
+                  className={'header-icon-btn ' + (showGlobalFindModal ? 'active' : '')}
+                  onClick={() => setShowGlobalFindModal(true)}
+                  title={t.btnGlobalSearch}
+                >
+                  <Replace size={15} />
                 </button>
               )}
 
@@ -1885,10 +1990,24 @@ ${chaptersHtml}
                 />
 
                 <div className="toolbar">
-                  <span>
-                    <FileText size={16} />
-                    {t.chapterLabel(project.chapters.findIndex((c) => c.id === chapter.id) + 1)}
-                  </span>
+                  <div className="chapter-label-group">
+                    <span>
+                      <FileText size={16} />
+                      {t.chapterLabel(project.chapters.findIndex((c) => c.id === chapter.id) + 1)}
+                    </span>
+
+                    <select
+                      value={chapter.status || 'draft'}
+                      onChange={(e) => updateChapterStatus(chapter.id, e.target.value as ChapterStatus)}
+                      className={`chapter-status-select status-${chapter.status || 'draft'}`}
+                      title={lang === 'bn' ? 'অধ্যায়ের অবস্থা' : 'Chapter Status'}
+                    >
+                      <option value="draft">{t.statusDraft}</option>
+                      <option value="in_progress">{t.statusInProgress}</option>
+                      <option value="revised">{t.statusRevised}</option>
+                      <option value="final">{t.statusFinal}</option>
+                    </select>
+                  </div>
 
                   {/* Mode switcher: Edit vs Visual Review */}
                   <div className="mode-switcher-group">
@@ -3109,6 +3228,19 @@ ${chaptersHtml}
           lang={lang}
           onInsert={handleInsertConjunct}
           onClose={() => setShowConjuncts(false)}
+        />
+      )}
+
+      {/* ── Global Project Find & Replace Modal ── */}
+      {showGlobalFindModal && project && (
+        <GlobalFindReplaceModal
+          isOpen={showGlobalFindModal}
+          onClose={() => setShowGlobalFindModal(false)}
+          chapters={project.chapters}
+          currentChapterId={cid}
+          lang={lang}
+          onReplaceAll={handleGlobalReplaceAll}
+          onSelectChapter={selectChapter}
         />
       )}
     </div>

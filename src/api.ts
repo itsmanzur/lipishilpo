@@ -58,7 +58,16 @@ function normalizeProject(p: Project): Project {
   };
 }
 
-export type Chapter = { id: string; title: string; text: string; notes?: string };
+export type ChapterStatus = 'draft' | 'in_progress' | 'revised' | 'final';
+
+export type Chapter = {
+  id: string;
+  title: string;
+  text: string;
+  notes?: string;
+  status?: ChapterStatus;
+  partTitle?: string;
+};
 export type Project = {
   id: string;
   title: string;

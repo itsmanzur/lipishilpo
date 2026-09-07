@@ -57,6 +57,11 @@ export const translations = {
     typewriterMode: 'Typewriter Scrolling (Center Line)',
     zenFocusMode: 'Zen Focus Dimmer',
     smartTyping: 'Smart Typographic Punctuation',
+    btnGlobalSearch: 'Global Project Search & Replace (Ctrl+Shift+F)',
+    statusDraft: 'Draft',
+    statusInProgress: 'In Progress',
+    statusRevised: 'Revised',
+    statusFinal: 'Final',
 
     // 7 Free Upgrade Features
     tabScratchpad: 'Scratchpad',
@@ -379,6 +384,11 @@ export const translations = {
     typewriterMode: 'টাইপরাইটার স্ক্রোলিং (মাঝখানে স্থির)',
     zenFocusMode: 'জেন ফোকাস (প্যারাগ্রাফ উজ্জ্বল)',
     smartTyping: 'স্মার্ট কোটস ও সাহিত্যিক ড্যাশ',
+    btnGlobalSearch: 'গ্লোবাল প্রজেক্ট সার্চ ও রিপ্লেস (Ctrl+Shift+F)',
+    statusDraft: 'খসড়া',
+    statusInProgress: 'চলমান',
+    statusRevised: 'পরিমার্জিত',
+    statusFinal: 'চূড়ান্ত',
 
     // 7 Free Upgrade Features
     tabScratchpad: 'স্ক্র্যাচপ্যাড',
