@@ -28,6 +28,7 @@ import { TypographyControl } from './components/TypographyControl';
 import { PublishModal } from './components/PublishModal';
 import { ConjunctsModal } from './components/ConjunctsModal';
 import { FloatingBubbleToolbar } from './components/FloatingBubbleToolbar';
+import { renderFormattedSpan } from './lib/render-review';
 import { GlobalFindReplaceModal } from './components/GlobalFindReplaceModal';
 import { CodexPanel, type ProjectCodex } from './components/CodexPanel';
 import { analyzeManuscript } from './lib/analytics';
@@ -2353,7 +2354,7 @@ ${chaptersHtml}
 
                         nonOverlap.forEach((s, idx) => {
                           if (s.start > cur) {
-                            elements.push(<span key={`t-${idx}`}>{text.slice(cur, s.start)}</span>);
+                            elements.push(renderFormattedSpan(text.slice(cur, s.start), `t-${idx}`));
                           }
                           const chunk = text.slice(s.start, s.end);
 
@@ -2397,7 +2398,7 @@ ${chaptersHtml}
                         });
 
                         if (cur < text.length) {
-                          elements.push(<span key="t-tail">{text.slice(cur)}</span>);
+                          elements.push(renderFormattedSpan(text.slice(cur), 't-tail'));
                         }
 
                         return elements;

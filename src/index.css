@@ -2233,6 +2233,98 @@ body {
   padding: 5px 8px 24px 0;
   outline: none;
 }
+
+/* ── Review Surface Rich Formatting Styles ── */
+.review-mark-highlight, .paper-review-surface mark.review-mark-highlight, .paper-review-surface mark:not(.proof-mark) {
+  background: #fef08a !important;
+  color: #713f12 !important;
+  padding: 1px 5px;
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(234, 179, 8, 0.2);
+  font-weight: 500;
+  border: 1px solid #fde047;
+}
+
+.review-bold, .paper-review-surface strong {
+  font-weight: 700;
+  color: #1e2e26;
+}
+
+.review-italic, .paper-review-surface em {
+  font-style: italic;
+  color: #2e4d3f;
+}
+
+.review-h2, .paper-review-surface h2 {
+  font-size: 1.35em;
+  font-weight: 700;
+  color: #1b4937;
+  margin: 1.1em 0 0.4em;
+  padding-bottom: 5px;
+  border-bottom: 1.5px solid #dbe6d7;
+  font-family: 'Noto Serif Bengali', serif;
+}
+
+.review-h3, .paper-review-surface h3 {
+  font-size: 1.18em;
+  font-weight: 600;
+  color: #245742;
+  margin: 0.9em 0 0.3em;
+  font-family: 'Noto Serif Bengali', serif;
+}
+
+.review-blockquote, .paper-review-surface blockquote {
+  margin: 0.9em 0;
+  padding: 10px 16px;
+  border-left: 3.5px solid #298366;
+  background: #f2f7f0;
+  border-radius: 0 6px 6px 0;
+  font-style: italic;
+  color: #29483b;
+}
+
+.review-callout-box {
+  margin: 1.1em 0;
+  padding: 12px 16px;
+  background: #f0f7ef;
+  border: 1.5px solid #c2dec2;
+  border-radius: 8px;
+}
+
+.review-callout-title {
+  font-weight: 700;
+  font-size: 13px;
+  color: #1a5a3f;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.review-callout-body {
+  font-size: 14px;
+  color: #2b4537;
+  line-height: 1.8;
+}
+
+.review-scene-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 1.4em 0;
+  color: #8c9e8f;
+  font-size: 13px;
+  letter-spacing: 0.25em;
+}
+.review-scene-divider::before, .review-scene-divider::after {
+  content: '';
+  flex: 1;
+  max-width: 70px;
+  height: 1px;
+  background: #cbd8c8;
+  margin: 0 10px;
+}
+
 .empty-review {
   color: #a8b5a0;
   font-style: italic;
