@@ -194,7 +194,16 @@ class Lipishilpo_Projects {
 		if ( ! $post || $post->post_type !== self::POST_TYPE ) {
 			return false;
 		}
-		return (int) $post->post_author === get_current_user_id() || current_user_can( 'edit_others_posts' );
+		$is_owner = (int) $post->post_author === get_current_user_id();
+		/**
+		 * Filters whether the current user has access to edit/view a manuscript.
+		 * Default: strictly author-only for creative manuscript privacy.
+		 *
+		 * @param bool $is_owner Whether current user is the post author.
+		 * @param int  $post_id  The manuscript post ID.
+		 * @param int  $user_id  The current user ID.
+		 */
+		return (bool) apply_filters( 'lipishilpo_can_access_project', $is_owner, $post_id, get_current_user_id() );
 	}
 
 	private static function sanitize_chapters( $chapters ) {
