@@ -9,3 +9,24 @@ export interface ProofRule {
   kind: RuleCategory;
   optional?: boolean;
 }
+
+export interface ProofOccurrence {
+  start: number;
+  end: number;
+  from: string;
+  to: string;
+}
+
+export interface ProofMatch {
+  id: string;
+  from: string;
+  to: string;
+  why: string;
+  kind: string;
+  category: RuleCategory;
+  optional?: boolean;
+  count: number;
+  occurrences: ProofOccurrence[];
+}
+
+

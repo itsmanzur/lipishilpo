@@ -28,6 +28,8 @@ import { TypographyControl } from './components/TypographyControl';
 import { PublishModal } from './components/PublishModal';
 import { ConjunctsModal } from './components/ConjunctsModal';
 import { FloatingBubbleToolbar } from './components/FloatingBubbleToolbar';
+import { ProofreadWalkthroughBar } from './components/ProofreadWalkthroughBar';
+import { PersonalDictionaryModal } from './components/PersonalDictionaryModal';
 import { renderFormattedSpan } from './lib/render-review';
 import { GlobalFindReplaceModal } from './components/GlobalFindReplaceModal';
 import { CodexPanel, type ProjectCodex } from './components/CodexPanel';
@@ -97,6 +99,10 @@ export default function App() {
   // Focus mode & Theme & Mode (Edit vs Visual Review)
   const [focusMode, setFocusMode] = useState(false);
   const [editorMode, setEditorMode] = useState<EditorMode>('edit');
+  const [showWalkthrough, setShowWalkthrough] = useState(false);
+  const [walkthroughIndex, setWalkthroughIndex] = useState(0);
+  const [showDictModal, setShowDictModal] = useState(false);
+
   const [theme, setTheme] = useState<EditorTheme>(() => {
     try {
       const saved = localStorage.getItem('lipishilpo_theme') as EditorTheme;
@@ -216,6 +222,15 @@ export default function App() {
   const manuscriptWords = project
     ? project.chapters.reduce((n, c) => n + calculateStats(c.text).words, 0)
     : 0;
+
+  const healthScore = useMemo(() => {
+    if (!text.trim()) return 100;
+    const words = text.trim().split(/\s+/).length;
+    const issueCount = (issues || []).filter((i) => !ignored.includes(i.from) && !ignored.includes(i.id)).length;
+    if (issueCount === 0) return 100;
+    const deduction = Math.min(60, Math.round((issueCount / Math.max(15, words)) * 100 * 2.5));
+    return Math.max(40, 100 - deduction);
+  }, [text, issues, ignored]);
 
   useEffect(() => {
     if (window.LipishilpoPro) {
@@ -801,7 +816,27 @@ export default function App() {
         setFocusMode(false);
       }
     }
-    window.addEventListener('keydown', handleKeyDown);
+    
+    const handleWalkthroughKeys = (e: KeyboardEvent) => {
+      if (!showWalkthrough || visibleIssues.length === 0) return;
+      if (e.key === 'Escape') {
+        setShowWalkthrough(false);
+      } else if (e.key === 'Tab') {
+        e.preventDefault();
+        setWalkthroughIndex((prev) => (e.shiftKey ? (prev - 1 + visibleIssues.length) % visibleIssues.length : (prev + 1) % visibleIssues.length));
+      } else if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+        const safeIdx = Math.max(0, Math.min(walkthroughIndex, visibleIssues.length - 1));
+        const activeIssue = visibleIssues[safeIdx];
+        if (activeIssue) {
+          e.preventDefault();
+          acceptFix(activeIssue);
+        }
+      }
+    };
+    if (showWalkthrough) {
+      window.addEventListener('keydown', handleWalkthroughKeys);
+    }
+window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [forceSave, view, focusMode]);
 
@@ -1389,6 +1424,51 @@ ${chaptersHtml}
   const hasSpaces = visibleIssues.some((i) => i.id === '__spaces');
   const hasDariSpace = visibleIssues.some((i) => i.id === '__dari_space');
   const safeFixesCount = visibleIssues.filter((i) => !i.optional && i.id !== '__guruchandali').length;
+
+    function handleQuickAddDictionary(word: string) {
+    const clean = word.trim();
+    if (!clean) return;
+    const nextDict = Array.from(new Set([...ignored, clean]));
+    setIgnored(nextDict);
+    try {
+      localStorage.setItem('lipishilpo_personal_dict', JSON.stringify(nextDict));
+    } catch {}
+    setNotice(lang === 'bn' ? `"${clean}" ব্যক্তিগত শব্দকোষে যোগ করা হয়েছে` : `"${clean}" added to personal dictionary`);
+  }
+
+  function handleFixCategory(category: 'spelling' | 'grammar' | 'punctuation') {
+    if (!chapter || !text.trim()) return;
+    const catIssues = visibleIssues.filter((i) => i.category === category && !i.optional);
+    if (catIssues.length === 0) return;
+
+    const prepared = catIssues.map((issue) => {
+      const { to, customized } = resolvedTo(issue);
+      return {
+        issue: {
+          ...issue,
+          to,
+          optional: false,
+          occurrences: (issue.occurrences || []).map((o) => ({ ...o, to })),
+        } as ProofMatch,
+        customized,
+      };
+    });
+
+    setHistory((h) => [...h.slice(-49), text]);
+    const fixedText = applyAllFixes(text, prepared.map((p) => p.issue));
+    updateText(fixedText);
+    recordEdits(prepared.map(({ issue, customized }) => ({
+      kind: customized ? 'custom' : kindFromIssue(issue),
+      from: issue.from,
+      to: issue.to,
+      why: issue.why,
+      count: issue.count || issue.occurrences?.length || 1,
+      customized,
+    })));
+
+    setIssues((prev) => prev.filter((i) => i.category !== category || i.optional));
+    setNotice(lang === 'bn' ? `${catIssues.length}টি সংশোধন সফলভাবে প্রয়োগ করা হয়েছে!` : `${catIssues.length} fixes applied successfully!`);
+  }
 
   function handleAcceptAllFixes() {
     if (!chapter || !text.trim()) return;
@@ -2014,6 +2094,27 @@ ${chaptersHtml}
             <div className={`editor-layout ${focusMode ? 'focus-layout' : ''}`}>
               {/* ── Writing area ── */}
               <section ref={paperContainerRef} className={`writing theme-${theme}`}>
+                {showWalkthrough && visibleIssues.length > 0 && (
+                  <ProofreadWalkthroughBar
+                    lang={lang}
+                    issues={visibleIssues}
+                    currentIndex={walkthroughIndex}
+                    onSelectIndex={(idx) => {
+                      setWalkthroughIndex(idx);
+                      const issue = visibleIssues[idx];
+                      if (issue?.occurrences?.[0]) {
+                        const occ = issue.occurrences[0];
+                        if (editorMode === 'edit') {
+                          editor.current?.focus();
+                          editor.current?.setSelectionRange(occ.start, occ.end);
+                        }
+                      }
+                    }}
+                    onAcceptFix={(issue) => acceptFix(issue)}
+                    onAddToDictionary={(word) => handleQuickAddDictionary(word)}
+                    onClose={() => setShowWalkthrough(false)}
+                  />
+                )}
                 {/* Floating Bubble Toolbar for selected text */}
                 <FloatingBubbleToolbar
                   position={bubblePosition}
@@ -2042,7 +2143,22 @@ ${chaptersHtml}
                   </div>
 
                   {/* Mode switcher: Edit vs Visual Review */}
-                  <div className="mode-switcher-group">
+                  <button
+                      type="button"
+                      className={`manuscript-health-pill score-${healthScore >= 95 ? 'excellent' : healthScore >= 80 ? 'good' : 'warning'}`}
+                      onClick={() => {
+                        setTabKey('proofread');
+                        if (!checked) void runProofread();
+                        setShowWalkthrough((prev) => !prev);
+                      }}
+                      title={lang === 'bn' ? 'পাণ্ডুলিপির নির্ভুলতা স্কোর (ক্লিক করে ওয়াকথ্রু শুরু করুন)' : 'Manuscript Health Score (Click to toggle walkthrough)'}
+                    >
+                      <Sparkles size={13} />
+                      <span>{lang === 'bn' ? `স্বাস্থ্য: ${formatNumber(healthScore)}%` : `Health: ${healthScore}%`}</span>
+                      {healthScore === 100 && <span className="perfect-badge">✨</span>}
+                    </button>
+
+                    <div className="mode-switcher-group">
                     <button
                       className={'mode-btn ' + (editorMode === 'edit' ? 'active' : '')}
                       onClick={() => { setEditorMode('edit'); setActivePopover(null); }}
@@ -2438,7 +2554,7 @@ ${chaptersHtml}
                           }}
                         />
                       </div>
-                      <p className="intext-popover-why">{activePopover.match.why}</p>
+                      <p className="intext-popover-why">💡 {activePopover.match.why}</p>
                       <div className="intext-popover-actions">
                         <button
                           className="primary"
@@ -2448,6 +2564,16 @@ ${chaptersHtml}
                           }}
                         >
                           <Check size={13} /> {t.btnAccept}
+                        </button>
+                        <button
+                          className="secondary dict-popover-btn"
+                          onClick={() => {
+                            handleQuickAddDictionary(activePopover.match.from);
+                            setActivePopover(null);
+                          }}
+                          title={lang === 'bn' ? 'ব্যক্তিগত শব্দকোষে যোগ করুন' : 'Add to personal dictionary'}
+                        >
+                          <BookA size={13} /> {lang === 'bn' ? 'শব্দকোষে' : 'Dictionary'}
                         </button>
                         <button
                           className="secondary"
@@ -2629,11 +2755,60 @@ ${chaptersHtml}
                         <small>{t.thisChapter}</small>
                       </div>
 
-                      {checked && safeFixesCount > 0 && (
-                        <div className="batch-fix-banner">
-                          <button className="primary full" onClick={handleAcceptAllFixes}>
-                            <CheckCheck size={16} /> {t.btnAcceptAll} ({formatNumber(safeFixesCount)})
-                          </button>
+                      {checked && (
+                        <div className="proofread-batch-suite">
+                          {safeFixesCount > 0 && (
+                            <button className="primary full batch-main-btn" onClick={handleAcceptAllFixes}>
+                              <CheckCheck size={16} /> {t.btnAcceptAll} ({formatNumber(safeFixesCount)})
+                            </button>
+                          )}
+
+                          <div className="category-batch-grid">
+                            {visibleIssues.some((i) => i.category === 'spelling' && !i.optional) && (
+                              <button
+                                type="button"
+                                className="cat-batch-btn spelling"
+                                onClick={() => handleFixCategory('spelling')}
+                                title={lang === 'bn' ? 'সব প্রমিত বানান এক ক্লিকে ঠিক করুন' : 'Fix all spelling issues'}
+                              >
+                                🔴 {lang === 'bn' ? 'সব বানান ঠিক করুন' : 'Fix All Spelling'} ({formatNumber(visibleIssues.filter((i) => i.category === 'spelling' && !i.optional).length)})
+                              </button>
+                            )}
+
+                            {(hasSpaces || hasDariSpace || visibleIssues.some((i) => i.category === 'punctuation')) && (
+                              <button
+                                type="button"
+                                className="cat-batch-btn punctuation"
+                                onClick={() => {
+                                  if (hasSpaces || hasDariSpace) handleFormatTypography();
+                                  handleFixCategory('punctuation');
+                                }}
+                                title={lang === 'bn' ? 'সব বিরামচিহ্ন ও স্পেস ঠিক করুন' : 'Fix all punctuation & spaces'}
+                              >
+                                🟣 {lang === 'bn' ? 'বিরামচিহ্ন ও স্পেস' : 'Fix Punctuation'}
+                              </button>
+                            )}
+                          </div>
+
+                          <div className="proof-tools-row">
+                            <button
+                              type="button"
+                              className="proof-tool-btn walkthrough-trigger"
+                              onClick={() => setShowWalkthrough(true)}
+                              title={lang === 'bn' ? 'কীবোর্ড চালিত জেন প্রুফরিডিং শুরু করুন' : 'Start Zen Keyboard Walkthrough'}
+                            >
+                              <Sparkles size={14} /> {lang === 'bn' ? 'জেন ওয়াকথ্রু' : 'Zen Walkthrough'}
+                            </button>
+
+                            <button
+                              type="button"
+                              className="proof-tool-btn dict-trigger"
+                              onClick={() => setShowDictModal(true)}
+                              title={lang === 'bn' ? 'আমার শব্দকোষ ও চরিত্র তালিকা' : 'Personal Dictionary'}
+                            >
+                              <BookA size={14} /> {lang === 'bn' ? `শব্দকোষ (${formatNumber(ignored.length)})` : `Dictionary (${ignored.length})`}
+                            </button>
+                          </div>
                         </div>
                       )}
 
