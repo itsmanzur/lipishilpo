@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   Feather, BookOpen, Plus, FileText, Library, BarChart3,
   LayoutTemplate, ChevronRight, Download, CheckCheck,
@@ -29,6 +29,8 @@ import { PublishModal } from './components/PublishModal';
 import { ConjunctsModal } from './components/ConjunctsModal';
 import { FloatingBubbleToolbar } from './components/FloatingBubbleToolbar';
 import { GlobalFindReplaceModal } from './components/GlobalFindReplaceModal';
+import { CodexPanel, type ProjectCodex } from './components/CodexPanel';
+import { analyzeManuscript } from './lib/analytics';
 import { handleSmartKeyDown } from './lib/smart-typography';
 import { exportProjectToJson } from './lib/project-backup';
 import { importManuscriptFile, ManuscriptImportError } from './lib/manuscript-import';
@@ -82,7 +84,7 @@ export default function App() {
     } catch {}
     return 'projects';
   });
-  const [tabKey, setTabKey] = useState<'proofread' | 'notes' | 'comments' | 'snapshots' | ProTabKey>('proofread');
+  const [tabKey, setTabKey] = useState<'proofread' | 'codex' | 'notes' | 'comments' | 'snapshots' | ProTabKey>('proofread');
   const [proApi, setProApi] = useState(() => getLipishilpoPro());
   const proSlot = useRef<HTMLDivElement>(null);
   const [modal, setModal] = useState(false);
@@ -209,6 +211,7 @@ export default function App() {
   const chapter = project?.chapters.find((c) => c.id === cid) ?? project?.chapters[0] ?? null;
   const text = chapter?.text ?? '';
   const stats: ManuscriptStats = calculateStats(text);
+  const detailedStats = useMemo(() => analyzeManuscript(text), [text]);
   const manuscriptWords = project
     ? project.chapters.reduce((n, c) => n + calculateStats(c.text).words, 0)
     : 0;
@@ -1049,6 +1052,32 @@ export default function App() {
     );
   }
 
+  function handleUpdateCodex(nextCodex: ProjectCodex) {
+    if (!project) return;
+    const updated = projects.map((p) =>
+      p.id === project.id ? { ...p, codex: nextCodex } : p
+    );
+    setProjects(updated);
+    autosave(updated);
+  }
+
+  function handleInsertTextFromCodex(charOrLoreName: string) {
+    if (!editor.current) return;
+    const textarea = editor.current;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const newText = text.substring(0, start) + charOrLoreName + text.substring(end);
+    setHistory((h) => [...h.slice(-49), text]);
+    typedTextRef.current = newText;
+    updateText(newText, 'type');
+    scheduleManualLog();
+    setChecked(false);
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + charOrLoreName.length, start + charOrLoreName.length);
+    }, 50);
+  }
+
   function handleDeleteChapter(chapterId: string) {
     if (!project) return;
     if (project.chapters.length <= 1) return;
@@ -1393,6 +1422,7 @@ ${chaptersHtml}
 
   const freeTabs = [
     { key: 'proofread' as const, label: t.tabProofread, pro: false },
+    { key: 'codex' as const, label: lang === 'bn' ? 'কডেক্স' : 'Codex', pro: false },
     { key: 'notes' as const, label: t.tabNotes, pro: false },
     { key: 'comments' as const, label: t.tabComments, pro: false },
     { key: 'snapshots' as const, label: t.tabSnapshots, pro: false },
@@ -2753,6 +2783,16 @@ ${chaptersHtml}
                     </>
                   )}
 
+                  {/* ── Tab: Character & World Codex (Free) ── */}
+                  {tabKey === 'codex' && (
+                    <CodexPanel
+                      codex={project.codex as ProjectCodex}
+                      lang={lang}
+                      onUpdateCodex={handleUpdateCodex}
+                      onInsertText={handleInsertTextFromCodex}
+                    />
+                  )}
+
                   {/* ── Tab: Scratchpad / Research Notes (Free) ── */}
                   {tabKey === 'notes' && (
                     <div className="scratchpad-panel">
@@ -3064,35 +3104,111 @@ ${chaptersHtml}
       )}
 
       {/* ── Manuscript Stats Modal ── */}
-      <dialog ref={statsDialog} className="modal-dialog" onCancel={() => setStatsModal(false)}>
-        <div className="modal">
+      <dialog ref={statsDialog} className="modal-dialog stats-dialog-expanded" onCancel={() => setStatsModal(false)}>
+        <div className="modal stats-modal-content">
           <button type="button" className="close" onClick={() => setStatsModal(false)}>
             <X size={20} />
           </button>
           <span className="brandmark"><BarChart3 size={24} /></span>
           <h2>{t.statsModalTitle}</h2>
+
+          {/* Core Metrics Grid */}
           <div className="stats-grid">
             <div className="stat-card">
-              <span className="stat-value">{formatNumber(stats.words)}</span>
+              <span className="stat-value">{formatNumber(detailedStats.words)}</span>
               <span className="stat-label">{t.statsTotalWords}</span>
             </div>
             <div className="stat-card">
-              <span className="stat-value">{formatNumber(stats.characters)}</span>
+              <span className="stat-value">{formatNumber(detailedStats.chars)}</span>
               <span className="stat-label">{t.statsTotalChars}</span>
             </div>
             <div className="stat-card">
-              <span className="stat-value">{formatNumber(stats.charactersNoSpaces)}</span>
-              <span className="stat-label">{t.statsCharsNoSpaces}</span>
+              <span className="stat-value">{formatNumber(detailedStats.sentences)}</span>
+              <span className="stat-label">{lang === 'bn' ? 'মোট বাক্য' : 'Sentences'}</span>
             </div>
             <div className="stat-card">
-              <span className="stat-value">{formatNumber(stats.paragraphs)}</span>
+              <span className="stat-value">{formatNumber(detailedStats.paragraphs)}</span>
               <span className="stat-label">{t.statsParagraphs}</span>
             </div>
-            <div className="stat-card full">
-              <span className="stat-value">{t.statsMinutes(stats.readingTimeMinutes)}</span>
-              <span className="stat-label">{t.statsEstReadingTime}</span>
+          </div>
+
+          {/* Dialogue vs Narrative Ratio Bar */}
+          <div className="analytics-section-card">
+            <div className="analytics-header-row">
+              <strong>{lang === 'bn' ? 'সংলাপ বনাম বর্ণনা অনুপাত' : 'Dialogue vs. Narrative Ratio'}</strong>
+              <span>
+                {lang === 'bn'
+                  ? `সংলাপ: ${detailedStats.dialogueRatio}% | বর্ণনা: ${100 - detailedStats.dialogueRatio}%`
+                  : `Dialogue: ${detailedStats.dialogueRatio}% | Narrative: ${100 - detailedStats.dialogueRatio}%`}
+              </span>
+            </div>
+            <div className="dialogue-ratio-bar">
+              <div
+                className="ratio-fill-dialogue"
+                style={{ width: `${detailedStats.dialogueRatio}%` }}
+                title={lang === 'bn' ? `সংলাপ (${detailedStats.dialogueWords} শব্দ)` : `Dialogue (${detailedStats.dialogueWords} words)`}
+              />
+              <div
+                className="ratio-fill-narrative"
+                style={{ width: `${100 - detailedStats.dialogueRatio}%` }}
+                title={lang === 'bn' ? `বর্ণনা (${detailedStats.narrativeWords} শব্দ)` : `Narrative (${detailedStats.narrativeWords} words)`}
+              />
+            </div>
+            <div className="dialogue-ratio-legend">
+              <span className="legend-item"><span className="dot dialogue-dot" /> {lang === 'bn' ? `সংলাপ (${formatNumber(detailedStats.dialogueWords)} শব্দ)` : `Dialogue (${formatNumber(detailedStats.dialogueWords)} words)`}</span>
+              <span className="legend-item"><span className="dot narrative-dot" /> {lang === 'bn' ? `বর্ণনা (${formatNumber(detailedStats.narrativeWords)} শব্দ)` : `Narrative (${formatNumber(detailedStats.narrativeWords)} words)`}</span>
             </div>
           </div>
+
+          {/* Sentence Cadence (Rhythm) */}
+          <div className="analytics-section-card">
+            <div className="analytics-header-row">
+              <strong>{lang === 'bn' ? 'বাক্যের ছন্দ ও দৈর্ঘ্য বিশ্লেষণ' : 'Sentence Cadence & Rhythm'}</strong>
+            </div>
+            <div className="cadence-grid">
+              <div className="cadence-pill short">
+                <strong>{formatNumber(detailedStats.sentenceCadence.short)}</strong>
+                <small>{lang === 'bn' ? 'ছোট বাক্য (< ১০ শব্দ)' : 'Short (< 10 words)'}</small>
+              </div>
+              <div className="cadence-pill medium">
+                <strong>{formatNumber(detailedStats.sentenceCadence.medium)}</strong>
+                <small>{lang === 'bn' ? 'মাঝারি (১০ - ২৫ শব্দ)' : 'Medium (10 - 25)'}</small>
+              </div>
+              <div className="cadence-pill long">
+                <strong>{formatNumber(detailedStats.sentenceCadence.long)}</strong>
+                <small>{lang === 'bn' ? 'দীর্ঘ বাক্য (> ২৫ শব্দ)' : 'Long (> 25 words)'}</small>
+              </div>
+            </div>
+          </div>
+
+          {/* Overused Words Detector */}
+          {detailedStats.overusedWords.length > 0 && (
+            <div className="analytics-section-card">
+              <div className="analytics-header-row">
+                <strong>{lang === 'bn' ? 'পুনরাবৃত্তি শব্দ ট্র্যাকার (Overused Words)' : 'Frequently Repeated Words'}</strong>
+                <small>{lang === 'bn' ? 'বিকল্প শব্দ প্রয়োগ করে লেখার মান বাড়ান' : 'Consider synonyms for variety'}</small>
+              </div>
+              <div className="overused-words-list">
+                {detailedStats.overusedWords.map((ow: { word: string; count: number; percentage: number; alternatives: string[] }, idx: number) => (
+                  <div key={idx} className="overused-word-item">
+                    <div className="ow-meta">
+                      <span className="ow-word">"{ow.word}"</span>
+                      <span className="ow-count">{lang === 'bn' ? `${formatNumber(ow.count)} বার (${ow.percentage}%)` : `${ow.count} times (${ow.percentage}%)`}</span>
+                    </div>
+                    {ow.alternatives.length > 0 && (
+                      <div className="ow-alts">
+                        <small>{lang === 'bn' ? 'বিকল্প:' : 'Synonyms:'}</small>
+                        {ow.alternatives.map((alt: string, aIdx: number) => (
+                          <span key={aIdx} className="alt-tag">{alt}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="stats-export-actions">
             <button className="primary" onClick={downloadTxt}>
               <Download size={15} /> {t.btnExportTxt}

@@ -74,6 +74,7 @@ export type Project = {
   genre: string;
   language: string;
   chapters: Chapter[];
+  codex?: { characters: any[]; lore: any[] };
   snapshots?: Record<string, unknown[]>;
   comments?: Record<string, unknown[]>;
   edits?: Record<string, unknown[]>;
