@@ -1,62 +1,38 @@
-# ?? Lipishilpo (?????????) � Manuscript Studio & Bengali Proofreading Engine
+# লিপি শিল্প (LipiShilpo)
 
-**Lipishilpo** is a distraction-free manuscript studio, book writing environment, and advanced Bengali & English proofreading plugin for WordPress. Designed specifically for authors, editors, novelists, and content creators.
+**বাংলা সাহিত্যিক, লেখক ও প্রকাশকদের জন্য পূর্ণাঙ্গ ও আন্তর্জাতিক মানের পাণ্ডুলিপি রচনা স্টুডিও।**
 
----
-
-## ? Features (Free Version)
-
-- **?? Complete Manuscript & Chapter Management:** Create multi-chapter books, novels, essays, and stories with seamless autosave directly to your WordPress backend.
-- **???? 100+ Bangla Academy Proofreading Rules:**
-  - Standard spelling corrections (?????? ?-??? ???? ????? ?-???, ?-??? ? ?-??? ?????, ???????).
-  - Sadhu-Cholit (????-????) mixed diction detection.
-  - Redundancy and pleonasm detection (??????? ???: *?? ??????*, *?????????*, *???????*, *????????*, etc.).
-  - Over-derivation and noun-to-adjective misuses (????????: *????????*, *??????*, *??????*, *???????*, etc.).
-- **? Live Background Auto-Proofread:** Real-time, non-blocking proofreading scans as you write with a 1-click toggle.
-- **? Smart Typography Formatter:** 1-click conversion to typographic curly quotes (�...�), proper em-dashes (�), ellipsis (�), and punctuation spacing.
-- **?? Sentence Complexity & Long Sentence Analysis:** Flags sentences exceeding 35 words to help maintain reader engagement.
-- **?? Margin Notes & In-Text Annotations:** Highlight phrases to attach editorial comments and resolve them as you polish.
-- **?? Chapter Snapshots (Version History):** Save checkpoints before major rewrites and restore with complete undo history.
-- **?? Distraction-Free Focus Mode & Themes:** Fullscreen writing mode with Light (Paper), Sepia (Parchment), and Dark (Night) themes.
-- **?? 1-Click English ? Bengali Interface:** Instant bilingual UI switching.
-- **?? Free Plain Text (.txt) & Markdown (.md) Manuscript Export.**
+LipiShilpo হলো ওয়ার্ডপ্রেসের জন্য একটি বিপ্লবী রাইটিং ও বুক ফরম্যাটিং স্যুট। এতে রয়েছে জেন ফোকাস রাইটিং পরিবেশ, স্মার্ট টাইপোগ্রাফি, অধ্যায় ব্যবস্থাপনা, ক্যারেক্টার ও ওয়ার্ল্ড কোডেক্স এবং গভীর সাহিত্যিক অ্যানালিটিক্স।
 
 ---
 
-## ?? Lipishilpo Pro Extension
+## 🚀 প্রধান বৈশিষ্ট্যসমূহ
 
-Advanced features are available via the separate **Lipishilpo Pro** companion plugin:
-- **?? Audio Proofreading (Text-to-Speech):** Natural voice read-aloud in Bengali & English with 0.75x�1.5x speed controls and live sentence tracking.
-- **?? Deep AI Manuscript Analysis & Editing:** Powered by OpenAI GPT-4o � Chapter phrasing polish, story architecture, pacing analysis, and whole-book continuity checking.
-- **?? Publication-Ready Book Exports:** Formatted DOCX (Word), PDF (with embedded Bengali fonts), and EPUB eBooks with customizable margins, typography, and Table of Contents.
-
----
-
-## ?? Installation
-
-1. Upload the lipishilpo folder to your WordPress /wp-content/plugins/ directory.
-2. Activate the plugin through the **Plugins** menu in WordPress.
-3. Access **Lipishilpo** from the WordPress admin menu or full-screen studio link.
+- 🎯 **Zen & Deep Focus Mode:** টাইপরাইটার স্ক্রোলিং এবং ৫টি প্রিমিয়াম পেপার থিম (Light, Sepia, Parchment, Slate Dark, OLED Black)।
+- ✍️ **Floating Selection Bubble:** সরাসরি টেক্সটের ওপর ড্রাইভেন ফ্লোটিং টুলবার।
+- 🔤 **Smart Bangla Typography:** স্বয়ংক্রিয় বাঁকা কোটেশন (`“”`, `‘’`), এম-ড্যাশ (`—`), এবং ইলিপসিস (`…`) রূপান্তর।
+- 📂 **Manuscript Organizer:** সাইডবার ড্র্যাগ অ্যান্ড ড্রপ অধ্যায় বিন্যাস এবং ৪-ধাপের স্ট্যাটাস ওয়ার্কফ্লো (Draft, In Progress, Revised, Final)।
+- 🔍 **Global Search & Replace (`Ctrl+Shift+F`):** সমগ্র বইয়ের সমস্ত অধ্যায়ে একসাথে অনুসন্ধান ও পরিবর্তনের আন্তর্জাতিক সুবিধা।
+- 👥 **World-Building Codex:** চরিত্র প্রোফাইলিং ও বিশ্বের নিয়মকানুন সংরক্ষণের নিবেদিত প্যানেল।
+- 📊 **Literary Analytics:** সংলাপ বনাম বর্ণনা অনুপাত, বাক্যের গতিশীলতা ছন্দ, এবং অতিব্যবহৃত শব্দ ডিটেক্টর ও প্রতিশব্দ সাজেশন।
+- 🔄 **Bangla Converter Engine:** বিজয় ↔ ইউনিকোড এবং অভ্র কনভার্সন টুলস।
+- 💾 **Universal Export:** DOCX, JSON, HTML, TXT ও Markdown এক্সপোর্ট।
 
 ---
 
-## ??? Development
+## 📦 ইনস্টলেশন ও ডেভেলপমেন্ট
 
-`ash
-# Navigate to frontend source
-cd src
-
-# Install dependencies
-npm install
-
-# Run development server
-npm run dev
-
-# Build production assets
-npm run build
-`
+1. `wp-content/plugins/lipishilpo` ডিরেক্টরিতে প্লাগইনটি রাখুন।
+2. ওয়ার্ডপ্রেস অ্যাডমিন প্যানেল থেকে **LipiShilpo** সক্রিয় (Activate) করুন।
+3. ক্লায়েন্ট অ্যাপ বিল্ড করতে:
+   ```bash
+   cd src
+   npm install
+   npm run build
+   ```
 
 ---
 
-## ?? License
-GPLv2 or later.
+## 📄 লাইসেন্স ও ডকুমেন্টেশন
+- বিস্তারিত ফ্রি ফিচারের জন্য দেখুন: [FREE_FEATURES.md](FREE_FEATURES.md)
+- বিস্তারিত প্রো ফিচারের জন্য দেখুন: [PRO_FEATURES.md](PRO_FEATURES.md)

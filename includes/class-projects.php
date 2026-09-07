@@ -142,10 +142,6 @@ class Lipishilpo_Projects {
 		);
 	}
 
-	public static function require_login() {
-		return self::require_writer();
-	}
-
 	public static function require_writer() {
 		if ( ! is_user_logged_in() ) {
 			return new WP_Error( 'lipishilpo_auth', __( 'Please sign in to continue.', 'lipishilpo' ), array( 'status' => 401 ) );
@@ -198,7 +194,16 @@ class Lipishilpo_Projects {
 		if ( ! $post || $post->post_type !== self::POST_TYPE ) {
 			return false;
 		}
-		return (int) $post->post_author === get_current_user_id();
+		$is_owner = (int) $post->post_author === get_current_user_id();
+		/**
+		 * Filters whether the current user has access to edit/view a manuscript.
+		 * Default: strictly author-only for creative manuscript privacy.
+		 *
+		 * @param bool $is_owner Whether current user is the post author.
+		 * @param int  $post_id  The manuscript post ID.
+		 * @param int  $user_id  The current user ID.
+		 */
+		return (bool) apply_filters( 'lipishilpo_can_access_project', $is_owner, $post_id, get_current_user_id() );
 	}
 
 	private static function sanitize_chapters( $chapters ) {
@@ -337,9 +342,9 @@ class Lipishilpo_Projects {
 			'genre'     => get_post_meta( $post->ID, self::META_GENRE, true ) ?: 'General Writing',
 			'language'  => get_post_meta( $post->ID, self::META_LANGUAGE, true ) ?: 'English',
 			'chapters'  => $chapters,
-			'snapshots' => is_array( $snapshots ) ? $snapshots : (object) array(),
-			'comments'  => is_array( $comments ) ? $comments : (object) array(),
-			'edits'     => is_array( $edits ) ? $edits : (object) array(),
+			'snapshots' => ! empty( $snapshots ) && is_array( $snapshots ) ? (object) $snapshots : (object) array(),
+			'comments'  => ! empty( $comments ) && is_array( $comments ) ? (object) $comments : (object) array(),
+			'edits'     => ! empty( $edits ) && is_array( $edits ) ? (object) $edits : (object) array(),
 			'created'   => $post->post_date,
 			'modified'  => $post->post_modified,
 		);
@@ -388,6 +393,22 @@ class Lipishilpo_Projects {
 			return new WP_Error( 'lipishilpo_invalid', __( 'Project title is required.', 'lipishilpo' ), array( 'status' => 400 ) );
 		}
 
+		if ( empty( $chapters ) ) {
+			$chapters = array(
+				array(
+					'id'    => wp_generate_uuid4(),
+					'title' => 'Chapter 1',
+					'text'  => '',
+					'notes' => '',
+				),
+			);
+		}
+
+		$limit_error = self::validate_chapter_limits( $chapters );
+		if ( $limit_error ) {
+			return $limit_error;
+		}
+
 		$post_id = wp_insert_post(
 			array(
 				'post_type'   => self::POST_TYPE,
@@ -402,28 +423,12 @@ class Lipishilpo_Projects {
 			return new WP_Error( 'lipishilpo_db', __( 'Failed to create project.', 'lipishilpo' ), array( 'status' => 500 ) );
 		}
 
-		if ( empty( $chapters ) ) {
-			$chapters = array(
-				array(
-					'id'    => wp_generate_uuid4(),
-					'title' => 'Chapter 1',
-					'text'  => '',
-					'notes' => '',
-				),
-			);
-		}
-
-		$limit_error = self::validate_chapter_limits( $chapters );
-		if ( $limit_error ) {
-			wp_delete_post( $post_id, true );
-			return $limit_error;
-		}
-
 		update_post_meta( $post_id, self::META_GENRE, $genre );
 		update_post_meta( $post_id, self::META_LANGUAGE, $language );
 		update_post_meta( $post_id, self::META_CHAPTERS, $chapters );
 		update_post_meta( $post_id, self::META_SNAPSHOTS, array() );
 		update_post_meta( $post_id, self::META_COMMENTS, array() );
+		update_post_meta( $post_id, self::META_EDITS, array() );
 
 		$response = rest_ensure_response( self::format_project( get_post( $post_id ) ) );
 		$response->set_status( 201 );

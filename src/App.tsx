@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   Feather, BookOpen, Plus, FileText, Library, BarChart3,
   LayoutTemplate, ChevronRight, Download, CheckCheck,
@@ -7,9 +7,10 @@ import {
   Maximize2, Minimize2, Sun, Moon, Coffee, History, Target,
   MessageSquare, MessageSquarePlus, CheckCircle, Eye, Edit3,
   BookA, Share2, StickyNote, FileUp,
+  Bold, Italic, Heading2, Quote, List, Box, Bookmark, GripVertical, Replace,
 } from 'lucide-react';
 import {
-  type Project, type Chapter,
+  type Project, type Chapter, type ChapterStatus,
   fetchProjects, createProject, updateProject, deleteProject,
   fetchPrefs, updatePrefs,
 } from './api';
@@ -26,6 +27,14 @@ import { PomodoroTimer } from './components/PomodoroTimer';
 import { TypographyControl } from './components/TypographyControl';
 import { PublishModal } from './components/PublishModal';
 import { ConjunctsModal } from './components/ConjunctsModal';
+import { FloatingBubbleToolbar } from './components/FloatingBubbleToolbar';
+import { ProofreadWalkthroughBar } from './components/ProofreadWalkthroughBar';
+import { PersonalDictionaryModal } from './components/PersonalDictionaryModal';
+import { renderFormattedSpan } from './lib/render-review';
+import { GlobalFindReplaceModal } from './components/GlobalFindReplaceModal';
+import { CodexPanel, type ProjectCodex } from './components/CodexPanel';
+import { analyzeManuscript } from './lib/analytics';
+import { handleSmartKeyDown } from './lib/smart-typography';
 import { exportProjectToJson } from './lib/project-backup';
 import { importManuscriptFile, ManuscriptImportError } from './lib/manuscript-import';
 import { createId } from './lib/id';
@@ -49,7 +58,7 @@ export interface ChapterComment {
   resolved: boolean;
 }
 
-export type EditorTheme = 'light' | 'sepia' | 'dark';
+export type EditorTheme = 'light' | 'sepia' | 'parchment' | 'dark' | 'oled';
 export type EditorMode = 'edit' | 'review';
 
 export default function App() {
@@ -78,7 +87,7 @@ export default function App() {
     } catch {}
     return 'projects';
   });
-  const [tabKey, setTabKey] = useState<'proofread' | 'notes' | 'comments' | 'snapshots' | ProTabKey>('proofread');
+  const [tabKey, setTabKey] = useState<'proofread' | 'codex' | 'notes' | 'comments' | 'snapshots' | ProTabKey>('proofread');
   const [proApi, setProApi] = useState(() => getLipishilpoPro());
   const proSlot = useRef<HTMLDivElement>(null);
   const [modal, setModal] = useState(false);
@@ -90,13 +99,39 @@ export default function App() {
   // Focus mode & Theme & Mode (Edit vs Visual Review)
   const [focusMode, setFocusMode] = useState(false);
   const [editorMode, setEditorMode] = useState<EditorMode>('edit');
+  const [showWalkthrough, setShowWalkthrough] = useState(false);
+  const [walkthroughIndex, setWalkthroughIndex] = useState(0);
+  const [showDictModal, setShowDictModal] = useState(false);
+
   const [theme, setTheme] = useState<EditorTheme>(() => {
     try {
       const saved = localStorage.getItem('lipishilpo_theme') as EditorTheme;
-      if (saved === 'light' || saved === 'sepia' || saved === 'dark') return saved;
+      if (saved === 'light' || saved === 'sepia' || saved === 'parchment' || saved === 'dark' || saved === 'oled') return saved;
     } catch {}
     return 'light';
   });
+
+  const [typewriterMode, setTypewriterMode] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('lipishilpo_typewriter') === '1';
+    } catch {
+      return false;
+    }
+  });
+
+  const [smartTyping, setSmartTyping] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('lipishilpo_smart_typing');
+      return saved !== null ? saved === '1' : true;
+    } catch {
+      return true;
+    }
+  });
+
+  const [bubblePosition, setBubblePosition] = useState<{ top: number; left: number } | null>(null);
+  const [showGlobalFindModal, setShowGlobalFindModal] = useState(false);
+  const [draggedChapterIndex, setDraggedChapterIndex] = useState<number | null>(null);
+  const paperContainerRef = useRef<HTMLDivElement>(null);
 
   const [dailyTarget, setDailyTarget] = useState(500);
   const [goalModalOpen, setGoalModalOpen] = useState(false);
@@ -183,9 +218,19 @@ export default function App() {
   const chapter = project?.chapters.find((c) => c.id === cid) ?? project?.chapters[0] ?? null;
   const text = chapter?.text ?? '';
   const stats: ManuscriptStats = calculateStats(text);
+  const detailedStats = useMemo(() => analyzeManuscript(text), [text]);
   const manuscriptWords = project
     ? project.chapters.reduce((n, c) => n + calculateStats(c.text).words, 0)
     : 0;
+
+  const healthScore = useMemo(() => {
+    if (!text.trim()) return 100;
+    const words = text.trim().split(/\s+/).length;
+    const issueCount = (issues || []).filter((i) => !ignored.includes(i.from) && !ignored.includes(i.id)).length;
+    if (issueCount === 0) return 100;
+    const deduction = Math.min(60, Math.round((issueCount / Math.max(15, words)) * 100 * 2.5));
+    return Math.max(40, 100 - deduction);
+  }, [text, issues, ignored]);
 
   useEffect(() => {
     if (window.LipishilpoPro) {
@@ -550,16 +595,125 @@ export default function App() {
     setNotice(t.noticeCommentDeleted);
   }
 
+  function adjustTypewriterScroll() {
+    if (!typewriterMode || !editor.current || !paperContainerRef.current) return;
+    const textarea = editor.current;
+    const container = paperContainerRef.current;
+    
+    // Calculate approximate line position
+    const textBeforeCursor = textarea.value.substring(0, textarea.selectionStart);
+    const lineCount = textBeforeCursor.split('\n').length;
+    const computed = window.getComputedStyle(textarea);
+    const lineHeight = parseFloat(computed.lineHeight) || (parseFloat(computed.fontSize) * 1.8) || 28;
+    
+    const cursorTopInTextarea = lineCount * lineHeight;
+    const textareaOffsetTop = textarea.offsetTop;
+    const targetScrollTop = textareaOffsetTop + cursorTopInTextarea - (container.clientHeight / 2);
+    
+    container.scrollTo({
+      top: Math.max(0, targetScrollTop),
+      behavior: 'smooth',
+    });
+  }
+
   function handleSelectTextInEditor() {
     if (!editor.current) return;
-    const start = editor.current.selectionStart;
-    const end = editor.current.selectionEnd;
+    const textarea = editor.current;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
     if (start !== end) {
       const selected = text.slice(start, end).trim();
       if (selected.length > 0 && selected.length < 300) {
         setSelectedQuote(selected);
       }
+
+      // Calculate coordinates for floating bubble
+      const rect = textarea.getBoundingClientRect();
+      const textBefore = textarea.value.substring(0, start);
+      const lines = textBefore.split('\n');
+      const lineIndex = lines.length;
+      const computed = window.getComputedStyle(textarea);
+      const lineHeight = parseFloat(computed.lineHeight) || 28;
+      
+      const topPos = rect.top + Math.min(lineIndex * lineHeight, rect.height) + window.scrollY;
+      const leftPos = rect.left + (rect.width / 2);
+      setBubblePosition({ top: Math.max(80, topPos - 12), left: leftPos });
+    } else {
+      setBubblePosition(null);
     }
+
+    if (typewriterMode) {
+      adjustTypewriterScroll();
+    }
+  }
+
+  function handleBubbleFormat(format: 'bold' | 'italic' | 'quote' | 'single-quote' | 'h2' | 'h3' | 'emdash' | 'scene-break' | 'mark' | 'comment') {
+    if (format === 'comment') {
+      handleSelectTextInEditor();
+      setShowCommentDialog(true);
+      setBubblePosition(null);
+      return;
+    }
+    
+    if (!editor.current) return;
+    const textarea = editor.current;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selected = text.substring(start, end);
+    let replacement = '';
+    let newCursorPos = start;
+
+    switch (format) {
+      case 'bold':
+        replacement = `**${selected || (lang === 'bn' ? 'গাঢ় লেখা' : 'bold text')}**`;
+        newCursorPos = selected ? end + 4 : start + 2;
+        break;
+      case 'italic':
+        replacement = `*${selected || (lang === 'bn' ? 'বাঁকা লেখা' : 'italic text')}*`;
+        newCursorPos = selected ? end + 2 : start + 1;
+        break;
+      case 'quote':
+        replacement = `“${selected || (lang === 'bn' ? 'উদ্ধৃতি' : 'quote')}”`;
+        newCursorPos = selected ? end + 2 : start + 1;
+        break;
+      case 'single-quote':
+        replacement = `‘${selected || (lang === 'bn' ? 'একক উদ্ধৃতি' : 'quote')}’`;
+        newCursorPos = selected ? end + 2 : start + 1;
+        break;
+      case 'h2':
+        replacement = `\n## ${selected || (lang === 'bn' ? 'উপ-শিরোনাম' : 'Subheading')}\n`;
+        newCursorPos = start + replacement.length;
+        break;
+      case 'h3':
+        replacement = `\n### ${selected || (lang === 'bn' ? 'অনুচ্ছেদ শিরোনাম' : 'Section Heading')}\n`;
+        newCursorPos = start + replacement.length;
+        break;
+      case 'emdash':
+        replacement = `—`;
+        newCursorPos = start + 1;
+        break;
+      case 'scene-break':
+        replacement = `\n\n❖ ❖ ❖\n\n`;
+        newCursorPos = start + replacement.length;
+        break;
+      case 'mark':
+        replacement = `<mark>${selected || (lang === 'bn' ? 'হাইলাইট' : 'highlight')}</mark>`;
+        newCursorPos = selected ? end + 15 : start + 6;
+        break;
+    }
+
+    const nextText = text.substring(0, start) + replacement + text.substring(end);
+    setHistory((h) => [...h.slice(-49), text]);
+    typedTextRef.current = nextText;
+    updateText(nextText, 'type');
+    scheduleManualLog();
+    setChecked(false);
+    setBubblePosition(null);
+
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(newCursorPos, newCursorPos);
+    }, 50);
   }
 
   // ── Theme Switcher ─────────────────────────────────────────────────────────
@@ -568,6 +722,26 @@ export default function App() {
     try {
       localStorage.setItem('lipishilpo_theme', nextTheme);
     } catch {}
+  }
+
+  function toggleTypewriterMode() {
+    setTypewriterMode((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('lipishilpo_typewriter', next ? '1' : '0');
+      } catch {}
+      return next;
+    });
+  }
+
+  function toggleSmartTyping() {
+    setSmartTyping((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('lipishilpo_smart_typing', next ? '1' : '0');
+      } catch {}
+      return next;
+    });
   }
 
   function persistChapterMeta(
@@ -624,6 +798,9 @@ export default function App() {
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
         forceSave();
+      } else if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'F' || e.key === 'f') && view === 'editor') {
+        e.preventDefault();
+        setShowGlobalFindModal(true);
       } else if ((e.ctrlKey || e.metaKey) && e.key === 'f' && view === 'editor') {
         e.preventDefault();
         setShowSearch((prev) => {
@@ -639,7 +816,27 @@ export default function App() {
         setFocusMode(false);
       }
     }
-    window.addEventListener('keydown', handleKeyDown);
+    
+    const handleWalkthroughKeys = (e: KeyboardEvent) => {
+      if (!showWalkthrough || visibleIssues.length === 0) return;
+      if (e.key === 'Escape') {
+        setShowWalkthrough(false);
+      } else if (e.key === 'Tab') {
+        e.preventDefault();
+        setWalkthroughIndex((prev) => (e.shiftKey ? (prev - 1 + visibleIssues.length) % visibleIssues.length : (prev + 1) % visibleIssues.length));
+      } else if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+        const safeIdx = Math.max(0, Math.min(walkthroughIndex, visibleIssues.length - 1));
+        const activeIssue = visibleIssues[safeIdx];
+        if (activeIssue) {
+          e.preventDefault();
+          acceptFix(activeIssue);
+        }
+      }
+    };
+    if (showWalkthrough) {
+      window.addEventListener('keydown', handleWalkthroughKeys);
+    }
+window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [forceSave, view, focusMode]);
 
@@ -745,6 +942,63 @@ export default function App() {
     autosave(updated);
   }
 
+  function applyFormatting(format: 'bold' | 'italic' | 'heading' | 'quote' | 'callout' | 'citation' | 'list' | 'divider') {
+    if (!editor.current) return;
+    const textarea = editor.current;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selected = text.substring(start, end);
+    let replacement = '';
+    let newCursorPos = start;
+
+    switch (format) {
+      case 'bold':
+        replacement = `**${selected || (lang === 'bn' ? 'গাঢ় লেখা' : 'bold text')}**`;
+        newCursorPos = selected ? end + 4 : start + 2;
+        break;
+      case 'italic':
+        replacement = `*${selected || (lang === 'bn' ? 'বাঁকা লেখা' : 'italic text')}*`;
+        newCursorPos = selected ? end + 2 : start + 1;
+        break;
+      case 'heading':
+        replacement = `\n## ${selected || (lang === 'bn' ? 'উপ-শিরোনাম' : 'Subheading')}\n`;
+        newCursorPos = start + replacement.length;
+        break;
+      case 'quote':
+        replacement = `\n> ${selected || (lang === 'bn' ? 'উদ্ধৃতি বা উক্তি এখানে লিখুন...' : 'Quote or epigraph here...')}\n`;
+        newCursorPos = start + replacement.length;
+        break;
+      case 'callout':
+        replacement = `\n:::box[${lang === 'bn' ? 'ইসলামের আলোকে' : 'Special Note'}]\n${selected || (lang === 'bn' ? 'বক্সের বিষয়বস্তু বা তথ্য এখানে লিখুন...' : 'Box content goes here...')}\n:::\n`;
+        newCursorPos = start + replacement.length;
+        break;
+      case 'citation':
+        replacement = `\n${lang === 'bn' ? 'তথ্যসূত্র' : 'Reference'}: ${selected || (lang === 'bn' ? 'উৎস বা রেফারেন্সের বিবরণ' : 'Citation details')}\n`;
+        newCursorPos = start + replacement.length;
+        break;
+      case 'list':
+        replacement = `\n* ${selected || (lang === 'bn' ? 'প্রথম পয়েন্ট' : 'First item')}\n* ${lang === 'bn' ? 'দ্বিতীয় পয়েন্ট' : 'Second item'}\n`;
+        newCursorPos = start + replacement.length;
+        break;
+      case 'divider':
+        replacement = `\n---\n`;
+        newCursorPos = start + replacement.length;
+        break;
+    }
+
+    const nextText = text.substring(0, start) + replacement + text.substring(end);
+    setHistory((h) => [...h.slice(-49), text]);
+    typedTextRef.current = nextText;
+    updateText(nextText, 'type');
+    scheduleManualLog();
+    setChecked(false);
+
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(newCursorPos, newCursorPos);
+    }, 50);
+  }
+
   function selectChapter(id: string) {
     flushManualEdits();
     setCid(id);
@@ -784,6 +1038,80 @@ export default function App() {
     );
     setProjects(updated);
     autosave(updated);
+  }
+
+  function reorderChapters(fromIndex: number, toIndex: number) {
+    if (!project || fromIndex === toIndex) return;
+    if (fromIndex < 0 || fromIndex >= project.chapters.length || toIndex < 0 || toIndex >= project.chapters.length) return;
+
+    const newChapters = [...project.chapters];
+    const [moved] = newChapters.splice(fromIndex, 1);
+    newChapters.splice(toIndex, 0, moved);
+
+    const updated = projects.map((p) =>
+      p.id === project.id ? { ...p, chapters: newChapters } : p
+    );
+    setProjects(updated);
+    autosave(updated);
+  }
+
+  function updateChapterStatus(chapterId: string, status: ChapterStatus) {
+    if (!project) return;
+    const newChapters = project.chapters.map((c) =>
+      c.id === chapterId ? { ...c, status } : c
+    );
+    const updated = projects.map((p) =>
+      p.id === project.id ? { ...p, chapters: newChapters } : p
+    );
+    setProjects(updated);
+    autosave(updated);
+  }
+
+  function handleGlobalReplaceAll(updatedChapters: Chapter[], replaceCount: number) {
+    if (!project) return;
+    const updated = projects.map((p) =>
+      p.id === project.id ? { ...p, chapters: updatedChapters } : p
+    );
+    setProjects(updated);
+    autosave(updated);
+
+    // If current chapter was updated, update local text state too
+    const currentUpdated = updatedChapters.find((c) => c.id === cid);
+    if (currentUpdated) {
+      typedTextRef.current = currentUpdated.text;
+      updateText(currentUpdated.text, 'tool');
+    }
+    setNotice(
+      lang === 'bn'
+        ? `সমগ্র বইয়ের ${replaceCount} টি জায়গায় প্রতিস্থাপন সম্পন্ন হয়েছে!`
+        : `Replaced ${replaceCount} instance(s) across entire book!`
+    );
+  }
+
+  function handleUpdateCodex(nextCodex: ProjectCodex) {
+    if (!project) return;
+    const updated = projects.map((p) =>
+      p.id === project.id ? { ...p, codex: nextCodex } : p
+    );
+    setProjects(updated);
+    autosave(updated);
+  }
+
+  function handleInsertTextFromCodex(charOrLoreName: string) {
+    if (!editor.current) return;
+    const textarea = editor.current;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const newText = text.substring(0, start) + charOrLoreName + text.substring(end);
+    setHistory((h) => [...h.slice(-49), text]);
+    typedTextRef.current = newText;
+    updateText(newText, 'type');
+    scheduleManualLog();
+    setChecked(false);
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + charOrLoreName.length, start + charOrLoreName.length);
+    }, 50);
   }
 
   function handleDeleteChapter(chapterId: string) {
@@ -1097,6 +1425,51 @@ ${chaptersHtml}
   const hasDariSpace = visibleIssues.some((i) => i.id === '__dari_space');
   const safeFixesCount = visibleIssues.filter((i) => !i.optional && i.id !== '__guruchandali').length;
 
+    function handleQuickAddDictionary(word: string) {
+    const clean = word.trim();
+    if (!clean) return;
+    const nextDict = Array.from(new Set([...ignored, clean]));
+    setIgnored(nextDict);
+    try {
+      localStorage.setItem('lipishilpo_personal_dict', JSON.stringify(nextDict));
+    } catch {}
+    setNotice(lang === 'bn' ? `"${clean}" ব্যক্তিগত শব্দকোষে যোগ করা হয়েছে` : `"${clean}" added to personal dictionary`);
+  }
+
+  function handleFixCategory(category: 'spelling' | 'grammar' | 'punctuation') {
+    if (!chapter || !text.trim()) return;
+    const catIssues = visibleIssues.filter((i) => i.category === category && !i.optional);
+    if (catIssues.length === 0) return;
+
+    const prepared = catIssues.map((issue) => {
+      const { to, customized } = resolvedTo(issue);
+      return {
+        issue: {
+          ...issue,
+          to,
+          optional: false,
+          occurrences: (issue.occurrences || []).map((o) => ({ ...o, to })),
+        } as ProofMatch,
+        customized,
+      };
+    });
+
+    setHistory((h) => [...h.slice(-49), text]);
+    const fixedText = applyAllFixes(text, prepared.map((p) => p.issue));
+    updateText(fixedText);
+    recordEdits(prepared.map(({ issue, customized }) => ({
+      kind: customized ? 'custom' : kindFromIssue(issue),
+      from: issue.from,
+      to: issue.to,
+      why: issue.why,
+      count: issue.count || issue.occurrences?.length || 1,
+      customized,
+    })));
+
+    setIssues((prev) => prev.filter((i) => i.category !== category || i.optional));
+    setNotice(lang === 'bn' ? `${catIssues.length}টি সংশোধন সফলভাবে প্রয়োগ করা হয়েছে!` : `${catIssues.length} fixes applied successfully!`);
+  }
+
   function handleAcceptAllFixes() {
     if (!chapter || !text.trim()) return;
     const safeFixes = visibleIssues.filter((i) => !i.optional);
@@ -1130,6 +1503,7 @@ ${chaptersHtml}
 
   const freeTabs = [
     { key: 'proofread' as const, label: t.tabProofread, pro: false },
+    { key: 'codex' as const, label: lang === 'bn' ? 'কডেক্স' : 'Codex', pro: false },
     { key: 'notes' as const, label: t.tabNotes, pro: false },
     { key: 'comments' as const, label: t.tabComments, pro: false },
     { key: 'snapshots' as const, label: t.tabSnapshots, pro: false },
@@ -1179,34 +1553,75 @@ ${chaptersHtml}
               </button>
 
               <div className="chapters">
-                {project.chapters.map((c, i) => (
-                  <div key={c.id} className={'chapter-item ' + (c.id === chapter?.id ? 'selected' : '')}>
-                    <button
-                      className="chapter-btn"
-                      onClick={() => selectChapter(c.id)}
+                {project.chapters.map((c, i) => {
+                  const status = c.status || 'draft';
+                  const nextStatusMap: Record<ChapterStatus, ChapterStatus> = {
+                    draft: 'in_progress',
+                    in_progress: 'revised',
+                    revised: 'final',
+                    final: 'draft',
+                  };
+                  const statusLabel = status === 'in_progress' ? t.statusInProgress : status === 'revised' ? t.statusRevised : status === 'final' ? t.statusFinal : t.statusDraft;
+
+                  return (
+                    <div
+                      key={c.id}
+                      draggable
+                      onDragStart={() => setDraggedChapterIndex(i)}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        if (draggedChapterIndex !== null && draggedChapterIndex !== i) {
+                          reorderChapters(draggedChapterIndex, i);
+                          setDraggedChapterIndex(null);
+                        }
+                      }}
+                      onDragEnd={() => setDraggedChapterIndex(null)}
+                      className={'chapter-item ' + (c.id === chapter?.id ? 'selected ' : '') + (draggedChapterIndex === i ? 'dragging ' : '')}
                     >
-                      <FileText size={15} />
-                      <span>{formatNumber(i + 1)}. {c.title || t.untitledChapter}</span>
-                    </button>
-                    <div className="chapter-actions">
-                      {i > 0 && (
-                        <button title={t.moveChapterUp} onClick={() => moveChapter(i, 'up')}>
-                          <ChevronUp size={13} />
-                        </button>
-                      )}
-                      {i < project.chapters.length - 1 && (
-                        <button title={t.moveChapterDown} onClick={() => moveChapter(i, 'down')}>
-                          <ChevronDown size={13} />
-                        </button>
-                      )}
-                      {project.chapters.length > 1 && (
-                        <button title={t.deleteChapter} onClick={() => handleDeleteChapter(c.id)}>
-                          <Trash2 size={13} />
-                        </button>
-                      )}
+                      <span className="drag-handle" title={lang === 'bn' ? 'টেনে অধ্যায় সাজান' : 'Drag to reorder'}>
+                        <GripVertical size={13} />
+                      </span>
+                      <button
+                        className="chapter-btn"
+                        onClick={() => selectChapter(c.id)}
+                        title={c.title || t.untitledChapter}
+                      >
+                        <FileText size={15} />
+                        <span>{formatNumber(i + 1)}. {c.title || t.untitledChapter}</span>
+                      </button>
+
+                      {/* Status indicator dot */}
+                      <button
+                        type="button"
+                        className={`chapter-status-dot status-${status}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          updateChapterStatus(c.id, nextStatusMap[status]);
+                        }}
+                        title={`${lang === 'bn' ? 'স্ট্যাটাস পরিবর্তন করুন' : 'Change Status'}: ${statusLabel}`}
+                      />
+
+                      <div className="chapter-actions">
+                        {i > 0 && (
+                          <button title={t.moveChapterUp} onClick={() => moveChapter(i, 'up')}>
+                            <ChevronUp size={13} />
+                          </button>
+                        )}
+                        {i < project.chapters.length - 1 && (
+                          <button title={t.moveChapterDown} onClick={() => moveChapter(i, 'down')}>
+                            <ChevronDown size={13} />
+                          </button>
+                        )}
+                        {project.chapters.length > 1 && (
+                          <button title={t.deleteChapter} onClick={() => handleDeleteChapter(c.id)}>
+                            <Trash2 size={13} />
+                          </button>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
                 <button className="add" onClick={addChapter}>
                   <Plus size={15} /> {t.addChapter}
                 </button>
@@ -1377,6 +1792,18 @@ ${chaptersHtml}
                 </button>
               )}
 
+              {/* Typewriter Scrolling Toggle */}
+              {view === 'editor' && (
+                <button
+                  type="button"
+                  className={'header-icon-btn typewriter-indicator-btn ' + (typewriterMode ? 'active' : '')}
+                  onClick={toggleTypewriterMode}
+                  title={t.typewriterMode}
+                >
+                  <Edit3 size={15} />
+                </button>
+              )}
+
               {/* Theme Switcher */}
               {view === 'editor' && (
                 <div className="theme-switcher">
@@ -1395,11 +1822,25 @@ ${chaptersHtml}
                     <Coffee size={14} />
                   </button>
                   <button
+                    className={'theme-btn ' + (theme === 'parchment' ? 'active' : '')}
+                    onClick={() => handleSetTheme('parchment')}
+                    title={t.themeParchment}
+                  >
+                    <Bookmark size={14} />
+                  </button>
+                  <button
                     className={'theme-btn ' + (theme === 'dark' ? 'active' : '')}
                     onClick={() => handleSetTheme('dark')}
                     title={t.themeDark}
                   >
                     <Moon size={14} />
+                  </button>
+                  <button
+                    className={'theme-btn ' + (theme === 'oled' ? 'active' : '')}
+                    onClick={() => handleSetTheme('oled')}
+                    title={t.themeOled}
+                  >
+                    <Box size={14} />
                   </button>
                 </div>
               )}
@@ -1415,7 +1856,7 @@ ${chaptersHtml}
                 </button>
               )}
 
-              {/* Find & Replace toggle */}
+              {/* Find & Replace toggle (Chapter) */}
               {view === 'editor' && (
                 <button
                   className={'header-icon-btn ' + (showSearch ? 'active' : '')}
@@ -1423,6 +1864,17 @@ ${chaptersHtml}
                   title={t.btnFindReplace}
                 >
                   <Search size={15} />
+                </button>
+              )}
+
+              {/* Global Project-Wide Search & Replace */}
+              {view === 'editor' && (
+                <button
+                  className={'header-icon-btn ' + (showGlobalFindModal ? 'active' : '')}
+                  onClick={() => setShowGlobalFindModal(true)}
+                  title={t.btnGlobalSearch}
+                >
+                  <Replace size={15} />
                 </button>
               )}
 
@@ -1605,6 +2057,19 @@ ${chaptersHtml}
             )}
           </section>
 
+        ) : view === 'docs' ? (
+          <DocsView
+            lang={lang}
+            onOpenEditor={() => setView(project ? 'editor' : 'projects')}
+            onOpenSettings={() => setView('settings')}
+          />
+        ) : view === 'settings' ? (
+          <SettingsView
+            isPro={wpConfig.isPro}
+            lang={lang}
+            onToggleLang={toggleLanguage}
+            onOpenEditor={() => setView(project ? 'editor' : 'projects')}
+          />
         ) : project && chapter ? (
           /* ── Editor View ── */
           <>
@@ -1641,15 +2106,72 @@ ${chaptersHtml}
 
             <div className={`editor-layout ${focusMode ? 'focus-layout' : ''}`}>
               {/* ── Writing area ── */}
-              <section className={`writing theme-${theme}`}>
+              <section ref={paperContainerRef} className={`writing theme-${theme}`}>
+                {showWalkthrough && visibleIssues.length > 0 && (
+                  <ProofreadWalkthroughBar
+                    lang={lang}
+                    issues={visibleIssues}
+                    currentIndex={walkthroughIndex}
+                    onSelectIndex={(idx) => {
+                      setWalkthroughIndex(idx);
+                      const issue = visibleIssues[idx];
+                      if (issue?.occurrences?.[0]) {
+                        const occ = issue.occurrences[0];
+                        if (editorMode === 'edit') {
+                          editor.current?.focus();
+                          editor.current?.setSelectionRange(occ.start, occ.end);
+                        }
+                      }
+                    }}
+                    onAcceptFix={(issue) => acceptFix(issue)}
+                    onAddToDictionary={(word) => handleQuickAddDictionary(word)}
+                    onClose={() => setShowWalkthrough(false)}
+                  />
+                )}
+                {/* Floating Bubble Toolbar for selected text */}
+                <FloatingBubbleToolbar
+                  position={bubblePosition}
+                  lang={lang}
+                  onFormat={handleBubbleFormat}
+                />
+
                 <div className="toolbar">
-                  <span>
-                    <FileText size={16} />
-                    {t.chapterLabel(project.chapters.findIndex((c) => c.id === chapter.id) + 1)}
-                  </span>
+                  <div className="chapter-label-group">
+                    <span>
+                      <FileText size={16} />
+                      {t.chapterLabel(project.chapters.findIndex((c) => c.id === chapter.id) + 1)}
+                    </span>
+
+                    <select
+                      value={chapter.status || 'draft'}
+                      onChange={(e) => updateChapterStatus(chapter.id, e.target.value as ChapterStatus)}
+                      className={`chapter-status-select status-${chapter.status || 'draft'}`}
+                      title={lang === 'bn' ? 'অধ্যায়ের অবস্থা' : 'Chapter Status'}
+                    >
+                      <option value="draft">{t.statusDraft}</option>
+                      <option value="in_progress">{t.statusInProgress}</option>
+                      <option value="revised">{t.statusRevised}</option>
+                      <option value="final">{t.statusFinal}</option>
+                    </select>
+                  </div>
 
                   {/* Mode switcher: Edit vs Visual Review */}
-                  <div className="mode-switcher-group">
+                  <button
+                      type="button"
+                      className={`manuscript-health-pill score-${healthScore >= 95 ? 'excellent' : healthScore >= 80 ? 'good' : 'warning'}`}
+                      onClick={() => {
+                        setTabKey('proofread');
+                        if (!checked) void runProofread();
+                        setShowWalkthrough((prev) => !prev);
+                      }}
+                      title={lang === 'bn' ? 'পাণ্ডুলিপির নির্ভুলতা স্কোর (ক্লিক করে ওয়াকথ্রু শুরু করুন)' : 'Manuscript Health Score (Click to toggle walkthrough)'}
+                    >
+                      <Sparkles size={13} />
+                      <span>{lang === 'bn' ? `স্বাস্থ্য: ${formatNumber(healthScore)}%` : `Health: ${healthScore}%`}</span>
+                      {healthScore === 100 && <span className="perfect-badge">✨</span>}
+                    </button>
+
+                    <div className="mode-switcher-group">
                     <button
                       className={'mode-btn ' + (editorMode === 'edit' ? 'active' : '')}
                       onClick={() => { setEditorMode('edit'); setActivePopover(null); }}
@@ -1764,7 +2286,88 @@ ${chaptersHtml}
                   </div>
                 )}
 
-                <div className="paper">
+                {/* Quick Book & Text Formatting Action Bar */}
+                {editorMode === 'edit' && (
+                  <div className="editor-quick-format-bar">
+                    <div className="format-btn-group">
+                      <button
+                        type="button"
+                        className="format-action-btn"
+                        onClick={() => applyFormatting('bold')}
+                        title={lang === 'bn' ? 'গাঢ় করুন (Bold) **লেখা**' : 'Bold **text**'}
+                      >
+                        <Bold size={13} />
+                      </button>
+                      <button
+                        type="button"
+                        className="format-action-btn"
+                        onClick={() => applyFormatting('italic')}
+                        title={lang === 'bn' ? 'বাঁকা করুন (Italic) *লেখা*' : 'Italic *text*'}
+                      >
+                        <Italic size={13} />
+                      </button>
+                    </div>
+
+                    <span className="format-divider" />
+
+                    <div className="format-btn-group">
+                      <button
+                        type="button"
+                        className="format-action-btn"
+                        onClick={() => applyFormatting('heading')}
+                        title={lang === 'bn' ? 'উপ-শিরোনাম (Subheading) ## সেকশন' : 'Subheading ## Section'}
+                      >
+                        <Heading2 size={13} />
+                        <span>H2</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="format-action-btn"
+                        onClick={() => applyFormatting('quote')}
+                        title={lang === 'bn' ? 'উদ্ধৃতি বা এপিগ্রাফ (Quote) > উক্তি' : 'Quote > Text'}
+                      >
+                        <Quote size={13} />
+                        <span>{lang === 'bn' ? 'উদ্ধৃতি' : 'Quote'}</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="format-action-btn highlight-box"
+                        onClick={() => applyFormatting('callout')}
+                        title={lang === 'bn' ? 'ইসলামের আলোকে / তথ্য বক্স :::box' : 'Callout Box :::box'}
+                      >
+                        <Box size={13} />
+                        <span>{lang === 'bn' ? 'তথ্য/ইসলামিক বক্স' : 'Box'}</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="format-action-btn"
+                        onClick={() => applyFormatting('citation')}
+                        title={lang === 'bn' ? 'তথ্যসূত্র বা সাইটেশন তথ্যসূত্র:' : 'Citation / Source'}
+                      >
+                        <Bookmark size={13} />
+                        <span>{lang === 'bn' ? 'তথ্যসূত্র' : 'Citation'}</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="format-action-btn"
+                        onClick={() => applyFormatting('list')}
+                        title={lang === 'bn' ? 'তালিকা বা পয়েন্ট * পয়েন্ট' : 'Bullet List * item'}
+                      >
+                        <List size={13} />
+                      </button>
+                      <button
+                        type="button"
+                        className="format-action-btn"
+                        onClick={() => applyFormatting('divider')}
+                        title={lang === 'bn' ? 'অধ্যায় ডিভাইডার প্রতীক ---' : 'Divider ---'}
+                      >
+                        <span>❖</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <div className={`paper ${typewriterMode ? 'typewriter-mode' : ''}`}>
                   <div className="chapter-kicker">
                     {t.chapterKicker(project.chapters.findIndex((c) => c.id === chapter.id) + 1)}
                   </div>
@@ -1789,6 +2392,25 @@ ${chaptersHtml}
                       onMouseUp={handleSelectTextInEditor}
                       onKeyUp={handleSelectTextInEditor}
                       onSelect={handleSelectTextInEditor}
+                      onKeyDown={(e) => {
+                        if (smartTyping) {
+                          const smart = handleSmartKeyDown(e, text);
+                          if (smart) {
+                            setHistory((h) => [...h.slice(-49), text]);
+                            typedTextRef.current = smart.newText;
+                            updateText(smart.newText, 'type');
+                            scheduleManualLog();
+                            setChecked(false);
+                            setTimeout(() => {
+                              if (editor.current) {
+                                editor.current.focus();
+                                editor.current.setSelectionRange(smart.newCursor, smart.newCursor);
+                              }
+                            }, 10);
+                            return;
+                          }
+                        }
+                      }}
                       onChange={(e) => {
                         const next = e.target.value;
                         setHistory((h) => [...h.slice(-49), text]);
@@ -1796,6 +2418,9 @@ ${chaptersHtml}
                         updateText(next, 'type');
                         scheduleManualLog();
                         setChecked(false);
+                        if (typewriterMode) {
+                          adjustTypewriterScroll();
+                        }
                       }}
                       onBlur={flushManualEdits}
                     />
@@ -1858,7 +2483,7 @@ ${chaptersHtml}
 
                         nonOverlap.forEach((s, idx) => {
                           if (s.start > cur) {
-                            elements.push(<span key={`t-${idx}`}>{text.slice(cur, s.start)}</span>);
+                            elements.push(renderFormattedSpan(text.slice(cur, s.start), `t-${idx}`));
                           }
                           const chunk = text.slice(s.start, s.end);
 
@@ -1902,7 +2527,7 @@ ${chaptersHtml}
                         });
 
                         if (cur < text.length) {
-                          elements.push(<span key="t-tail">{text.slice(cur)}</span>);
+                          elements.push(renderFormattedSpan(text.slice(cur), 't-tail'));
                         }
 
                         return elements;
@@ -1942,7 +2567,7 @@ ${chaptersHtml}
                           }}
                         />
                       </div>
-                      <p className="intext-popover-why">{activePopover.match.why}</p>
+                      <p className="intext-popover-why">💡 {activePopover.match.why}</p>
                       <div className="intext-popover-actions">
                         <button
                           className="primary"
@@ -1952,6 +2577,16 @@ ${chaptersHtml}
                           }}
                         >
                           <Check size={13} /> {t.btnAccept}
+                        </button>
+                        <button
+                          className="secondary dict-popover-btn"
+                          onClick={() => {
+                            handleQuickAddDictionary(activePopover.match.from);
+                            setActivePopover(null);
+                          }}
+                          title={lang === 'bn' ? 'ব্যক্তিগত শব্দকোষে যোগ করুন' : 'Add to personal dictionary'}
+                        >
+                          <BookA size={13} /> {lang === 'bn' ? 'শব্দকোষে' : 'Dictionary'}
                         </button>
                         <button
                           className="secondary"
@@ -2042,36 +2677,40 @@ ${chaptersHtml}
                             </button>
                           )}
                         </div>
-                        <div className="proof-toolbar-row">
-                          <label className="auto-check-toggle" title={t.autoCheckLabel}>
-                            <input
-                              type="checkbox"
-                              checked={autoCheck}
-                              onChange={(e) => setAutoCheck(e.target.checked)}
-                            />
-                            <span>{t.autoCheckLabel}</span>
-                          </label>
-                          <label className="auto-check-toggle" title={t.styleHintsLabel}>
-                            <input
-                              type="checkbox"
-                              checked={styleHints}
-                              onChange={(e) => {
-                                const on = e.target.checked;
-                                setStyleHints(on);
-                                try {
-                                  localStorage.setItem('lipishilpo_style_hints', on ? '1' : '0');
-                                } catch {}
-                              }}
-                            />
-                            <span>{t.styleHintsLabel}</span>
-                          </label>
+                        <div className="proof-options-card">
+                          <div className="proof-toggles-grid">
+                            <label className="auto-check-toggle" title={t.autoCheckLabel}>
+                              <input
+                                type="checkbox"
+                                checked={autoCheck}
+                                onChange={(e) => setAutoCheck(e.target.checked)}
+                              />
+                              <span>{lang === 'bn' ? 'স্বয়ংক্রিয় ব্যাকরণ' : t.autoCheckLabel}</span>
+                            </label>
+                            <label className="auto-check-toggle" title={t.styleHintsLabel}>
+                              <input
+                                type="checkbox"
+                                checked={styleHints}
+                                onChange={(e) => {
+                                  const on = e.target.checked;
+                                  setStyleHints(on);
+                                  try {
+                                    localStorage.setItem('lipishilpo_style_hints', on ? '1' : '0');
+                                  } catch {}
+                                }}
+                              />
+                              <span>{lang === 'bn' ? 'ঐচ্ছিক শৈলী' : t.styleHintsLabel}</span>
+                            </label>
+                          </div>
                           <button
+                            type="button"
                             className="typography-quick-btn"
                             onClick={handleFormatTypography}
                             title={t.btnFixTypography}
                             disabled={!text.trim()}
                           >
-                            <Sparkles size={13} /> {t.btnFixTypography}
+                            <Sparkles size={14} />
+                            <span>{lang === 'bn' ? 'টাইপোগ্রাফিক ফাঁকা ও দাড়ি ফিক্স' : t.btnFixTypography}</span>
                           </button>
                         </div>
                       </div>
@@ -2129,11 +2768,60 @@ ${chaptersHtml}
                         <small>{t.thisChapter}</small>
                       </div>
 
-                      {checked && safeFixesCount > 0 && (
-                        <div className="batch-fix-banner">
-                          <button className="primary full" onClick={handleAcceptAllFixes}>
-                            <CheckCheck size={16} /> {t.btnAcceptAll} ({formatNumber(safeFixesCount)})
-                          </button>
+                      {checked && (
+                        <div className="proofread-batch-suite">
+                          {safeFixesCount > 0 && (
+                            <button className="primary full batch-main-btn" onClick={handleAcceptAllFixes}>
+                              <CheckCheck size={16} /> {t.btnAcceptAll} ({formatNumber(safeFixesCount)})
+                            </button>
+                          )}
+
+                          <div className="category-batch-grid">
+                            {visibleIssues.some((i) => i.category === 'spelling' && !i.optional) && (
+                              <button
+                                type="button"
+                                className="cat-batch-btn spelling"
+                                onClick={() => handleFixCategory('spelling')}
+                                title={lang === 'bn' ? 'সব প্রমিত বানান এক ক্লিকে ঠিক করুন' : 'Fix all spelling issues'}
+                              >
+                                🔴 {lang === 'bn' ? 'সব বানান ঠিক করুন' : 'Fix All Spelling'} ({formatNumber(visibleIssues.filter((i) => i.category === 'spelling' && !i.optional).length)})
+                              </button>
+                            )}
+
+                            {(hasSpaces || hasDariSpace || visibleIssues.some((i) => i.category === 'punctuation')) && (
+                              <button
+                                type="button"
+                                className="cat-batch-btn punctuation"
+                                onClick={() => {
+                                  if (hasSpaces || hasDariSpace) handleFormatTypography();
+                                  handleFixCategory('punctuation');
+                                }}
+                                title={lang === 'bn' ? 'সব বিরামচিহ্ন ও স্পেস ঠিক করুন' : 'Fix all punctuation & spaces'}
+                              >
+                                🟣 {lang === 'bn' ? 'বিরামচিহ্ন ও স্পেস' : 'Fix Punctuation'}
+                              </button>
+                            )}
+                          </div>
+
+                          <div className="proof-tools-row">
+                            <button
+                              type="button"
+                              className="proof-tool-btn walkthrough-trigger"
+                              onClick={() => setShowWalkthrough(true)}
+                              title={lang === 'bn' ? 'কীবোর্ড চালিত জেন প্রুফরিডিং শুরু করুন' : 'Start Zen Keyboard Walkthrough'}
+                            >
+                              <Sparkles size={14} /> {lang === 'bn' ? 'জেন ওয়াকথ্রু' : 'Zen Walkthrough'}
+                            </button>
+
+                            <button
+                              type="button"
+                              className="proof-tool-btn dict-trigger"
+                              onClick={() => setShowDictModal(true)}
+                              title={lang === 'bn' ? 'আমার শব্দকোষ ও চরিত্র তালিকা' : 'Personal Dictionary'}
+                            >
+                              <BookA size={14} /> {lang === 'bn' ? `শব্দকোষ (${formatNumber(ignored.length)})` : `Dictionary (${ignored.length})`}
+                            </button>
+                          </div>
                         </div>
                       )}
 
@@ -2283,6 +2971,16 @@ ${chaptersHtml}
                         <p>{t.gentleNote}</p>
                       </div>
                     </>
+                  )}
+
+                  {/* ── Tab: Character & World Codex (Free) ── */}
+                  {tabKey === 'codex' && (
+                    <CodexPanel
+                      codex={project.codex as ProjectCodex}
+                      lang={lang}
+                      onUpdateCodex={handleUpdateCodex}
+                      onInsertText={handleInsertTextFromCodex}
+                    />
                   )}
 
                   {/* ── Tab: Scratchpad / Research Notes (Free) ── */}
@@ -2572,19 +3270,6 @@ ${chaptersHtml}
             )}
             </div>
           </>
-        ) : view === 'docs' ? (
-          <DocsView
-            lang={lang}
-            onOpenEditor={() => setView(project ? 'editor' : 'projects')}
-            onOpenSettings={() => setView('settings')}
-          />
-        ) : view === 'settings' ? (
-          <SettingsView
-            isPro={wpConfig.isPro}
-            lang={lang}
-            onToggleLang={toggleLanguage}
-            onOpenEditor={() => setView(project ? 'editor' : 'projects')}
-          />
         ) : null}
       </main>
 
@@ -2596,35 +3281,111 @@ ${chaptersHtml}
       )}
 
       {/* ── Manuscript Stats Modal ── */}
-      <dialog ref={statsDialog} className="modal-dialog" onCancel={() => setStatsModal(false)}>
-        <div className="modal">
+      <dialog ref={statsDialog} className="modal-dialog stats-dialog-expanded" onCancel={() => setStatsModal(false)}>
+        <div className="modal stats-modal-content">
           <button type="button" className="close" onClick={() => setStatsModal(false)}>
             <X size={20} />
           </button>
           <span className="brandmark"><BarChart3 size={24} /></span>
           <h2>{t.statsModalTitle}</h2>
+
+          {/* Core Metrics Grid */}
           <div className="stats-grid">
             <div className="stat-card">
-              <span className="stat-value">{formatNumber(stats.words)}</span>
+              <span className="stat-value">{formatNumber(detailedStats.words)}</span>
               <span className="stat-label">{t.statsTotalWords}</span>
             </div>
             <div className="stat-card">
-              <span className="stat-value">{formatNumber(stats.characters)}</span>
+              <span className="stat-value">{formatNumber(detailedStats.chars)}</span>
               <span className="stat-label">{t.statsTotalChars}</span>
             </div>
             <div className="stat-card">
-              <span className="stat-value">{formatNumber(stats.charactersNoSpaces)}</span>
-              <span className="stat-label">{t.statsCharsNoSpaces}</span>
+              <span className="stat-value">{formatNumber(detailedStats.sentences)}</span>
+              <span className="stat-label">{lang === 'bn' ? 'মোট বাক্য' : 'Sentences'}</span>
             </div>
             <div className="stat-card">
-              <span className="stat-value">{formatNumber(stats.paragraphs)}</span>
+              <span className="stat-value">{formatNumber(detailedStats.paragraphs)}</span>
               <span className="stat-label">{t.statsParagraphs}</span>
             </div>
-            <div className="stat-card full">
-              <span className="stat-value">{t.statsMinutes(stats.readingTimeMinutes)}</span>
-              <span className="stat-label">{t.statsEstReadingTime}</span>
+          </div>
+
+          {/* Dialogue vs Narrative Ratio Bar */}
+          <div className="analytics-section-card">
+            <div className="analytics-header-row">
+              <strong>{lang === 'bn' ? 'সংলাপ বনাম বর্ণনা অনুপাত' : 'Dialogue vs. Narrative Ratio'}</strong>
+              <span>
+                {lang === 'bn'
+                  ? `সংলাপ: ${detailedStats.dialogueRatio}% | বর্ণনা: ${100 - detailedStats.dialogueRatio}%`
+                  : `Dialogue: ${detailedStats.dialogueRatio}% | Narrative: ${100 - detailedStats.dialogueRatio}%`}
+              </span>
+            </div>
+            <div className="dialogue-ratio-bar">
+              <div
+                className="ratio-fill-dialogue"
+                style={{ width: `${detailedStats.dialogueRatio}%` }}
+                title={lang === 'bn' ? `সংলাপ (${detailedStats.dialogueWords} শব্দ)` : `Dialogue (${detailedStats.dialogueWords} words)`}
+              />
+              <div
+                className="ratio-fill-narrative"
+                style={{ width: `${100 - detailedStats.dialogueRatio}%` }}
+                title={lang === 'bn' ? `বর্ণনা (${detailedStats.narrativeWords} শব্দ)` : `Narrative (${detailedStats.narrativeWords} words)`}
+              />
+            </div>
+            <div className="dialogue-ratio-legend">
+              <span className="legend-item"><span className="dot dialogue-dot" /> {lang === 'bn' ? `সংলাপ (${formatNumber(detailedStats.dialogueWords)} শব্দ)` : `Dialogue (${formatNumber(detailedStats.dialogueWords)} words)`}</span>
+              <span className="legend-item"><span className="dot narrative-dot" /> {lang === 'bn' ? `বর্ণনা (${formatNumber(detailedStats.narrativeWords)} শব্দ)` : `Narrative (${formatNumber(detailedStats.narrativeWords)} words)`}</span>
             </div>
           </div>
+
+          {/* Sentence Cadence (Rhythm) */}
+          <div className="analytics-section-card">
+            <div className="analytics-header-row">
+              <strong>{lang === 'bn' ? 'বাক্যের ছন্দ ও দৈর্ঘ্য বিশ্লেষণ' : 'Sentence Cadence & Rhythm'}</strong>
+            </div>
+            <div className="cadence-grid">
+              <div className="cadence-pill short">
+                <strong>{formatNumber(detailedStats.sentenceCadence.short)}</strong>
+                <small>{lang === 'bn' ? 'ছোট বাক্য (< ১০ শব্দ)' : 'Short (< 10 words)'}</small>
+              </div>
+              <div className="cadence-pill medium">
+                <strong>{formatNumber(detailedStats.sentenceCadence.medium)}</strong>
+                <small>{lang === 'bn' ? 'মাঝারি (১০ - ২৫ শব্দ)' : 'Medium (10 - 25)'}</small>
+              </div>
+              <div className="cadence-pill long">
+                <strong>{formatNumber(detailedStats.sentenceCadence.long)}</strong>
+                <small>{lang === 'bn' ? 'দীর্ঘ বাক্য (> ২৫ শব্দ)' : 'Long (> 25 words)'}</small>
+              </div>
+            </div>
+          </div>
+
+          {/* Overused Words Detector */}
+          {detailedStats.overusedWords.length > 0 && (
+            <div className="analytics-section-card">
+              <div className="analytics-header-row">
+                <strong>{lang === 'bn' ? 'পুনরাবৃত্তি শব্দ ট্র্যাকার (Overused Words)' : 'Frequently Repeated Words'}</strong>
+                <small>{lang === 'bn' ? 'বিকল্প শব্দ প্রয়োগ করে লেখার মান বাড়ান' : 'Consider synonyms for variety'}</small>
+              </div>
+              <div className="overused-words-list">
+                {detailedStats.overusedWords.map((ow: { word: string; count: number; percentage: number; alternatives: string[] }, idx: number) => (
+                  <div key={idx} className="overused-word-item">
+                    <div className="ow-meta">
+                      <span className="ow-word">"{ow.word}"</span>
+                      <span className="ow-count">{lang === 'bn' ? `${formatNumber(ow.count)} বার (${ow.percentage}%)` : `${ow.count} times (${ow.percentage}%)`}</span>
+                    </div>
+                    {ow.alternatives.length > 0 && (
+                      <div className="ow-alts">
+                        <small>{lang === 'bn' ? 'বিকল্প:' : 'Synonyms:'}</small>
+                        {ow.alternatives.map((alt: string, aIdx: number) => (
+                          <span key={aIdx} className="alt-tag">{alt}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="stats-export-actions">
             <button className="primary" onClick={downloadTxt}>
               <Download size={15} /> {t.btnExportTxt}
@@ -2760,6 +3521,19 @@ ${chaptersHtml}
           lang={lang}
           onInsert={handleInsertConjunct}
           onClose={() => setShowConjuncts(false)}
+        />
+      )}
+
+      {/* ── Global Project Find & Replace Modal ── */}
+      {showGlobalFindModal && project && (
+        <GlobalFindReplaceModal
+          isOpen={showGlobalFindModal}
+          onClose={() => setShowGlobalFindModal(false)}
+          chapters={project.chapters}
+          currentChapterId={cid}
+          lang={lang}
+          onReplaceAll={handleGlobalReplaceAll}
+          onSelectChapter={selectChapter}
         />
       )}
     </div>
