@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Admin Settings Page — Lipishilpo (Free)
  *
@@ -101,7 +101,6 @@ class Lipishilpo_Admin {
 		<?php
 	}
 
-
 	public static function add_privacy_policy_content() {
 		if ( ! function_exists( 'wp_add_privacy_policy_content' ) ) {
 			return;
@@ -110,9 +109,9 @@ class Lipishilpo_Admin {
 		$content = sprintf(
 			'<h2>%s</h2><p>%s</p><h3>%s</h3><p>%s</p><h3>%s</h3><p>%s</p>',
 			esc_html__( 'Lipishilpo Writing Studio Data & Privacy', 'lipishilpo' ),
-			esc_html__( 'Lipishilpo stores authors' manuscript drafts, chapter contents, character codex profiles, personal dictionary words, and writing streak statistics exclusively in the local WordPress database. Manuscript drafts are private and accessible only by their creator.', 'lipishilpo' ),
+			esc_html__( 'Lipishilpo stores manuscript drafts, chapter contents, character codex profiles, personal dictionary words, and writing streak statistics exclusively in the local WordPress database. Manuscript drafts are private and accessible only by their creator.', 'lipishilpo' ),
 			esc_html__( 'Third-Party Services & AI Processing', 'lipishilpo' ),
-			esc_html__( 'In the standard Free version, Lipishilpo processes all text analysis and rule-based proofreading locally within the user's browser with zero external API calls. When the Lipishilpo Pro addon is activated, authors can optionally use AI editorial features (OpenAI GPT-4o). In such cases, only the specifically selected text or chapter is transmitted to OpenAI servers under the configured API credentials.', 'lipishilpo' ),
+			esc_html__( 'In the standard Free version, Lipishilpo processes all text analysis and rule-based proofreading locally within the browser with zero external API calls. When the Lipishilpo Pro addon is activated, authors can optionally use AI editorial features (OpenAI GPT-4o). In such cases, only the specifically selected text or chapter is transmitted to OpenAI servers under the configured API credentials.', 'lipishilpo' ),
 			esc_html__( 'Data Retention & Deletion', 'lipishilpo' ),
 			esc_html__( 'When an author deletes a manuscript project, all related chapters, snapshots, and editorial comments are permanently purged from the database. When the plugin is uninstalled, all plugin post types, user metadata, and configuration options are completely erased.', 'lipishilpo' )
 		);
