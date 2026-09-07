@@ -50,8 +50,13 @@ export const translations = {
     btnFocusMode: 'Distraction-Free Focus Mode',
     btnExitFocus: 'Exit Focus Mode',
     themeLight: 'Light (Paper)',
-    themeSepia: 'Sepia (Parchment)',
-    themeDark: 'Dark Mode (Night)',
+    themeSepia: 'Sepia (Vintage)',
+    themeParchment: 'Parchment (Warm Amber)',
+    themeDark: 'Dark (Slate)',
+    themeOled: 'OLED (Pure Black)',
+    typewriterMode: 'Typewriter Scrolling (Center Line)',
+    zenFocusMode: 'Zen Focus Dimmer',
+    smartTyping: 'Smart Typographic Punctuation',
 
     // 7 Free Upgrade Features
     tabScratchpad: 'Scratchpad',
@@ -367,8 +372,13 @@ export const translations = {
     btnFocusMode: 'মনোযোগ মোড (ফুলস্ক্রিন)',
     btnExitFocus: 'মনোযোগ মোড বন্ধ করুন',
     themeLight: 'সাদা কাগজ (Light)',
-    themeSepia: 'বাদামি কাগজ (Sepia)',
-    themeDark: 'রাতের মোড (Dark)',
+    themeSepia: 'ভিন্টেজ সেপিয়া (Sepia)',
+    themeParchment: 'পার্চমেন্ট গোল্ড (Parchment)',
+    themeDark: 'স্লেট ডার্ক (Dark)',
+    themeOled: 'ওলেড নিশ্ছিদ্র কালো (OLED)',
+    typewriterMode: 'টাইপরাইটার স্ক্রোলিং (মাঝখানে স্থির)',
+    zenFocusMode: 'জেন ফোকাস (প্যারাগ্রাফ উজ্জ্বল)',
+    smartTyping: 'স্মার্ট কোটস ও সাহিত্যিক ড্যাশ',
 
     // 7 Free Upgrade Features
     tabScratchpad: 'স্ক্র্যাচপ্যাড',

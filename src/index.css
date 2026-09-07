@@ -5910,3 +5910,181 @@ body.lipishilpo-studio-fullscreen #lipishilpo-root {
   cursor: not-allowed;
   background: #f4f6f1;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   International Themes & Zen Focus Features
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Parchment (Warm Amber Paper) */
+.writing.theme-parchment {
+  background: #fbf7ee;
+  border-color: #ecdcc5;
+  color: #382c1e;
+}
+.writing.theme-parchment .toolbar {
+  background: #f4ecda;
+  border-bottom-color: #e4d3b8;
+  color: #78644c;
+}
+.writing.theme-parchment .toolbar select,
+.writing.theme-parchment .toolbar button {
+  color: #78644c;
+}
+.writing.theme-parchment .chapter-title {
+  color: #3b2c17;
+}
+.writing.theme-parchment .chapter-kicker {
+  color: #9c8365;
+}
+.writing.theme-parchment .paper-rule {
+  background: #deb881;
+}
+.writing.theme-parchment .paper textarea {
+  color: #2b1f11;
+}
+.writing.theme-parchment .paper textarea::placeholder {
+  color: #ad9a82;
+}
+.writing.theme-parchment .writing-footer {
+  background: #f4ecda;
+  border-top-color: #e4d3b8;
+  color: #78644c;
+}
+.writing.theme-parchment .goal-bar-bg {
+  background: #e2d2b8;
+}
+.writing.theme-parchment .goal-bar-fill {
+  background: #b47828;
+}
+
+/* OLED (Pure Pitch Black) */
+.writing.theme-oled {
+  background: #000000;
+  border-color: #1a1a1a;
+  color: #e0e0e0;
+}
+.writing.theme-oled .toolbar {
+  background: #080808;
+  border-bottom-color: #1a1a1a;
+  color: #888888;
+}
+.writing.theme-oled .toolbar select,
+.writing.theme-oled .toolbar button {
+  color: #888888;
+}
+.writing.theme-oled .toolbar select option {
+  background: #080808;
+  color: #e0e0e0;
+}
+.writing.theme-oled .chapter-title {
+  color: #ffffff;
+}
+.writing.theme-oled .chapter-kicker {
+  color: #555555;
+}
+.writing.theme-oled .paper-rule {
+  background: #222222;
+}
+.writing.theme-oled .paper textarea {
+  color: #e5e5e5;
+}
+.writing.theme-oled .paper textarea::placeholder {
+  color: #444444;
+}
+.writing.theme-oled .writing-footer {
+  background: #080808;
+  border-top-color: #1a1a1a;
+  color: #888888;
+}
+.writing.theme-oled .goal-bar-bg {
+  background: #1c1c1c;
+}
+.writing.theme-oled .goal-bar-fill {
+  background: #10b981;
+}
+
+/* Floating Selection Bubble Bar */
+.floating-bubble-toolbar {
+  position: absolute;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 6px;
+  background: #1e293b;
+  color: #f8fafc;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.35), 0 8px 10px -6px rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  transform: translate(-50%, -100%) translateY(-10px);
+  animation: bubblePop 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+  pointer-events: auto;
+}
+
+@keyframes bubblePop {
+  0% { opacity: 0; transform: translate(-50%, -90%) translateY(-6px) scale(0.95); }
+  100% { opacity: 1; transform: translate(-50%, -100%) translateY(-10px) scale(1); }
+}
+
+.bubble-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  color: #e2e8f0;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+  transition: all 0.12s ease;
+}
+
+.bubble-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+.bubble-btn.text-icon {
+  font-family: inherit;
+  font-size: 11.5px;
+}
+
+.bubble-btn.comment-btn {
+  color: #38bdf8;
+}
+.bubble-btn.comment-btn:hover {
+  background: rgba(56, 189, 248, 0.25);
+  color: #7dd3fc;
+}
+
+.bubble-divider {
+  width: 1px;
+  height: 16px;
+  background: rgba(255, 255, 255, 0.18);
+  margin: 0 2px;
+}
+
+/* Typewriter Scrolling & Zen Mode indicators */
+.typewriter-indicator-btn.active,
+.zen-dimmer-btn.active {
+  background: #e6f4ea !important;
+  color: #137333 !important;
+  font-weight: 600;
+}
+.theme-dark .typewriter-indicator-btn.active,
+.theme-dark .zen-dimmer-btn.active,
+.theme-oled .typewriter-indicator-btn.active,
+.theme-oled .zen-dimmer-btn.active {
+  background: rgba(16, 185, 129, 0.2) !important;
+  color: #34d399 !important;
+}
+
+/* Typewriter Mode Textarea extra bottom padding */
+.paper.typewriter-mode textarea {
+  padding-bottom: 50vh !important;
+}

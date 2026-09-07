@@ -27,6 +27,8 @@ import { PomodoroTimer } from './components/PomodoroTimer';
 import { TypographyControl } from './components/TypographyControl';
 import { PublishModal } from './components/PublishModal';
 import { ConjunctsModal } from './components/ConjunctsModal';
+import { FloatingBubbleToolbar } from './components/FloatingBubbleToolbar';
+import { handleSmartKeyDown } from './lib/smart-typography';
 import { exportProjectToJson } from './lib/project-backup';
 import { importManuscriptFile, ManuscriptImportError } from './lib/manuscript-import';
 import { createId } from './lib/id';
@@ -50,7 +52,7 @@ export interface ChapterComment {
   resolved: boolean;
 }
 
-export type EditorTheme = 'light' | 'sepia' | 'dark';
+export type EditorTheme = 'light' | 'sepia' | 'parchment' | 'dark' | 'oled';
 export type EditorMode = 'edit' | 'review';
 
 export default function App() {
@@ -94,10 +96,30 @@ export default function App() {
   const [theme, setTheme] = useState<EditorTheme>(() => {
     try {
       const saved = localStorage.getItem('lipishilpo_theme') as EditorTheme;
-      if (saved === 'light' || saved === 'sepia' || saved === 'dark') return saved;
+      if (saved === 'light' || saved === 'sepia' || saved === 'parchment' || saved === 'dark' || saved === 'oled') return saved;
     } catch {}
     return 'light';
   });
+
+  const [typewriterMode, setTypewriterMode] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('lipishilpo_typewriter') === '1';
+    } catch {
+      return false;
+    }
+  });
+
+  const [smartTyping, setSmartTyping] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('lipishilpo_smart_typing');
+      return saved !== null ? saved === '1' : true;
+    } catch {
+      return true;
+    }
+  });
+
+  const [bubblePosition, setBubblePosition] = useState<{ top: number; left: number } | null>(null);
+  const paperContainerRef = useRef<HTMLDivElement>(null);
 
   const [dailyTarget, setDailyTarget] = useState(500);
   const [goalModalOpen, setGoalModalOpen] = useState(false);
@@ -551,16 +573,125 @@ export default function App() {
     setNotice(t.noticeCommentDeleted);
   }
 
+  function adjustTypewriterScroll() {
+    if (!typewriterMode || !editor.current || !paperContainerRef.current) return;
+    const textarea = editor.current;
+    const container = paperContainerRef.current;
+    
+    // Calculate approximate line position
+    const textBeforeCursor = textarea.value.substring(0, textarea.selectionStart);
+    const lineCount = textBeforeCursor.split('\n').length;
+    const computed = window.getComputedStyle(textarea);
+    const lineHeight = parseFloat(computed.lineHeight) || (parseFloat(computed.fontSize) * 1.8) || 28;
+    
+    const cursorTopInTextarea = lineCount * lineHeight;
+    const textareaOffsetTop = textarea.offsetTop;
+    const targetScrollTop = textareaOffsetTop + cursorTopInTextarea - (container.clientHeight / 2);
+    
+    container.scrollTo({
+      top: Math.max(0, targetScrollTop),
+      behavior: 'smooth',
+    });
+  }
+
   function handleSelectTextInEditor() {
     if (!editor.current) return;
-    const start = editor.current.selectionStart;
-    const end = editor.current.selectionEnd;
+    const textarea = editor.current;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
     if (start !== end) {
       const selected = text.slice(start, end).trim();
       if (selected.length > 0 && selected.length < 300) {
         setSelectedQuote(selected);
       }
+
+      // Calculate coordinates for floating bubble
+      const rect = textarea.getBoundingClientRect();
+      const textBefore = textarea.value.substring(0, start);
+      const lines = textBefore.split('\n');
+      const lineIndex = lines.length;
+      const computed = window.getComputedStyle(textarea);
+      const lineHeight = parseFloat(computed.lineHeight) || 28;
+      
+      const topPos = rect.top + Math.min(lineIndex * lineHeight, rect.height) + window.scrollY;
+      const leftPos = rect.left + (rect.width / 2);
+      setBubblePosition({ top: Math.max(80, topPos - 12), left: leftPos });
+    } else {
+      setBubblePosition(null);
     }
+
+    if (typewriterMode) {
+      adjustTypewriterScroll();
+    }
+  }
+
+  function handleBubbleFormat(format: 'bold' | 'italic' | 'quote' | 'single-quote' | 'h2' | 'h3' | 'emdash' | 'scene-break' | 'mark' | 'comment') {
+    if (format === 'comment') {
+      handleSelectTextInEditor();
+      setShowCommentDialog(true);
+      setBubblePosition(null);
+      return;
+    }
+    
+    if (!editor.current) return;
+    const textarea = editor.current;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selected = text.substring(start, end);
+    let replacement = '';
+    let newCursorPos = start;
+
+    switch (format) {
+      case 'bold':
+        replacement = `**${selected || (lang === 'bn' ? 'গাঢ় লেখা' : 'bold text')}**`;
+        newCursorPos = selected ? end + 4 : start + 2;
+        break;
+      case 'italic':
+        replacement = `*${selected || (lang === 'bn' ? 'বাঁকা লেখা' : 'italic text')}*`;
+        newCursorPos = selected ? end + 2 : start + 1;
+        break;
+      case 'quote':
+        replacement = `“${selected || (lang === 'bn' ? 'উদ্ধৃতি' : 'quote')}”`;
+        newCursorPos = selected ? end + 2 : start + 1;
+        break;
+      case 'single-quote':
+        replacement = `‘${selected || (lang === 'bn' ? 'একক উদ্ধৃতি' : 'quote')}’`;
+        newCursorPos = selected ? end + 2 : start + 1;
+        break;
+      case 'h2':
+        replacement = `\n## ${selected || (lang === 'bn' ? 'উপ-শিরোনাম' : 'Subheading')}\n`;
+        newCursorPos = start + replacement.length;
+        break;
+      case 'h3':
+        replacement = `\n### ${selected || (lang === 'bn' ? 'অনুচ্ছেদ শিরোনাম' : 'Section Heading')}\n`;
+        newCursorPos = start + replacement.length;
+        break;
+      case 'emdash':
+        replacement = `—`;
+        newCursorPos = start + 1;
+        break;
+      case 'scene-break':
+        replacement = `\n\n❖ ❖ ❖\n\n`;
+        newCursorPos = start + replacement.length;
+        break;
+      case 'mark':
+        replacement = `<mark>${selected || (lang === 'bn' ? 'হাইলাইট' : 'highlight')}</mark>`;
+        newCursorPos = selected ? end + 15 : start + 6;
+        break;
+    }
+
+    const nextText = text.substring(0, start) + replacement + text.substring(end);
+    setHistory((h) => [...h.slice(-49), text]);
+    typedTextRef.current = nextText;
+    updateText(nextText, 'type');
+    scheduleManualLog();
+    setChecked(false);
+    setBubblePosition(null);
+
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(newCursorPos, newCursorPos);
+    }, 50);
   }
 
   // ── Theme Switcher ─────────────────────────────────────────────────────────
@@ -569,6 +700,26 @@ export default function App() {
     try {
       localStorage.setItem('lipishilpo_theme', nextTheme);
     } catch {}
+  }
+
+  function toggleTypewriterMode() {
+    setTypewriterMode((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('lipishilpo_typewriter', next ? '1' : '0');
+      } catch {}
+      return next;
+    });
+  }
+
+  function toggleSmartTyping() {
+    setSmartTyping((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('lipishilpo_smart_typing', next ? '1' : '0');
+      } catch {}
+      return next;
+    });
   }
 
   function persistChapterMeta(
@@ -1435,6 +1586,18 @@ ${chaptersHtml}
                 </button>
               )}
 
+              {/* Typewriter Scrolling Toggle */}
+              {view === 'editor' && (
+                <button
+                  type="button"
+                  className={'header-icon-btn typewriter-indicator-btn ' + (typewriterMode ? 'active' : '')}
+                  onClick={toggleTypewriterMode}
+                  title={t.typewriterMode}
+                >
+                  <Edit3 size={15} />
+                </button>
+              )}
+
               {/* Theme Switcher */}
               {view === 'editor' && (
                 <div className="theme-switcher">
@@ -1453,11 +1616,25 @@ ${chaptersHtml}
                     <Coffee size={14} />
                   </button>
                   <button
+                    className={'theme-btn ' + (theme === 'parchment' ? 'active' : '')}
+                    onClick={() => handleSetTheme('parchment')}
+                    title={t.themeParchment}
+                  >
+                    <Bookmark size={14} />
+                  </button>
+                  <button
                     className={'theme-btn ' + (theme === 'dark' ? 'active' : '')}
                     onClick={() => handleSetTheme('dark')}
                     title={t.themeDark}
                   >
                     <Moon size={14} />
+                  </button>
+                  <button
+                    className={'theme-btn ' + (theme === 'oled' ? 'active' : '')}
+                    onClick={() => handleSetTheme('oled')}
+                    title={t.themeOled}
+                  >
+                    <Box size={14} />
                   </button>
                 </div>
               )}
@@ -1699,7 +1876,14 @@ ${chaptersHtml}
 
             <div className={`editor-layout ${focusMode ? 'focus-layout' : ''}`}>
               {/* ── Writing area ── */}
-              <section className={`writing theme-${theme}`}>
+              <section ref={paperContainerRef} className={`writing theme-${theme}`}>
+                {/* Floating Bubble Toolbar for selected text */}
+                <FloatingBubbleToolbar
+                  position={bubblePosition}
+                  lang={lang}
+                  onFormat={handleBubbleFormat}
+                />
+
                 <div className="toolbar">
                   <span>
                     <FileText size={16} />
@@ -1903,7 +2087,7 @@ ${chaptersHtml}
                   </div>
                 )}
 
-                <div className="paper">
+                <div className={`paper ${typewriterMode ? 'typewriter-mode' : ''}`}>
                   <div className="chapter-kicker">
                     {t.chapterKicker(project.chapters.findIndex((c) => c.id === chapter.id) + 1)}
                   </div>
@@ -1928,6 +2112,25 @@ ${chaptersHtml}
                       onMouseUp={handleSelectTextInEditor}
                       onKeyUp={handleSelectTextInEditor}
                       onSelect={handleSelectTextInEditor}
+                      onKeyDown={(e) => {
+                        if (smartTyping) {
+                          const smart = handleSmartKeyDown(e, text);
+                          if (smart) {
+                            setHistory((h) => [...h.slice(-49), text]);
+                            typedTextRef.current = smart.newText;
+                            updateText(smart.newText, 'type');
+                            scheduleManualLog();
+                            setChecked(false);
+                            setTimeout(() => {
+                              if (editor.current) {
+                                editor.current.focus();
+                                editor.current.setSelectionRange(smart.newCursor, smart.newCursor);
+                              }
+                            }, 10);
+                            return;
+                          }
+                        }
+                      }}
                       onChange={(e) => {
                         const next = e.target.value;
                         setHistory((h) => [...h.slice(-49), text]);
@@ -1935,6 +2138,9 @@ ${chaptersHtml}
                         updateText(next, 'type');
                         scheduleManualLog();
                         setChecked(false);
+                        if (typewriterMode) {
+                          adjustTypewriterScroll();
+                        }
                       }}
                       onBlur={flushManualEdits}
                     />
