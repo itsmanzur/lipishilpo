@@ -1504,6 +1504,7 @@ ${chaptersHtml}
                       <button
                         className="chapter-btn"
                         onClick={() => selectChapter(c.id)}
+                        title={c.title || t.untitledChapter}
                       >
                         <FileText size={15} />
                         <span>{formatNumber(i + 1)}. {c.title || t.untitledChapter}</span>

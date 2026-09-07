@@ -76,13 +76,14 @@ select {
   overflow: hidden;
 }
 .sidebar {
-  width: 250px;
+  width: 260px;
+  min-width: 260px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   background: #eef3ed;
   border-right: 1px solid #dce4d9;
-  padding: 32px 20px 0;
+  padding: 24px 14px 0;
   min-height: 0;
   overflow-y: auto;
 }
@@ -174,9 +175,11 @@ hr {
   border-radius: 2px;
 }
 .chapters {
-  border-left: 1px solid #d6e0d0;
-  margin: 16px -3px 0 12px;
-  padding-left: 10px;
+  margin: 12px 0 0 0;
+  padding-left: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 .chapter {
   width: 100%;
@@ -920,8 +923,9 @@ h1 {
 }
 @media (max-width: 1150px) {
   .sidebar {
-    width: 220px;
-    padding: 28px 12px 0;
+    width: 245px;
+    min-width: 245px;
+    padding: 24px 10px 0;
   }
   .editor-layout {
     grid-template-columns: minmax(0, 1fr) 280px;
@@ -946,7 +950,8 @@ h1 {
 }
 @media (max-width: 950px) {
   .sidebar {
-    width: 190px;
+    width: 230px;
+    min-width: 230px;
   }
   .brand {
     font-size: 23px;
@@ -1605,31 +1610,57 @@ body {
   justify-content: space-between;
   border-radius: 6px;
   margin-bottom: 2px;
+  padding: 2px 4px;
   transition: background 0.15s ease;
+  position: relative;
+  min-height: 32px;
+  gap: 3px;
+  box-sizing: border-box;
+  width: 100%;
+}
+.chapter-item:hover {
+  background: #e4eee2;
 }
 .chapter-item.selected {
-  background: #e6f0e3;
+  background: #d6e8d2;
 }
 .chapter-btn {
   flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   text-align: left;
   background: transparent;
   border: none;
-  padding: 8px 10px;
+  padding: 4px 4px;
   font-size: 13px;
   color: #263e38;
   cursor: pointer;
-  border-radius: 6px;
+  border-radius: 4px;
+  min-height: unset !important;
+  height: auto;
+  overflow: hidden;
+}
+.chapter-btn svg {
+  flex-shrink: 0;
+  color: #5c7867;
+}
+.chapter-btn span {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: left;
+  display: block;
 }
 .chapter-actions {
   display: flex;
   align-items: center;
-  gap: 2px;
-  padding-right: 6px;
-  opacity: 0.3;
+  gap: 1px;
+  flex-shrink: 0;
+  opacity: 0;
   transition: opacity 0.15s ease;
 }
 .chapter-item:hover .chapter-actions {
@@ -1638,13 +1669,20 @@ body {
 .chapter-actions button {
   background: transparent;
   border: none;
-  padding: 3px;
+  padding: 2px;
   border-radius: 3px;
   color: #537061;
   cursor: pointer;
+  width: 20px;
+  height: 20px;
+  min-height: unset !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 .chapter-actions button:hover {
-  background: #d8e5d4;
+  background: #c9dbca;
   color: #184233;
 }
 
@@ -4277,7 +4315,7 @@ body.lipishilpo-studio-fullscreen #lipishilpo-root {
 
 
 /* ==========================================================================
-   Lipishilpo Pro Studio — Book Get-Up & Modal Styles
+   Lipishilpo Pro Studio ï¿½ Book Get-Up & Modal Styles
    ========================================================================== */
 
 /* Fullscreen Modal Overlay */
@@ -6127,36 +6165,44 @@ body.lipishilpo-studio-fullscreen #lipishilpo-root {
 
 /* Chapter Status Dot in Sidebar */
 .chapter-status-dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  border: 1.5px solid #ffffff;
-  padding: 0;
+  width: 8px !important;
+  height: 8px !important;
+  min-width: 8px !important;
+  min-height: 8px !important;
+  max-width: 8px !important;
+  max-height: 8px !important;
+  border-radius: 50% !important;
+  border: 1.5px solid #ffffff !important;
+  padding: 0 !important;
+  margin: 0 3px !important;
+  flex-shrink: 0 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15) !important;
   cursor: pointer;
-  flex-shrink: 0;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  display: inline-block !important;
+  line-height: 1 !important;
+  outline: none;
   transition: transform 0.15s ease;
-  margin: 0 4px;
+  background-clip: padding-box;
 }
 
 .chapter-status-dot:hover {
-  transform: scale(1.3);
+  transform: scale(1.35);
 }
 
 .chapter-status-dot.status-draft {
-  background: #94a3b8;
+  background: #94a3b8 !important;
 }
 
 .chapter-status-dot.status-in_progress {
-  background: #f59e0b;
+  background: #f59e0b !important;
 }
 
 .chapter-status-dot.status-revised {
-  background: #3b82f6;
+  background: #3b82f6 !important;
 }
 
 .chapter-status-dot.status-final {
-  background: #10b981;
+  background: #10b981 !important;
 }
 
 /* Chapter Status Pill in Editor Toolbar */
