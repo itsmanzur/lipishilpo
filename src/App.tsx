@@ -7,6 +7,7 @@ import {
   Maximize2, Minimize2, Sun, Moon, Coffee, History, Target,
   MessageSquare, MessageSquarePlus, CheckCircle, Eye, Edit3,
   BookA, Share2, StickyNote, FileUp,
+  Bold, Italic, Heading2, Quote, List, Box, Bookmark,
 } from 'lucide-react';
 import {
   type Project, type Chapter,
@@ -743,6 +744,63 @@ export default function App() {
     );
     setProjects(updated);
     autosave(updated);
+  }
+
+  function applyFormatting(format: 'bold' | 'italic' | 'heading' | 'quote' | 'callout' | 'citation' | 'list' | 'divider') {
+    if (!editor.current) return;
+    const textarea = editor.current;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selected = text.substring(start, end);
+    let replacement = '';
+    let newCursorPos = start;
+
+    switch (format) {
+      case 'bold':
+        replacement = `**${selected || (lang === 'bn' ? 'গাঢ় লেখা' : 'bold text')}**`;
+        newCursorPos = selected ? end + 4 : start + 2;
+        break;
+      case 'italic':
+        replacement = `*${selected || (lang === 'bn' ? 'বাঁকা লেখা' : 'italic text')}*`;
+        newCursorPos = selected ? end + 2 : start + 1;
+        break;
+      case 'heading':
+        replacement = `\n## ${selected || (lang === 'bn' ? 'উপ-শিরোনাম' : 'Subheading')}\n`;
+        newCursorPos = start + replacement.length;
+        break;
+      case 'quote':
+        replacement = `\n> ${selected || (lang === 'bn' ? 'উদ্ধৃতি বা উক্তি এখানে লিখুন...' : 'Quote or epigraph here...')}\n`;
+        newCursorPos = start + replacement.length;
+        break;
+      case 'callout':
+        replacement = `\n:::box[${lang === 'bn' ? 'ইসলামের আলোকে' : 'Special Note'}]\n${selected || (lang === 'bn' ? 'বক্সের বিষয়বস্তু বা তথ্য এখানে লিখুন...' : 'Box content goes here...')}\n:::\n`;
+        newCursorPos = start + replacement.length;
+        break;
+      case 'citation':
+        replacement = `\n${lang === 'bn' ? 'তথ্যসূত্র' : 'Reference'}: ${selected || (lang === 'bn' ? 'উৎস বা রেফারেন্সের বিবরণ' : 'Citation details')}\n`;
+        newCursorPos = start + replacement.length;
+        break;
+      case 'list':
+        replacement = `\n* ${selected || (lang === 'bn' ? 'প্রথম পয়েন্ট' : 'First item')}\n* ${lang === 'bn' ? 'দ্বিতীয় পয়েন্ট' : 'Second item'}\n`;
+        newCursorPos = start + replacement.length;
+        break;
+      case 'divider':
+        replacement = `\n---\n`;
+        newCursorPos = start + replacement.length;
+        break;
+    }
+
+    const nextText = text.substring(0, start) + replacement + text.substring(end);
+    setHistory((h) => [...h.slice(-49), text]);
+    typedTextRef.current = nextText;
+    updateText(nextText, 'type');
+    scheduleManualLog();
+    setChecked(false);
+
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(newCursorPos, newCursorPos);
+    }, 50);
   }
 
   function selectChapter(id: string) {
@@ -1759,6 +1817,87 @@ ${chaptersHtml}
                       </button>
                       <button disabled={!searchMatches.length} onClick={handleReplaceAll}>
                         {t.btnReplaceAll}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Quick Book & Text Formatting Action Bar */}
+                {editorMode === 'edit' && (
+                  <div className="editor-quick-format-bar">
+                    <div className="format-btn-group">
+                      <button
+                        type="button"
+                        className="format-action-btn"
+                        onClick={() => applyFormatting('bold')}
+                        title={lang === 'bn' ? 'গাঢ় করুন (Bold) **লেখা**' : 'Bold **text**'}
+                      >
+                        <Bold size={13} />
+                      </button>
+                      <button
+                        type="button"
+                        className="format-action-btn"
+                        onClick={() => applyFormatting('italic')}
+                        title={lang === 'bn' ? 'বাঁকা করুন (Italic) *লেখা*' : 'Italic *text*'}
+                      >
+                        <Italic size={13} />
+                      </button>
+                    </div>
+
+                    <span className="format-divider" />
+
+                    <div className="format-btn-group">
+                      <button
+                        type="button"
+                        className="format-action-btn"
+                        onClick={() => applyFormatting('heading')}
+                        title={lang === 'bn' ? 'উপ-শিরোনাম (Subheading) ## সেকশন' : 'Subheading ## Section'}
+                      >
+                        <Heading2 size={13} />
+                        <span>H2</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="format-action-btn"
+                        onClick={() => applyFormatting('quote')}
+                        title={lang === 'bn' ? 'উদ্ধৃতি বা এপিগ্রাফ (Quote) > উক্তি' : 'Quote > Text'}
+                      >
+                        <Quote size={13} />
+                        <span>{lang === 'bn' ? 'উদ্ধৃতি' : 'Quote'}</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="format-action-btn highlight-box"
+                        onClick={() => applyFormatting('callout')}
+                        title={lang === 'bn' ? 'ইসলামের আলোকে / তথ্য বক্স :::box' : 'Callout Box :::box'}
+                      >
+                        <Box size={13} />
+                        <span>{lang === 'bn' ? 'তথ্য/ইসলামিক বক্স' : 'Box'}</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="format-action-btn"
+                        onClick={() => applyFormatting('citation')}
+                        title={lang === 'bn' ? 'তথ্যসূত্র বা সাইটেশন তথ্যসূত্র:' : 'Citation / Source'}
+                      >
+                        <Bookmark size={13} />
+                        <span>{lang === 'bn' ? 'তথ্যসূত্র' : 'Citation'}</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="format-action-btn"
+                        onClick={() => applyFormatting('list')}
+                        title={lang === 'bn' ? 'তালিকা বা পয়েন্ট * পয়েন্ট' : 'Bullet List * item'}
+                      >
+                        <List size={13} />
+                      </button>
+                      <button
+                        type="button"
+                        className="format-action-btn"
+                        onClick={() => applyFormatting('divider')}
+                        title={lang === 'bn' ? 'অধ্যায় ডিভাইডার প্রতীক ---' : 'Divider ---'}
+                      >
+                        <span>❖</span>
                       </button>
                     </div>
                   </div>
