@@ -2181,36 +2181,40 @@ ${chaptersHtml}
                             </button>
                           )}
                         </div>
-                        <div className="proof-toolbar-row">
-                          <label className="auto-check-toggle" title={t.autoCheckLabel}>
-                            <input
-                              type="checkbox"
-                              checked={autoCheck}
-                              onChange={(e) => setAutoCheck(e.target.checked)}
-                            />
-                            <span>{t.autoCheckLabel}</span>
-                          </label>
-                          <label className="auto-check-toggle" title={t.styleHintsLabel}>
-                            <input
-                              type="checkbox"
-                              checked={styleHints}
-                              onChange={(e) => {
-                                const on = e.target.checked;
-                                setStyleHints(on);
-                                try {
-                                  localStorage.setItem('lipishilpo_style_hints', on ? '1' : '0');
-                                } catch {}
-                              }}
-                            />
-                            <span>{t.styleHintsLabel}</span>
-                          </label>
+                        <div className="proof-options-card">
+                          <div className="proof-toggles-grid">
+                            <label className="auto-check-toggle" title={t.autoCheckLabel}>
+                              <input
+                                type="checkbox"
+                                checked={autoCheck}
+                                onChange={(e) => setAutoCheck(e.target.checked)}
+                              />
+                              <span>{lang === 'bn' ? 'স্বয়ংক্রিয় ব্যাকরণ' : t.autoCheckLabel}</span>
+                            </label>
+                            <label className="auto-check-toggle" title={t.styleHintsLabel}>
+                              <input
+                                type="checkbox"
+                                checked={styleHints}
+                                onChange={(e) => {
+                                  const on = e.target.checked;
+                                  setStyleHints(on);
+                                  try {
+                                    localStorage.setItem('lipishilpo_style_hints', on ? '1' : '0');
+                                  } catch {}
+                                }}
+                              />
+                              <span>{lang === 'bn' ? 'ঐচ্ছিক শৈলী' : t.styleHintsLabel}</span>
+                            </label>
+                          </div>
                           <button
+                            type="button"
                             className="typography-quick-btn"
                             onClick={handleFormatTypography}
                             title={t.btnFixTypography}
                             disabled={!text.trim()}
                           >
-                            <Sparkles size={13} /> {t.btnFixTypography}
+                            <Sparkles size={14} />
+                            <span>{lang === 'bn' ? 'টাইপোগ্রাফিক ফাঁকা ও দাড়ি ফিক্স' : t.btnFixTypography}</span>
                           </button>
                         </div>
                       </div>
