@@ -2057,6 +2057,19 @@ ${chaptersHtml}
             )}
           </section>
 
+        ) : view === 'docs' ? (
+          <DocsView
+            lang={lang}
+            onOpenEditor={() => setView(project ? 'editor' : 'projects')}
+            onOpenSettings={() => setView('settings')}
+          />
+        ) : view === 'settings' ? (
+          <SettingsView
+            isPro={wpConfig.isPro}
+            lang={lang}
+            onToggleLang={toggleLanguage}
+            onOpenEditor={() => setView(project ? 'editor' : 'projects')}
+          />
         ) : project && chapter ? (
           /* ── Editor View ── */
           <>
@@ -3257,19 +3270,6 @@ ${chaptersHtml}
             )}
             </div>
           </>
-        ) : view === 'docs' ? (
-          <DocsView
-            lang={lang}
-            onOpenEditor={() => setView(project ? 'editor' : 'projects')}
-            onOpenSettings={() => setView('settings')}
-          />
-        ) : view === 'settings' ? (
-          <SettingsView
-            isPro={wpConfig.isPro}
-            lang={lang}
-            onToggleLang={toggleLanguage}
-            onOpenEditor={() => setView(project ? 'editor' : 'projects')}
-          />
         ) : null}
       </main>
 
