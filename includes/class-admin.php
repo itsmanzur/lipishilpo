@@ -60,16 +60,17 @@ class Lipishilpo_Admin {
 				</div>
 			<?php endif; ?>
 
-			<form method="post" action="options.php">
-				<?php
-				settings_fields( 'lipishilpo_settings' );
-				do_settings_sections( 'lipishilpo-settings' );
-
-				if ( $pro_installed ) {
+			<?php if ( $pro_installed ) : ?>
+				<form method="post" action="options.php">
+					<?php
+					settings_fields( 'lipishilpo_settings' );
+					do_settings_sections( 'lipishilpo-settings' );
 					submit_button( __( 'Save Settings', 'lipishilpo' ) );
-				}
-				?>
-			</form>
+					?>
+				</form>
+			<?php else : ?>
+				<?php do_settings_sections( 'lipishilpo-settings' ); ?>
+			<?php endif; ?>
 
 			<?php if ( ! $is_pro ) : ?>
 				<div class="card" style="max-width: 800px; margin-top: 20px; padding: 20px 24px; border-left: 4px solid #20644f;">
