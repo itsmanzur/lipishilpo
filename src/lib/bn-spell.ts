@@ -15,14 +15,10 @@ function dictsBaseUrl(): string {
   return '';
 }
 
-async function loadGzipText(url: string): Promise<string> {
+async function loadText(url: string): Promise<string> {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Dictionary HTTP ${res.status}`);
-  if (typeof DecompressionStream === 'undefined' || !res.body) {
-    throw new Error('Gzip dictionary is not supported in this browser');
-  }
-  const stream = res.body.pipeThrough(new DecompressionStream('gzip'));
-  return new Response(stream).text();
+  return res.text();
 }
 
 async function loadSpell(affName: string, dicName: string): Promise<Spell | null> {
@@ -30,8 +26,8 @@ async function loadSpell(affName: string, dicName: string): Promise<Spell | null
   if (!base) return null;
   try {
     const [aff, dic] = await Promise.all([
-      loadGzipText(`${base}/${affName}`),
-      loadGzipText(`${base}/${dicName}`),
+      loadText(`${base}/${affName}`),
+      loadText(`${base}/${dicName}`),
     ]);
     return nspell({ aff, dic });
   } catch {
@@ -40,12 +36,12 @@ async function loadSpell(affName: string, dicName: string): Promise<Spell | null
 }
 
 export async function getBengaliSpell(): Promise<Spell | null> {
-  if (!bnSpellPromise) bnSpellPromise = loadSpell('bn-BD.aff.gz', 'bn-BD.dic.gz');
+  if (!bnSpellPromise) bnSpellPromise = loadSpell('bn-BD.aff', 'bn-BD.dic');
   return bnSpellPromise;
 }
 
 export async function getEnglishSpell(): Promise<Spell | null> {
-  if (!enSpellPromise) enSpellPromise = loadSpell('en-US.aff.gz', 'en-US.dic.gz');
+  if (!enSpellPromise) enSpellPromise = loadSpell('en-US.aff', 'en-US.dic');
   return enSpellPromise;
 }
 

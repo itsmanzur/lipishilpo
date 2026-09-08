@@ -9,4 +9,4 @@ English (en-US) Hunspell dictionary
 Source: LibreOffice dictionaries (en_US), based on SCOWL / Kevin Atkinson
 https://github.com/LibreOffice/dictionaries/tree/master/en
 License: BSD-style (see README-en-US.txt)
-Shipped as en-US.aff.gz and en-US.dic.gz. The editor decompresses them in the browser.
+Shipped as en-US.aff and en-US.dic for offline browser spellchecking.

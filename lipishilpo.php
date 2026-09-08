@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name: Lipishilpo — Bengali & English Manuscript Studio
+ * Plugin Name: Lipishilpo — Bengali & Multilingual Manuscript Studio
  * Plugin URI:  https://lipishilpo.com
  * Description: Multilingual writing and editorial studio. Rule-based proofreading, chapter management, and manuscript tools.
  * Version:     1.0.0
@@ -31,8 +31,6 @@ require_once LIPISHILPO_DIR . 'includes/class-projects.php';
 add_action( 'plugins_loaded', 'lipishilpo_init', 10 );
 
 function lipishilpo_init() {
-	load_plugin_textdomain( 'lipishilpo', false, dirname( plugin_basename( LIPISHILPO_FILE ) ) . '/languages' );
-
 	Lipishilpo_Admin::init();
 	Lipishilpo_Projects::init();
 
@@ -124,8 +122,10 @@ function lipishilpo_enqueue_assets() {
 // ── ES Module Support (Vite build) ─────────────────────────────────────────
 add_filter( 'script_loader_tag', 'lipishilpo_script_type_module', 10, 3 );
 function lipishilpo_script_type_module( $tag, $handle, $src ) {
-	if ( 'lipishilpo-editor' === $handle || strpos( $handle, 'lipishilpo-pro' ) !== false ) {
-		return '<script type="module" src="' . esc_url( $src ) . '" id="' . esc_attr( $handle ) . '-js"></script>';
+	if ( 'lipishilpo-editor' === $handle || false !== strpos( $handle, 'lipishilpo-pro' ) ) {
+		if ( false === strpos( $tag, 'type="module"' ) ) {
+			$tag = str_replace( '<script ', '<script type="module" ', $tag );
+		}
 	}
 	return $tag;
 }
