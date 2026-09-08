@@ -88,3 +88,48 @@ Lipishilpo Pro unlocks the full Book Get-Up Studio (print-ready PDF & EPUB layou
 = 1.0.0 =
 Initial international release of LipiShilpo Free Manuscript Studio.
 
+== 3rd Party / External Services ==
+
+This plugin bundles and utilizes several open-source libraries, fonts, and dictionary files to provide its distraction-free writing, typography, and proofreading features:
+
+### Fonts
+* **Noto Sans Bengali / Noto Serif Bengali / Noto Serif**
+  * Author: The Noto Project Authors (Google)
+  * Source: https://github.com/notofonts/bengali / https://github.com/googlefonts/noto-fonts
+  * License: SIL Open Font License, 1.1 (http://scripts.sil.org/OFL)
+* **Hind Siliguri**
+  * Author: Indian Type Foundry
+  * Source: https://github.com/itfoundry/hind-siliguri
+  * License: SIL Open Font License, 1.1 (http://scripts.sil.org/OFL)
+* **Tiro Bangla**
+  * Author: Tiro Typeworks (John Hudson, Fiona Ross)
+  * Source: https://github.com/TiroTypeworks/Tiro-Bangla
+  * License: SIL Open Font License, 1.1 (http://scripts.sil.org/OFL)
+
+### Dictionaries (Proofreading)
+* **Bengali (bn-BD) Hunspell Dictionary**
+  * Author/Source: Bangla Type Foundry / Jacob Thomas (mirrored by mm-crj/bangla-hunspell)
+  * Source: https://banglatypefoundry.com/spellchecker/
+  * License: GNU General Public License v2 (GPL-2.0)
+* **English (en-US) Hunspell Dictionary**
+  * Author/Source: LibreOffice dictionaries / SCOWL (Kevin Atkinson)
+  * Source: https://github.com/LibreOffice/dictionaries/tree/master/en
+  * License: BSD-style / LGPL / MPL
+
+### JavaScript Libraries (Bundled)
+* **React & React-DOM** (v19.x)
+  * Author: Meta Platforms, Inc.
+  * Source: https://react.dev
+  * License: MIT License (https://github.com/facebook/react/blob/main/LICENSE)
+* **Lucide React**
+  * Author: Lucide Project
+  * Source: https://lucide.dev
+  * License: ISC License (https://github.com/lucide-icons/lucide/blob/main/LICENSE)
+* **Mammoth.js**
+  * Author: Michael Williamson
+  * Source: https://github.com/mwilliamson/mammoth.js
+  * License: BSD 2-Clause License (https://github.com/mwilliamson/mammoth.js/blob/master/LICENSE)
+* **Nspell**
+  * Author: Titus Wormer
+  * Source: https://github.com/wooorm/nspell
+  * License: MIT License (https://github.com/wooorm/nspell/blob/main/license)
