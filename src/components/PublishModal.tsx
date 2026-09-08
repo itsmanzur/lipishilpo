@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Share2, ExternalLink, Edit3, CheckCircle2, Loader2, X, FileText, BookOpen } from 'lucide-react';
 import { type Chapter, type Project, publishToWordPress, type PublishResult } from '../api';
+import { markupToHtml } from '../lib/highlight-markup';
 import { type Language } from '../i18n';
 
 interface PublishModalProps {
@@ -28,26 +29,14 @@ export const PublishModal: React.FC<PublishModalProps> = ({
 
   function getFormattedHtml(): string {
     if (scope === 'chapter' && currentChapter) {
-      const paras = currentChapter.text
-        .split(/\n{2,}/)
-        .map((p) => p.trim())
-        .filter(Boolean)
-        .map((p) => `<p>${p.replace(/\n/g, '<br/>')}</p>`)
-        .join('\n');
-      return paras;
+      return markupToHtml(currentChapter.text || '');
     }
 
     if (project) {
       return project.chapters
         .map((c, i) => {
           const heading = `<h2>${i + 1}. ${c.title || (lang === 'bn' ? 'অধ্যায়' : 'Chapter')}</h2>`;
-          const paras = c.text
-            .split(/\n{2,}/)
-            .map((p) => p.trim())
-            .filter(Boolean)
-            .map((p) => `<p>${p.replace(/\n/g, '<br/>')}</p>`)
-            .join('\n');
-          return `${heading}\n${paras}`;
+          return `${heading}\n${markupToHtml(c.text || '')}`;
         })
         .join('\n\n<hr/>\n\n');
     }

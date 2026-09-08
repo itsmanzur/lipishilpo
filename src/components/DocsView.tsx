@@ -100,8 +100,8 @@ export const DocsView: React.FC<DocsViewProps> = ({ lang, onOpenEditor, onOpenSe
     {
       q: lang === 'bn' ? 'লিপিশিল্প প্রোতে কী কী অতিরিক্ত সুবিধা আছে?' : 'What additional features are in Lipishilpo Pro?',
       a: lang === 'bn'
-        ? 'লিপিশিল্প প্রোতে রয়েছে সম্পূর্ণ বুক গেট-আপ স্টুডিও (প্রিন্ট-রেডি কাস্টম পিডিএফ ও ই-পাব লেআউট ইঞ্জিন, ড্রপক্যাপ, অলঙ্কৃত হেডার ও সূচিপত্র ডিজাইন), OpenAI GPT-4o সম্পাদকীয় সহ-লেখক এবং বাংলা টেক্সট-টু-স্পিচ অডিও প্রুফরিডার।'
-        : 'Lipishilpo Pro unlocks the Book Get-Up Studio (print-ready PDF & EPUB layout designer with headers, footers, drop caps, and table of contents), OpenAI GPT-4o editorial co-writer, and Bengali text-to-speech audio reader.'
+        ? 'লিপিশিল্প প্রোতে রয়েছে বুক গেট-আপ স্টুডিও (প্রিন্ট-রেডি PDF, EPUB ও Word এক্সপোর্ট, ড্রপক্যাপ, হেডার ও সূচিপত্র), OpenAI GPT-4o সম্পাদকীয় সহ-লেখক এবং বাংলা টেক্সট-টু-স্পিচ।'
+        : 'Lipishilpo Pro unlocks the Book Get-Up Studio (print-ready PDF, EPUB, and Word export, headers, footers, drop caps, and table of contents), OpenAI GPT-4o editorial co-writer, and Bengali text-to-speech.'
     },
   ];
 
@@ -323,6 +323,9 @@ export const DocsView: React.FC<DocsViewProps> = ({ lang, onOpenEditor, onOpenSe
                   <span className="marker-pill hl-purple">{lang === 'bn' ? 'বেগুনি: চরিত্র' : 'Purple: Character'}</span>
                   <span className="marker-pill hl-pink">{lang === 'bn' ? 'গোলাপি: সংশোধন' : 'Pink: Revise'}</span>
                 </div>
+                <div className="fmt-code-box">
+                  <code>==গুরুত্বপূর্ণ লাইন==</code>
+                </div>
               </div>
 
               {/* Footnotes */}
@@ -429,8 +432,8 @@ export const DocsView: React.FC<DocsViewProps> = ({ lang, onOpenEditor, onOpenSe
                 <h3>{lang === 'bn' ? 'ইউনিভার্সাল এক্সপোর্ট' : 'Universal Export Options'}</h3>
                 <p>
                   {lang === 'bn'
-                    ? 'Clean DOCX (Word), Markdown (.md), Plain Text (.txt), Clean HTML এবং JSON ব্যাকআপে ১-ক্লিকে ডাউনলোড করুন।'
-                    : 'Export clean manuscripts to Word (DOCX), Markdown, Text, HTML, or full LipiShilpo JSON backups.'}
+                    ? 'Markdown (.md), Plain Text (.txt), Clean HTML এবং JSON ব্যাকআপে ১-ক্লিকে ডাউনলোড করুন। Word (.docx) ইমপোর্ট ফ্রি; লেআউটসহ DOCX/PDF/EPUB প্রোতে।'
+                    : 'Export Markdown, Text, HTML, or a full LipiShilpo JSON backup. Word (.docx) import is free; layout DOCX, PDF, and EPUB are in Pro.'}
                 </p>
               </div>
             </div>
@@ -446,29 +449,29 @@ export const DocsView: React.FC<DocsViewProps> = ({ lang, onOpenEditor, onOpenSe
                 </thead>
                 <tbody>
                   <tr>
-                    <td><strong>DOCX (Word)</strong></td>
+                    <td><strong>HTML / TXT / Markdown</strong></td>
                     <td><span className="badge free">Free</span></td>
-                    <td>{lang === 'bn' ? 'সম্পাদক বা প্রকাশকের কাছে জমা দেওয়ার জন্য' : 'Editorial submissions & Word processing'}</td>
-                  </tr>
-                  <tr>
-                    <td><strong>Markdown (.md)</strong></td>
-                    <td><span className="badge free">Free</span></td>
-                    <td>{lang === 'bn' ? 'গিটহাব বা টেক্সট এডিটর' : 'Modern markdown workflows'}</td>
-                  </tr>
-                  <tr>
-                    <td><strong>HTML / TXT</strong></td>
-                    <td><span className="badge free">Free</span></td>
-                    <td>{lang === 'bn' ? 'ওয়েবে প্রকাশ বা সাধারণ ব্যাকআপ' : 'Web publishing and plain backup'}</td>
+                    <td>{lang === 'bn' ? 'ওয়েব, রিডার ও সাধারণ ব্যাকআপ' : 'Web, readers, and plain backup'}</td>
                   </tr>
                   <tr>
                     <td><strong>JSON Backup</strong></td>
                     <td><span className="badge free">Free</span></td>
-                    <td>{lang === 'bn' ? '১০০% পাণ্ডুলিপি রিস্টোর' : 'Full project data migration & restore'}</td>
+                    <td>{lang === 'bn' ? 'পুরো পাণ্ডুলিপি রিস্টোর' : 'Full project restore'}</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Word (.docx) ইমপোর্ট</strong></td>
+                    <td><span className="badge free">Free</span></td>
+                    <td>{lang === 'bn' ? 'Word থেকে অধ্যায় নিয়ে আসা' : 'Bring chapters in from Word'}</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Word (.docx) এক্সপোর্ট</strong></td>
+                    <td><span className="badge pro">Pro</span></td>
+                    <td>{lang === 'bn' ? 'লেআউটসহ সম্পাদক/প্রকাশকের কাছে জমা' : 'Layout-aware editorial submission'}</td>
                   </tr>
                   <tr>
                     <td><strong>Print PDF / EPUB</strong></td>
                     <td><span className="badge pro">Pro</span></td>
-                    <td>{lang === 'bn' ? 'বুক লেআউট, অলঙ্কৃত হেডার ও প্রিন্ট' : 'Print-ready layout & Kindle e-books'}</td>
+                    <td>{lang === 'bn' ? 'বুক লেআউট, হেডার ও প্রিন্ট/ই-বুক' : 'Print-ready layout and e-books'}</td>
                   </tr>
                 </tbody>
               </table>

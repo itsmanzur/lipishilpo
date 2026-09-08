@@ -469,6 +469,129 @@ h1 {
 .paper textarea::placeholder {
   color: #acb39f;
 }
+
+/* Live formatted edit overlay (same glyphs as textarea, styled) */
+.paper-live-wrap {
+  position: relative;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+}
+.paper-live-overlay,
+.paper-live-input {
+  font-family: inherit;
+  line-height: inherit;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  padding: 0 8px 24px 0;
+  box-sizing: border-box;
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+}
+.paper-live-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  color: #505d49;
+  scrollbar-width: none;
+}
+.paper-live-overlay::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+.paper-live-input {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  resize: none;
+  border: 0;
+  background: transparent;
+  color: transparent !important;
+  caret-color: #505d49;
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+}
+.paper textarea.paper-live-input {
+  flex: none;
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+}
+.paper-live-input::selection {
+  background: rgba(32, 100, 79, 0.28);
+  color: transparent;
+}
+.paper-live-wrap.is-composing .paper-live-input {
+  color: #505d49 !important;
+}
+.paper-live-wrap.is-composing .paper-live-overlay {
+  visibility: hidden;
+}
+.live-token {
+  opacity: 0.26;
+  font-weight: 400;
+  font-style: normal;
+}
+.live-bold {
+  font-weight: 700;
+}
+.live-italic {
+  font-style: italic;
+}
+.live-h2,
+.live-h3 {
+  font-weight: 700;
+  color: #1b4937;
+}
+.live-quote {
+  font-style: italic;
+  color: #29483b;
+}
+.live-poem {
+  font-style: italic;
+  color: #2a4638;
+}
+.live-box {
+  background: rgba(210, 232, 214, 0.45);
+}
+.live-box-title {
+  font-weight: 700;
+  color: #1a5a3f;
+}
+.live-dropcap {
+  font-weight: 600;
+}
+.live-divider {
+  color: #5f7a68;
+}
+.live-fn-ref {
+  font-size: inherit;
+  color: #1b4937;
+  font-weight: 600;
+}
+.live-fn-def {
+  color: #4b6354;
+}
+.live-mark {
+  border-radius: 2px;
+}
+.live-mark.hl-yellow,
+.live-mark:not([class*="hl-"]) {
+  background: #fef08a;
+}
+.live-mark.hl-green {
+  background: #bbf7d0;
+}
+.live-mark.hl-purple {
+  background: #e9d5ff;
+}
+.live-mark.hl-pink {
+  background: #fce7f3;
+}
 .writing-footer {
   display: flex;
   justify-content: space-between;
@@ -1792,6 +1915,15 @@ body {
 .writing.theme-sepia .paper textarea {
   color: #3b2c1a;
 }
+.writing.theme-sepia .paper-live-overlay {
+  color: #3b2c1a;
+}
+.writing.theme-sepia .paper-live-input {
+  caret-color: #3b2c1a;
+}
+.writing.theme-sepia .paper-live-wrap.is-composing .paper-live-input {
+  color: #3b2c1a !important;
+}
 .writing.theme-sepia .paper textarea::placeholder {
   color: #a89880;
 }
@@ -1837,6 +1969,26 @@ body {
 }
 .writing.theme-dark .paper textarea {
   color: #dbe8e3;
+}
+.writing.theme-dark .paper-live-overlay {
+  color: #dbe8e3;
+}
+.writing.theme-dark .paper-live-input {
+  caret-color: #dbe8e3;
+}
+.writing.theme-dark .paper-live-wrap.is-composing .paper-live-input {
+  color: #dbe8e3 !important;
+}
+.writing.theme-dark .live-token {
+  opacity: 0.38;
+}
+.writing.theme-dark .live-h2,
+.writing.theme-dark .live-h3 {
+  color: #b7e2d0;
+}
+.writing.theme-dark .live-quote,
+.writing.theme-dark .live-poem {
+  color: #c5ddd4;
 }
 .writing.theme-dark .paper textarea::placeholder {
   color: #5d756c;
@@ -3868,6 +4020,7 @@ body.lipishilpo-studio-fullscreen #lipishilpo-root {
 
 /* ── Typography Dynamic Bindings ── */
 .paper textarea,
+.paper-live-wrap,
 .visual-rendered-doc {
   font-family: var(--editor-font-family, 'Noto Serif Bengali', serif) !important;
   font-size: var(--editor-font-size, 18px) !important;
@@ -6119,9 +6272,119 @@ body.lipishilpo-studio-fullscreen #lipishilpo-root {
   padding: 6px 14px;
   background: rgba(248, 250, 252, 0.85);
   border-bottom: 1px solid #e2e8f0;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   border-radius: 6px 6px 0 0;
   user-select: none;
+  overflow: visible;
+}
+
+.format-overflow-host {
+  position: relative;
+}
+
+.format-dropdown-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.format-action-btn.is-open {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.format-more-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 40;
+  min-width: 240px;
+  padding: 6px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.14);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.format-more-menu.format-colors-menu {
+  flex-direction: row;
+  min-width: 0;
+  padding: 8px 10px;
+  gap: 8px;
+}
+
+.format-more-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 8px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: #334155;
+  font-size: 12.5px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.format-more-item:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.format-more-glyph {
+  min-width: 16px;
+  text-align: center;
+  font-size: 11px;
+}
+
+.format-more-hint {
+  margin-left: auto;
+  font-weight: 500;
+  color: #64748b;
+  font-size: 11px;
+}
+
+.format-more-split {
+  border-top: 1px solid #e2e8f0;
+  margin-top: 4px;
+  padding-top: 4px;
+}
+
+.format-motif-list {
+  padding: 2px 0 2px 12px;
+}
+
+.theme-dark .format-more-menu {
+  background: #0f172a;
+  border-color: #334155;
+}
+
+.theme-dark .format-more-item {
+  color: #cbd5e1;
+}
+
+.theme-dark .format-more-item:hover {
+  background: #334155;
+  color: #ffffff;
+}
+
+.theme-dark .format-more-hint {
+  color: #94a3b8;
+}
+
+.theme-dark .format-more-split {
+  border-top-color: #334155;
+}
+
+@media (max-width: 720px) {
+  .editor-quick-format-bar {
+    flex-wrap: wrap;
+  }
 }
 
 .format-btn-group {
@@ -6357,6 +6620,15 @@ body.lipishilpo-studio-fullscreen #lipishilpo-root {
 .writing.theme-parchment .paper textarea {
   color: #2b1f11;
 }
+.writing.theme-parchment .paper-live-overlay {
+  color: #2b1f11;
+}
+.writing.theme-parchment .paper-live-input {
+  caret-color: #2b1f11;
+}
+.writing.theme-parchment .paper-live-wrap.is-composing .paper-live-input {
+  color: #2b1f11 !important;
+}
 .writing.theme-parchment .paper textarea::placeholder {
   color: #ad9a82;
 }
@@ -6402,6 +6674,22 @@ body.lipishilpo-studio-fullscreen #lipishilpo-root {
 }
 .writing.theme-oled .paper textarea {
   color: #e5e5e5;
+}
+.writing.theme-oled .paper-live-overlay {
+  color: #e5e5e5;
+}
+.writing.theme-oled .paper-live-input {
+  caret-color: #e5e5e5;
+}
+.writing.theme-oled .paper-live-wrap.is-composing .paper-live-input {
+  color: #e5e5e5 !important;
+}
+.writing.theme-oled .live-token {
+  opacity: 0.4;
+}
+.writing.theme-oled .live-h2,
+.writing.theme-oled .live-h3 {
+  color: #d0d0d0;
 }
 .writing.theme-oled .paper textarea::placeholder {
   color: #444444;

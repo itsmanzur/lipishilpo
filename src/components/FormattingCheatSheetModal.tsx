@@ -66,9 +66,9 @@ const CHEAT_ITEMS: CheatItem[] = [
   },
   {
     name: { bn: 'রঙিন হাইলাইট (Highlight)', en: 'Color Highlight' },
-    syntax: '<mark class="hl-yellow">লেখা</mark>',
-    example: { bn: '<mark class="hl-yellow">প্লটের মূল রহস্য</mark>', en: '<mark class="hl-yellow">Core mystery</mark>' },
-    desc: { bn: 'হলুদ, সবুজ, বেগুনি বা গোলাপি মার্কার দিয়ে মার্ক করা', en: 'Highlight with yellow, green, purple or pink' },
+    syntax: '==লেখা==',
+    example: { bn: '==প্লটের মূল রহস্য==', en: '==Core mystery==' },
+    desc: { bn: 'হলুদ মার্কার। সবুজ/বেগুনি/গোলাপি: ==green:লেখা==', en: 'Yellow marker. Other colors: ==green:text==, ==purple:text==, ==pink:text==' },
     category: 'text',
   },
 

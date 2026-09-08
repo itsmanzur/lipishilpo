@@ -33,7 +33,7 @@ It bridges the gap between distraction-free writing environments (like Ulysses a
 * **World-Building & Character Codex:** Dedicated profile cards for characters (role, traits, bio) and world lore settings with 1-click name insertion.
 * **Literary Analytics:** Dialogue vs. Narrative ratio visualizer, sentence cadence rhythm, and overused words detector with literary synonyms.
 * **Phonetic Typing & Conjuncts Suite:** Built-in Bijoy to Unicode, Unicode to Bijoy, and Avro phonetic converters with a complete conjuncts cheat sheet.
-* **Universal Exports:** Export manuscripts to Clean DOCX (Microsoft Word), JSON Backup, Clean HTML, Markdown, and Plain Text.
+* **Universal Exports:** Export manuscripts to JSON backup, Clean HTML, Markdown, and Plain Text. Import Microsoft Word (.docx). Print-ready DOCX, PDF, and EPUB are in Lipishilpo Pro.
 
 == Installation ==
 
@@ -53,10 +53,10 @@ Type `/` on any line in the editor to pop up the command palette. You can type k
 Yes! LipiShilpo includes a dual-engine converter that allows 1-click bi-directional conversion between Bijoy and standard Unicode, along with an Avro cheat sheet for complex Bengali conjuncts (যুক্তবর্ণ).
 
 = Can I export my book to Microsoft Word? =
-Yes! LipiShilpo provides 1-click DOCX export with preserved chapter headings, paragraph styling, and Bengali typography.
+You can import .docx into the Free studio. Layout-aware Word (.docx) export, along with print-ready PDF and EPUB, is in Lipishilpo Pro Book Studio. Free exports HTML, Markdown, plain text, and JSON backup.
 
 = What additional features are in Lipishilpo Pro? =
-Lipishilpo Pro unlocks the full Book Get-Up Studio (print-ready PDF & EPUB layout engine, customizable headers, footers, drop caps, and table of contents designs), OpenAI GPT-4o editorial co-writer, and Bengali audio text-to-speech.
+Lipishilpo Pro unlocks the Book Get-Up Studio (print-ready PDF, EPUB, and Word export, headers, footers, drop caps, and table of contents), OpenAI GPT-4o editorial co-writer, and Bengali audio text-to-speech.
 
 == Screenshots ==
 
@@ -81,7 +81,7 @@ Lipishilpo Pro unlocks the full Book Get-Up Studio (print-ready PDF & EPUB layou
 * Global project search and replace modal (Ctrl+Shift+F).
 * Character and World Lore Codex panel.
 * Dialogue vs narrative ratio, sentence cadence, and overused words analytics.
-* DOCX, JSON, HTML, TXT, and Markdown universal exports.
+* JSON, HTML, TXT, and Markdown exports; Word (.docx) import. Print-ready DOCX/PDF/EPUB via Pro.
 
 == Upgrade Notice ==
 

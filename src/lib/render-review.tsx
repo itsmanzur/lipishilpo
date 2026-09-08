@@ -19,7 +19,8 @@ export function renderFormattedSpan(rawText: string, keyPrefix: string): React.R
   // 9: Footnote reference [^N]
   // 10: **bold**
   // 11: *italic*
-  const pattern = /(:::box\[(.*?)\]([\s\S]*?):::)|(:::poem([\s\S]*?):::)|(:::dropcap([\s\S]*?):::)|(\n?(?:---|\u2756\s+\u2756\s+\u2756|~\s*\u2766\s*~|—\s*\u2726\s*—|\*\s*\*\s*\*|\u2767\s+\u2767\s+\u2767)\n?)|(\n?#{2,3}\s+[^\n]+)|(\n?>\s+[^\n]+)|(<mark(?:\s+class="([^"]*)")?>([\s\S]*?)<\/mark>)|(\n?\[\^([0-9\u09E6-\u09EF]+)\]:\s*([^\n]+))|(\[\^([0-9\u09E6-\u09EF]+)\])|(\*\*[^*]+\*\*)|(\*[^*]+\*)/g;
+  // 12: ==green:text== or ==text== (highlight, not HTML)
+  const pattern = /(:::box\[(.*?)\]([\s\S]*?):::)|(:::poem([\s\S]*?):::)|(:::dropcap([\s\S]*?):::)|(\n?(?:---|\u2756\s+\u2756\s+\u2756|~\s*\u2766\s*~|—\s*\u2726\s*—|\*\s*\*\s*\*|\u2767\s+\u2767\s+\u2767)\n?)|(\n?#{2,3}\s+[^\n]+)|(\n?>\s+[^\n]+)|(<mark(?:\s+class="([^"]*)")?>([\s\S]*?)<\/mark>)|(\n?\[\^([0-9\u09E6-\u09EF]+)\]:\s*([^\n]+))|(\[\^([0-9\u09E6-\u09EF]+)\])|(\*\*[^*]+\*\*)|(\*[^*]+\*)|(==(yellow|green|purple|pink):([\s\S]*?)==)|(==([\s\S]*?)==)/g;
 
   const parts: React.ReactNode[] = [];
   let lastIndex = 0;
@@ -155,6 +156,24 @@ export function renderFormattedSpan(rawText: string, keyPrefix: string): React.R
         <em key={`${keyPrefix}-i-${idx++}`} className="review-italic">
           {italicContent}
         </em>
+      );
+    }
+    // 12. ==green:text==
+    else if (match[21]) {
+      const markClass = `hl-${match[22]}`;
+      const markContent = match[23] || '';
+      parts.push(
+        <mark key={`${keyPrefix}-mdmk-${idx++}`} className={`review-mark-highlight ${markClass}`}>
+          {markContent}
+        </mark>
+      );
+    }
+    // 13. ==text==
+    else if (match[24]) {
+      parts.push(
+        <mark key={`${keyPrefix}-mdmk-${idx++}`} className="review-mark-highlight hl-yellow">
+          {match[25] || ''}
+        </mark>
       );
     }
 

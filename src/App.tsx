@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react';
 import {
   Feather, BookOpen, Plus, FileText, Library, BarChart3,
   LayoutTemplate, ChevronRight, Download, CheckCheck,
@@ -7,7 +7,7 @@ import {
   Maximize2, Minimize2, Sun, Moon, Coffee, History, Target,
   MessageSquare, MessageSquarePlus, CheckCircle, Eye, Edit3,
   BookA, Share2, StickyNote, FileUp, Keyboard, Compass,
-  Bold, Italic, Heading2, Quote, List, Box, Bookmark, GripVertical, Replace, MessageSquareQuote,
+  Box, Bookmark, GripVertical, Replace,
 } from 'lucide-react';
 import {
   type Project, type Chapter, type ChapterStatus,
@@ -33,6 +33,8 @@ import { PersonalDictionaryModal } from './components/PersonalDictionaryModal';
 import { SlashCommandMenu, type SlashCommandItem } from './components/SlashCommandMenu';
 import { FormattingCheatSheetModal } from './components/FormattingCheatSheetModal';
 import { renderFormattedSpan } from './lib/render-review';
+import { renderLiveOverlay } from './lib/live-overlay';
+import { EditorFormatBar } from './components/EditorFormatBar';
 import { GlobalFindReplaceModal } from './components/GlobalFindReplaceModal';
 import { ShortcutsModal } from './components/ShortcutsModal';
 import { OnboardingTour } from './components/OnboardingTour';
@@ -44,6 +46,7 @@ import { handleSmartKeyDown } from './lib/smart-typography';
 import { exportProjectToJson } from './lib/project-backup';
 import { importManuscriptFile, ManuscriptImportError, type ImportedManuscript } from './lib/manuscript-import';
 import { createId } from './lib/id';
+import { htmlMarksToMarkdown, wrapHighlight, unwrapHighlight, markupToHtml, type HighlightColor } from './lib/highlight-markup';
 import { clipEditText, diffManualEdits, type ChapterEdit, type EditKind } from './lib/edit-log';
 import { wpConfig } from './api';
 import { translations, getSavedLanguage, saveLanguage, type Language } from './i18n';
@@ -223,6 +226,8 @@ export default function App() {
   const dialog = useRef<HTMLDialogElement>(null);
   const statsDialog = useRef<HTMLDialogElement>(null);
   const editor = useRef<HTMLTextAreaElement>(null);
+  const liveOverlayRef = useRef<HTMLDivElement>(null);
+  const [imeComposing, setImeComposing] = useState(false);
   const searchInput = useRef<HTMLInputElement>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const trackedTextRef = useRef('');
@@ -591,6 +596,12 @@ export default function App() {
     }
   }, [chapter?.id, project?.id]);
 
+  useEffect(() => {
+    if (!chapter?.text.includes('<mark')) return;
+    const next = htmlMarksToMarkdown(chapter.text);
+    if (next !== chapter.text) updateText(next, 'tool');
+  }, [chapter?.id]);
+
   function editStamp() {
     return new Date().toLocaleString(lang === 'bn' ? 'bn-BD' : 'en-US', {
       month: 'short',
@@ -713,6 +724,18 @@ export default function App() {
       behavior: 'smooth',
     });
   }
+
+  function syncLiveOverlayScroll() {
+    const ta = editor.current;
+    const ov = liveOverlayRef.current;
+    if (!ta || !ov) return;
+    ov.scrollTop = ta.scrollTop;
+    ov.scrollLeft = ta.scrollLeft;
+  }
+
+  useLayoutEffect(() => {
+    syncLiveOverlayScroll();
+  }, [text, font, editorMode]);
 
   function handleSelectTextInEditor() {
     if (!editor.current) return;
@@ -1364,25 +1387,20 @@ window.addEventListener('keydown', handleKeyDown);
       case 'mark-green':
       case 'mark-purple':
       case 'mark-pink': {
-        const colorClass = format === 'mark-green' ? 'hl-green'
-          : format === 'mark-purple' ? 'hl-purple'
-          : format === 'mark-pink' ? 'hl-pink'
-          : 'hl-yellow';
-
-        if (selected.startsWith(`<mark class="${colorClass}">`) && selected.endsWith('</mark>')) {
-          const unwrapped = selected.slice(`<mark class="${colorClass}">`.length, -7);
-          replacement = unwrapped;
+        const color: HighlightColor = format === 'mark-green' ? 'green'
+          : format === 'mark-purple' ? 'purple'
+          : format === 'mark-pink' ? 'pink'
+          : 'yellow';
+        const parsed = unwrapHighlight(selected);
+        if (parsed.wrapped && parsed.color === color) {
+          replacement = parsed.inner;
           selStart = start;
-          selEnd = start + unwrapped.length;
-        } else if (selected.startsWith('<mark>') && selected.endsWith('</mark>')) {
-          const unwrapped = selected.slice(6, -7);
-          replacement = unwrapped;
-          selStart = start;
-          selEnd = start + unwrapped.length;
+          selEnd = start + parsed.inner.length;
         } else {
-          const inner = selected || (lang === 'bn' ? 'হাইলাইট' : 'highlight');
-          replacement = `<mark class="${colorClass}">${inner}</mark>`;
-          selStart = start + `<mark class="${colorClass}">`.length;
+          const inner = parsed.inner || (lang === 'bn' ? 'হাইলাইট' : 'highlight');
+          replacement = wrapHighlight(inner, color);
+          const prefix = color === 'yellow' ? 2 : color.length + 3;
+          selStart = start + prefix;
           selEnd = selStart + inner.length;
         }
         break;
@@ -1735,11 +1753,8 @@ window.addEventListener('keydown', handleKeyDown);
   function downloadHtml() {
     if (!project) return;
     const chaptersHtml = project.chapters.map((c) => {
-      const paras = (c.text || '')
-        .split(/\n{2,}/)
-        .map((p) => `<p>${escapeHtml(p).replace(/\n/g, '<br/>')}</p>`)
-        .join('\n');
-      return `<section>\n<h2>${escapeHtml(c.title || '')}</h2>\n${paras}\n</section>`;
+      const body = markupToHtml(c.text || '');
+      return `<section>\n<h2>${escapeHtml(c.title || '')}</h2>\n${body}\n</section>`;
     }).join('\n');
     const html = `<!DOCTYPE html>
 <html lang="${project.language === 'English' ? 'en' : 'bn'}">
@@ -2826,137 +2841,12 @@ ${chaptersHtml}
                   </div>
                 )}
 
-                {/* Quick Book & Text Formatting Action Bar */}
                 {editorMode === 'edit' && (
-                  <div className="editor-quick-format-bar" onMouseDown={(e) => e.preventDefault()}>
-                    <div className="format-btn-group">
-                      <button
-                        type="button"
-                        className="format-action-btn"
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => applyFormatting('bold')}
-                        title={lang === 'bn' ? 'গাঢ় করুন (Bold) **লেখা** [Ctrl+B]' : 'Bold **text** [Ctrl+B]'}
-                      >
-                        <Bold size={13} />
-                      </button>
-                      <button
-                        type="button"
-                        className="format-action-btn"
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => applyFormatting('italic')}
-                        title={lang === 'bn' ? 'বাঁকা করুন (Italic) *লেখা* [Ctrl+I]' : 'Italic *text* [Ctrl+I]'}
-                      >
-                        <Italic size={13} />
-                      </button>
-                    </div>
-
-                    <span className="format-divider" />
-
-                    <div className="format-btn-group">
-                      <button
-                        type="button"
-                        className="format-action-btn"
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => applyFormatting('dialogue')}
-                        title={lang === 'bn' ? 'সংলাপ — “উক্তি” [Ctrl+Shift+D]' : 'Dialogue — “Quote” [Ctrl+Shift+D]'}
-                      >
-                        <MessageSquareQuote size={13} />
-                        <span>{lang === 'bn' ? 'সংলাপ' : 'Dialogue'}</span>
-                      </button>
-                      <button
-                        type="button"
-                        className="format-action-btn"
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => applyFormatting('heading')}
-                        title={lang === 'bn' ? 'উপ-শিরোনাম (Subheading) ## সেকশন' : 'Subheading ## Section'}
-                      >
-                        <Heading2 size={13} />
-                        <span>H2</span>
-                      </button>
-                      <button
-                        type="button"
-                        className="format-action-btn"
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => applyFormatting('quote')}
-                        title={lang === 'bn' ? 'উদ্ধৃতি বা এপিগ্রাফ (Quote) > উক্তি' : 'Quote > Text'}
-                      >
-                        <Quote size={13} />
-                        <span>{lang === 'bn' ? 'উদ্ধৃতি' : 'Quote'}</span>
-                      </button>
-                      <button
-                        type="button"
-                        className="format-action-btn"
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => applyFormatting('poem')}
-                        title={lang === 'bn' ? 'কবিতা ও স্তবক :::poem' : 'Poem :::poem'}
-                      >
-                        <Feather size={13} />
-                        <span>{lang === 'bn' ? 'কবিতা' : 'Poem'}</span>
-                      </button>
-                      <button
-                        type="button"
-                        className="format-action-btn highlight-box"
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => applyFormatting('callout')}
-                        title={lang === 'bn' ? 'ইসলামের আলোকে / তথ্য বক্স :::box' : 'Callout Box :::box'}
-                      >
-                        <Box size={13} />
-                        <span>{lang === 'bn' ? 'তথ্য/ইসলামিক বক্স' : 'Box'}</span>
-                      </button>
-                      <button
-                        type="button"
-                        className="format-action-btn"
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => applyFormatting('citation')}
-                        title={lang === 'bn' ? 'তথ্যসূত্র বা সাইটেশন তথ্যসূত্র:' : 'Citation / Source'}
-                      >
-                        <Bookmark size={13} />
-                        <span>{lang === 'bn' ? 'তথ্যসূত্র' : 'Citation'}</span>
-                      </button>
-                      <button
-                        type="button"
-                        className="format-action-btn"
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => applyFormatting('footnote')}
-                        title={lang === 'bn' ? 'পাদটীকা ও টীকা [^১]' : 'Footnote [^1]'}
-                      >
-                        <span>[^১]</span>
-                      </button>
-                      <button
-                        type="button"
-                        className="format-action-btn"
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => applyFormatting('list')}
-                        title={lang === 'bn' ? 'তালিকা বা পয়েন্ট * পয়েন্ট' : 'Bullet List * item'}
-                      >
-                        <List size={13} />
-                      </button>
-                      <button
-                        type="button"
-                        className="format-action-btn"
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => applyFormatting('divider-diamond')}
-                        title={lang === 'bn' ? 'দৃশ্য বিভাজক মোটিফ ❖ ❖ ❖' : 'Scene Break Motif ❖ ❖ ❖'}
-                      >
-                        <span>❖</span>
-                      </button>
-                    </div>
-
-                    <span className="format-divider" />
-
-                    <div className="format-btn-group">
-                      <button
-                        type="button"
-                        className="format-action-btn cheatsheet-btn"
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => setShowCheatSheetModal(true)}
-                        title={lang === 'bn' ? 'ফরম্যাটিং চিটশিট সহায়িকা [Ctrl+/]' : 'Formatting Cheat Sheet [Ctrl+/]'}
-                      >
-                        <Keyboard size={13} />
-                        <span>{lang === 'bn' ? 'চিটশিট' : 'Cheat Sheet'}</span>
-                      </button>
-                    </div>
-                  </div>
+                  <EditorFormatBar
+                    lang={lang}
+                    onFormat={applyFormatting}
+                    onOpenCheatSheet={() => setShowCheatSheetModal(true)}
+                  />
                 )}
 
                 <div className={`paper ${typewriterMode ? 'typewriter-mode' : ''}`} data-tour="write">
@@ -2974,77 +2864,90 @@ ${chaptersHtml}
 
                   {/* Mode 1: Direct Edit Textarea */}
                   {editorMode === 'edit' ? (
-                    <textarea
-                      key={chapter.id}
-                      ref={editor}
-                      aria-label={t.editorPlaceholder}
-                      style={{ fontSize: font }}
-                      value={text}
-                      placeholder={t.editorPlaceholder}
-                      spellCheck={false}
-                      onMouseUp={() => {
-                        handleSelectTextInEditor();
-                        if (editor.current) checkSlashTrigger(editor.current);
-                      }}
-                      onKeyUp={(e) => {
-                        handleSelectTextInEditor();
-                        if (editor.current) checkSlashTrigger(editor.current);
-                      }}
-                      onSelect={handleSelectTextInEditor}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Escape' && slashMenu.isOpen) {
-                          e.preventDefault();
-                          setSlashMenu({ isOpen: false, query: '', position: null, startIdx: -1 });
-                          return;
-                        }
-                        if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'd') {
-                          e.preventDefault();
-                          applyFormatting('dialogue');
-                          return;
-                        }
-                        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
-                          e.preventDefault();
-                          applyFormatting('bold');
-                          return;
-                        }
-                        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'i') {
-                          e.preventDefault();
-                          applyFormatting('italic');
-                          return;
-                        }
-                        if (smartTyping) {
-                          const smart = handleSmartKeyDown(e, text);
-                          if (smart) {
-                            setHistory((h) => [...h.slice(-49), text]);
-                            typedTextRef.current = smart.newText;
-                            updateText(smart.newText, 'type');
-                            scheduleManualLog();
-                            setChecked(false);
-                            setTimeout(() => {
-                              if (editor.current) {
-                                editor.current.focus();
-                                editor.current.setSelectionRange(smart.newCursor, smart.newCursor);
-                                checkSlashTrigger(editor.current);
-                              }
-                            }, 10);
+                    <div className={'paper-live-wrap' + (imeComposing ? ' is-composing' : '') + (!text ? ' is-empty' : '')}>
+                      <div
+                        ref={liveOverlayRef}
+                        className="paper-live-overlay"
+                        aria-hidden="true"
+                      >
+                        {renderLiveOverlay(text, `ch-${chapter.id}`)}
+                      </div>
+                      <textarea
+                        key={chapter.id}
+                        ref={editor}
+                        className="paper-live-input"
+                        aria-label={t.editorPlaceholder}
+                        style={{ fontSize: font }}
+                        value={text}
+                        placeholder={t.editorPlaceholder}
+                        spellCheck={false}
+                        onScroll={syncLiveOverlayScroll}
+                        onCompositionStart={() => setImeComposing(true)}
+                        onCompositionEnd={() => setImeComposing(false)}
+                        onMouseUp={() => {
+                          handleSelectTextInEditor();
+                          if (editor.current) checkSlashTrigger(editor.current);
+                        }}
+                        onKeyUp={(e) => {
+                          handleSelectTextInEditor();
+                          if (editor.current) checkSlashTrigger(editor.current);
+                        }}
+                        onSelect={handleSelectTextInEditor}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Escape' && slashMenu.isOpen) {
+                            e.preventDefault();
+                            setSlashMenu({ isOpen: false, query: '', position: null, startIdx: -1 });
                             return;
                           }
-                        }
-                      }}
-                      onChange={(e) => {
-                        const next = e.target.value;
-                        setHistory((h) => [...h.slice(-49), text]);
-                        typedTextRef.current = next;
-                        updateText(next, 'type');
-                        scheduleManualLog();
-                        setChecked(false);
-                        checkSlashTrigger(e.currentTarget);
-                        if (typewriterMode) {
-                          adjustTypewriterScroll();
-                        }
-                      }}
-                      onBlur={flushManualEdits}
-                    />
+                          if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'd') {
+                            e.preventDefault();
+                            applyFormatting('dialogue');
+                            return;
+                          }
+                          if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
+                            e.preventDefault();
+                            applyFormatting('bold');
+                            return;
+                          }
+                          if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'i') {
+                            e.preventDefault();
+                            applyFormatting('italic');
+                            return;
+                          }
+                          if (smartTyping) {
+                            const smart = handleSmartKeyDown(e, text);
+                            if (smart) {
+                              setHistory((h) => [...h.slice(-49), text]);
+                              typedTextRef.current = smart.newText;
+                              updateText(smart.newText, 'type');
+                              scheduleManualLog();
+                              setChecked(false);
+                              setTimeout(() => {
+                                if (editor.current) {
+                                  editor.current.focus();
+                                  editor.current.setSelectionRange(smart.newCursor, smart.newCursor);
+                                  checkSlashTrigger(editor.current);
+                                }
+                              }, 10);
+                              return;
+                            }
+                          }
+                        }}
+                        onChange={(e) => {
+                          const next = e.target.value;
+                          setHistory((h) => [...h.slice(-49), text]);
+                          typedTextRef.current = next;
+                          updateText(next, 'type');
+                          scheduleManualLog();
+                          setChecked(false);
+                          checkSlashTrigger(e.currentTarget);
+                          if (typewriterMode) {
+                            adjustTypewriterScroll();
+                          }
+                        }}
+                        onBlur={flushManualEdits}
+                      />
+                    </div>
                   ) : (
                     /* Mode 2: Interactive Visual Markup Review */
                     <div
