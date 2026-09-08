@@ -3,7 +3,8 @@ import {
   BookOpen, Sparkles, Wand2, ShieldAlert, FileDown,
   HelpCircle, ChevronDown, ChevronRight, Check, Copy, Sliders, Compass,
   Layers, SpellCheck, FileOutput, Users, Clock, PencilLine, Volume2,
-  Feather, MessageSquareQuote, Quote, Box, Bookmark, Type, Divide, Keyboard
+  Feather, MessageSquareQuote, Quote, Box, Bookmark, Type, Divide, Keyboard,
+  History, FileUp, Replace, RotateCcw, CheckCheck
 } from 'lucide-react';
 import { type Language } from '../i18n';
 import { findIssues, type ProofMatch } from '../proofread';
@@ -15,7 +16,7 @@ interface DocsViewProps {
   onStartTour?: () => void;
 }
 
-type DocsTab = 'intro' | 'formatting' | 'proofread' | 'continuity' | 'ai' | 'export' | 'faq';
+type DocsTab = 'intro' | 'formatting' | 'snapshots' | 'importexport' | 'proofread' | 'continuity' | 'ai' | 'faq';
 
 export const DocsView: React.FC<DocsViewProps> = ({ lang, onOpenEditor, onOpenSettings, onStartTour }) => {
   const [activeTab, setActiveTab] = useState<DocsTab>('intro');
@@ -50,11 +51,12 @@ export const DocsView: React.FC<DocsViewProps> = ({ lang, onOpenEditor, onOpenSe
 
   const tabs: Array<{ id: DocsTab; label: string; icon: React.ReactNode; pro?: boolean }> = [
     { id: 'intro', label: lang === 'bn' ? 'পরিচিতি' : 'Overview', icon: <BookOpen size={15} /> },
-    { id: 'formatting', label: lang === 'bn' ? 'টেক্সট ফরম্যাটিং' : 'Formatting Guide', icon: <PencilLine size={15} /> },
-    { id: 'proofread', label: lang === 'bn' ? 'প্রুফরিড' : 'Proofread', icon: <Sparkles size={15} /> },
-    { id: 'continuity', label: lang === 'bn' ? 'ধারাবাহিকতা' : 'Continuity', icon: <ShieldAlert size={15} /> },
+    { id: 'formatting', label: lang === 'bn' ? 'ফরম্যাটিং ও স্ল্যাশ' : 'Formatting & Slash', icon: <PencilLine size={15} /> },
+    { id: 'snapshots', label: lang === 'bn' ? 'ভার্সন হিস্ট্রি' : 'Version History', icon: <History size={15} /> },
+    { id: 'importexport', label: lang === 'bn' ? 'ইমপোর্ট ও এক্সপোর্ট' : 'Import & Export', icon: <FileUp size={15} /> },
+    { id: 'proofread', label: lang === 'bn' ? 'প্রুফরিড ও অ্যানালিটিক্স' : 'Proofread & Analytics', icon: <Sparkles size={15} /> },
+    { id: 'continuity', label: lang === 'bn' ? 'কোডেক্স ও ওয়ার্কফ্লো' : 'Codex & Workflow', icon: <ShieldAlert size={15} /> },
     { id: 'ai', label: lang === 'bn' ? 'এআই সহায়ক' : 'AI Editorial', icon: <Wand2 size={15} />, pro: true },
-    { id: 'export', label: lang === 'bn' ? 'এক্সপোর্ট' : 'Export', icon: <FileDown size={15} /> },
     { id: 'faq', label: lang === 'bn' ? 'প্রশ্নোত্তর' : 'FAQ', icon: <HelpCircle size={15} /> },
   ];
 
@@ -62,340 +64,276 @@ export const DocsView: React.FC<DocsViewProps> = ({ lang, onOpenEditor, onOpenSe
     {
       q: lang === 'bn' ? 'লিপিশিল্প কী এবং এটি কাদের জন্য?' : 'What is Lipishilpo and who is it for?',
       a: lang === 'bn'
-        ? 'লিপিশিল্প হলো বাংলা ও বহুভাষিক উপন্যাসিক, গল্পকার, কবি, সাংবাদিক এবং কন্টেন্ট নির্মাতাদের জন্য একটি পূর্ণাঙ্গ পাণ্ডুলিপি রচনা ও সম্পাদনা স্টুডিও। এতে ব্যাকরণগত শুদ্ধতা, বাহুল্য দোষ পরিহার, প্রমিত বানান ও চরিত্র ধারাবাহিকতা পর্যবেক্ষণ করা যায় সহজে।'
-        : 'Lipishilpo is a manuscript writing and editorial studio for Bengali and multilingual novelists, storytellers, poets, journalists, and content creators. It provides grammatical proofreading, style linting, and character continuity tracking.'
+        ? 'লিপিশিল্প হলো বাংলা ও বহুভাষিক উপন্যাসিক, গল্পকার, কবি, গবেষক, সাংবাদিক এবং প্রকাশকদের জন্য একটি পূর্ণাঙ্গ পাণ্ডুলিপি রচনা ও সম্পাদনা স্টুডিও। এতে ব্যাকরণগত শুদ্ধতা, প্রমিত বানান, স্ল্যাশ কমান্ড, চরিত্র কোডেক্স, ভার্সন কন্ট্রোল এবং বিশদ সাহিত্যিক অ্যানালিটিক্স পর্যবেক্ষণ করা যায়।'
+        : 'Lipishilpo is a distraction-free manuscript studio for novelists, authors, poets, journalists, and publishers writing in Bengali and multilingual scripts. It includes grammar linting, slash commands, character codex, version history, and literary analytics.'
     },
     {
-      q: lang === 'bn' ? 'আমি কি সাইন-আপ ছাড়াই ফ্রি ব্যবহার করতে পারব?' : 'Can I use this for free without signing up?',
+      q: lang === 'bn' ? 'কী কী ফরম্যাটে পাণ্ডুলিপি ইমপোর্ট করা যায়?' : 'Which formats can I import my manuscript from?',
       a: lang === 'bn'
-        ? 'হ্যাঁ। মূল পাণ্ডুলিপি এডিটর, অধ্যায় ব্যবস্থাপনা, অফলাইন বাংলা ব্যাকরণ পরীক্ষণ এবং HTML/TXT এক্সপোর্ট সম্পূর্ণ ফ্রি। লেখা আপনার ওয়ার্ডপ্রেস ও ব্রাউজারেই থাকে।'
-        : 'Yes. The core studio, chapter management, offline Bangla proofreading, and HTML/TXT exports are free. Your writing stays in WordPress and the browser.'
+        ? 'লিপিশিল্পে Microsoft Word (.docx), Markdown (.md), Plain Text (.txt) এবং লিপিশিল্প ব্যাকআপ (.json) ফাইল সরাসরি ব্রাউজারে ড্র্যাগ-অ্যান্ড-ড্রপ করে ইমপোর্ট করা যায়। হেডিংস বা বাংলা মার্কার (অধ্যায় ১, পরিচ্ছেদ ২) থাকলে সেগুলো স্বয়ংক্রিয়ভাবে আলাদা অধ্যায়ে বিভক্ত হয়ে যায়।'
+        : 'You can import Microsoft Word (.docx), Markdown (.md), Plain Text (.txt), and LipiShilpo Backup (.json) files. Headings or chapter markers (e.g. Chapter 1, অধ্যায় ১) are automatically split into separate chapters with instant breakdown preview.'
     },
     {
-      q: lang === 'bn' ? 'প্রুফরিডিং ইঞ্জিন কীভাবে কাজ করে?' : 'How does the offline proofreading engine work?',
+      q: lang === 'bn' ? 'ভার্সন হিস্ট্রি ও স্ন্যাপশট কীভাবে কাজ করে?' : 'How does Version History & Snapshots work?',
       a: lang === 'bn'
-        ? 'লিপিশিল্প বাংলা একাডেমির প্রমিত বানানরীতি, বাহুল্য দোষ, সাধু ও চলিত ভাষার মিশ্রণ, অপ্রয়োজনীয় ইংরেজি স্পেস ও যতিচিহ্নের নিয়মাবলি মেনে রিয়েল-টাইমে লেখা বিশ্লেষণ করে।'
-        : 'Lipishilpo analyzes text in real time against Bangla Academy spelling, redundancy, Sadhu–Cholit mixing, and punctuation rules.'
+        ? 'আপনি যেকোনো সময় কাস্টম নাম দিয়ে লেখার স্ন্যাপশট সেভ করতে পারেন। এছাড়াও সব সংশোধন প্রয়োগ (Apply All Fixes), সার্বিক প্রতিস্থাপন (Global Replace) অথবা রোলব্যাকের আগে স্বয়ংক্রিয় সেফটি ব্যাকআপ সংরক্ষিত হয়। ডিফারেন্স ভিউয়ারে (Diff View) পাশাপাশি যোগ ও বিয়োগ দেখে ১-ক্লিকেই যেকোনো পুরনো সংস্করণে ফেরত যাওয়া যায়।'
+        : 'You can create named snapshots anytime. Automatic safety snapshots are created before applying bulk fixes, global replacements, or rollbacks. In the diff viewer, compare additions and deletions side-by-side and restore any previous version with 1 click.'
     },
     {
-      q: lang === 'bn' ? 'Word বা ডক ফাইল থেকে কীভাবে পাণ্ডুলিপি ইমপোর্ট করব?' : 'How do I import a Word document?',
+      q: lang === 'bn' ? 'স্ল্যাশ কমান্ড (/) ও চিটশিট (Ctrl+/) কীভাবে ব্যবহার করব?' : 'How do Slash Commands (/) and Cheat Sheet (Ctrl+/) work?',
       a: lang === 'bn'
-        ? 'পাণ্ডুলিপি পাতার «ইমপোর্ট» বাটনে ক্লিক করে .docx ফাইল দিন। Heading 1/2 অথবা «অধ্যায় ১» লেখা থাকলে সেগুলো আলাদা অধ্যায় হয়ে যায়। পুরনো .doc ফাইল আগে .docx করে সেভ করুন। JSON ব্যাকআপও একই বাটন দিয়ে ফিরে আনে।'
-        : 'On the manuscripts page, click Import and choose a .docx file. Heading 1/2 styles or lines such as “Chapter 1” become separate chapters. Older .doc files must first be saved as .docx. The same button also restores a Lipishilpo JSON backup.'
+        ? 'এডিটরের যেকোনো নতুন লাইনে / টাইপ করলেই নোশন-স্টাইলের কমান্ড প্যালেট চালু হবে (যেমন /dialogue, /poem, /box, /h2)। এছাড়াও কীবোর্ডে Ctrl + / চাপলে সম্পূর্ণ ফরম্যাটিং চিটশিট পপআপ হবে এবং ১-ক্লিকেই এডিটরে সিনট্যাক্স যুক্ত করতে পারবেন।'
+        : 'Type / on any new line to open Notion-style slash commands (/dialogue, /poem, /box, /h2). Press Ctrl + / anywhere in the editor to open the interactive formatting cheat sheet and insert literary syntaxes with 1 click.'
     },
     {
-      q: lang === 'bn' ? 'আমার পাণ্ডুলিপির গোপনীয়তা কতটা সুরক্ষিত?' : 'How secure is my manuscript privacy?',
+      q: lang === 'bn' ? 'বড় উপন্যাসের (৫০,০০০–২,০০,০০০ শব্দ) পারফরম্যান্স কেমন?' : 'How does it perform with large manuscripts (50k–200k words)?',
       a: lang === 'bn'
-        ? 'ফ্রি ভার্সনে কোনো লেখা বাইরের সার্ভারে যায় না। সবকিছু আপনার ওয়ার্ডপ্রেস ডেটাবেস ও লোকাল স্টোরেজে থাকে।'
-        : 'In the free version, no manuscript text is sent to external servers. Everything stays in your WordPress database and local storage.'
+        ? 'লিপিশিল্পে মেমরি-সেফ লেজি রেন্ডারিং এবং ১২০০ms ডিবাউন্সড অটোসেভ ব্যবহৃত হয়েছে। টাইপিং চলাকালীন অফলাইন লোকালস্টোরেজ ক্যাশিং নিশ্চিত থাকায় নেটওয়ার্ক বন্ধ হলেও এক অক্ষরও হারায় না এবং টাইপিং সর্বদা স্থির ৬০fps বজায় থাকে।'
+        : 'Lipishilpo uses memory-safe lazy chapter rendering, 1200ms debounced autosave, and local storage offline caching. Even in 100k+ word manuscripts, typing maintains a steady 60fps with zero data loss.'
     },
     {
-      q: lang === 'bn' ? 'স্টুডিও ট্যুর পরে আবার কীভাবে দেখব?' : 'How do I replay the studio tour later?',
+      q: lang === 'bn' ? 'আমার পাণ্ডুলিপির ডেটা ও গোপনীয়তা কতটা সুরক্ষিত?' : 'How secure is my manuscript data and privacy?',
       a: lang === 'bn'
-        ? 'হেডারের কম্পাস আইকনে ক্লিক করুন, অথবা সেটিংস ও এই নির্দেশিকা থেকে «ট্যুর আবার দেখুন» চাপুন। আগে একটি পাণ্ডুলিপি খুলতে হবে।'
-        : 'Click the compass icon in the header, or use Replay studio tour from Settings or this guide. Open a manuscript first.'
+        ? 'ফ্রি ভার্সনে কোনো লেখা বাইরের কোনো সার্ভার বা এপিআইতে পাঠানো হয় না। সবকিছু শতভাগ আপনার নিজস্ব ওয়ার্ডপ্রেস ডেটাবেস এবং ব্রাউজারে সুরক্ষিত থাকে। প্রতিটি পাণ্ডুলিপি শুধুমাত্র লেখকের নিজস্ব ইউজার একাউন্টেই দৃশ্যমান।'
+        : 'In the Free version, zero data is transmitted to external servers or APIs. Everything is stored strictly inside your local WordPress database and browser, accessible only to the authenticated author.'
     },
     {
       q: lang === 'bn' ? 'লিপিশিল্প প্রোতে কী কী অতিরিক্ত সুবিধা আছে?' : 'What additional features are in Lipishilpo Pro?',
       a: lang === 'bn'
-        ? 'প্রোতে রয়েছে OpenAI GPT-4o সাহিত্যিক সম্পাদনা, পুরো বইয়ের চরিত্র ও বয়স ধারাবাহিকতা, শুনে শুনে প্রুফরিডিং, এবং প্রিন্ট-রেডি DOCX, বাংলা ফন্টসহ PDF ও EPUB।'
-        : 'Pro unlocks OpenAI GPT-4o literary polishing, whole-book continuity, audio proofreading, and print-ready DOCX, PDF, and EPUB export.'
-    }
+        ? 'লিপিশিল্প প্রোতে রয়েছে সম্পূর্ণ বুক গেট-আপ স্টুডিও (প্রিন্ট-রেডি কাস্টম পিডিএফ ও ই-পাব লেআউট ইঞ্জিন, ড্রপক্যাপ, অলঙ্কৃত হেডার ও সূচিপত্র ডিজাইন), OpenAI GPT-4o সম্পাদকীয় সহ-লেখক এবং বাংলা টেক্সট-টু-স্পিচ অডিও প্রুফরিডার।'
+        : 'Lipishilpo Pro unlocks the Book Get-Up Studio (print-ready PDF & EPUB layout designer with headers, footers, drop caps, and table of contents), OpenAI GPT-4o editorial co-writer, and Bengali text-to-speech audio reader.'
+    },
   ];
 
   return (
-    <div className="docs-container">
-      <div className="docs-hero-card">
-        <div className="docs-hero-content">
-          <span className="docs-hero-badge">
-            <BookOpen size={14} /> {lang === 'bn' ? 'ব্যবহার নির্দেশিকা' : 'User guide'}
-          </span>
-          <h1>{lang === 'bn' ? 'লিপিশিল্পে স্বাগতম' : 'Welcome to Lipishilpo'}</h1>
-          <p>
-            {lang === 'bn'
-              ? 'বাংলা ও ইংরেজি পাণ্ডুলিপির জন্য একটি নিরিবিলি স্টুডিও। অধ্যায় সাজান, প্রুফ চালান, বই আকারে প্রকাশ করুন।'
-              : 'A calm studio for Bengali and English manuscripts. Organize chapters, proofread, and publish a clean book.'}
-          </p>
+    <div className="docs-shell">
+      {/* ── Top Bar ── */}
+      <div className="docs-topbar">
+        <div className="docs-brand">
+          <Feather size={20} className="brand-feather" />
+          <div>
+            <h1>{lang === 'bn' ? 'লিপিশিল্প ইউজার গাইড ও ডকুমেন্টেশন' : 'Lipishilpo User Guide & Docs'}</h1>
+            <p>{lang === 'bn' ? 'পাণ্ডুলিপি রচনা, সম্পাদনা ও প্রকাশনার সম্পূর্ণ নির্দেশিকা' : 'Complete Guide to Writing, Editing & Publishing Manuscripts'}</p>
+          </div>
         </div>
-        <div className="docs-hero-actions">
-          <button className="primary hero-action-btn" onClick={onOpenEditor}>
-            <BookOpen size={16} /> {lang === 'bn' ? 'স্টুডিও খুলুন' : 'Open studio'}
-          </button>
-          {onOpenSettings && (
-            <button className="secondary hero-action-btn" onClick={onOpenSettings}>
-              <Sliders size={16} /> {lang === 'bn' ? 'সেটিংস' : 'Settings'}
-            </button>
-          )}
+        <div className="docs-actions">
           {onStartTour && (
-            <button className="secondary hero-action-btn" onClick={onStartTour}>
-              <Compass size={16} /> {lang === 'bn' ? 'ট্যুর দেখুন' : 'Replay tour'}
+            <button type="button" className="btn-secondary" onClick={onStartTour}>
+              <Compass size={14} />
+              <span>{lang === 'bn' ? 'স্টুডিও ট্যুর' : 'Studio Tour'}</span>
             </button>
           )}
+          {onOpenSettings && (
+            <button type="button" className="btn-secondary" onClick={onOpenSettings}>
+              <Sliders size={14} />
+              <span>{lang === 'bn' ? 'সেটিংস' : 'Settings'}</span>
+            </button>
+          )}
+          <button type="button" className="btn-primary" onClick={onOpenEditor}>
+            <PencilLine size={14} />
+            <span>{lang === 'bn' ? 'স্টুডিও এডিটরে যান' : 'Open Studio Editor'}</span>
+          </button>
         </div>
       </div>
 
-      <div className="docs-nav-tabs" role="tablist" aria-label={lang === 'bn' ? 'নির্দেশিকার বিভাগ' : 'Guide sections'}>
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            role="tab"
-            aria-selected={activeTab === tab.id}
-            className={'doc-tab-btn ' + (activeTab === tab.id ? 'active' : '')}
-            onClick={() => setActiveTab(tab.id)}
-          >
-            {tab.icon}
-            <span>{tab.label}</span>
-            {tab.pro && <span className="doc-pro-badge">Pro</span>}
-          </button>
-        ))}
-      </div>
+      {/* ── Main Container ── */}
+      <div className="docs-container">
+        {/* Navigation Tabs */}
+        <div className="docs-tabs-nav" role="tablist">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={activeTab === tab.id}
+              className={`doc-tab-btn ${activeTab === tab.id ? 'active' : ''}`}
+              onClick={() => setActiveTab(tab.id)}
+            >
+              {tab.icon}
+              <span>{tab.label}</span>
+              {tab.pro && <span className="doc-pro-badge">Pro</span>}
+            </button>
+          ))}
+        </div>
 
-      <div className="docs-content-area" role="tabpanel">
+        {/* Tab 1: Overview */}
         {activeTab === 'intro' && (
           <div className="doc-pane">
-            <h2>{lang === 'bn' ? 'লিপিশিল্প কীভাবে কাজ করে' : 'How Lipishilpo works'}</h2>
+            <h2>{lang === 'bn' ? 'লিপিশিল্প পরিচিতি ও স্টুডিও ফিচার' : 'Welcome to Lipishilpo Manuscript Studio'}</h2>
             <p>
               {lang === 'bn'
-                ? 'উপন্যাস, ছোটগল্প, প্রবন্ধ বা বই — লিপিশিল্প বিভ্রান্তিমুক্ত লেখার জায়গা এবং প্রুফ–সম্পাদনার সরঞ্জাম একসাথে দেয়।'
-                : 'For novels, stories, essays, or books, Lipishilpo pairs a distraction-free page with proof and chapter tools.'}
+                ? 'লিপিশিল্প হলো ওয়ার্ডপ্রেসের ওপর নির্মিত একটি আধুনিক ও আন্তর্জাতিক মানের রাইটিং ও এডিটিং স্টুডিও। এটি লেখক ও প্রকাশকদের জন্য বিভ্রান্তিমুক্ত (distraction-free) লেখার পরিবেশ তৈরি করে।'
+                : 'Lipishilpo is an international-standard writing and editorial studio built for WordPress. It offers a clean, distraction-free environment for novelists, editors, and publishers.'}
             </p>
 
-            <div className="feature-steps-grid">
+            <div className="feature-steps-grid three">
               <div className="feature-step-card">
-                <div className="step-icon"><Layers size={18} /></div>
-                <div className="step-num">১</div>
-                <h3>{lang === 'bn' ? 'অধ্যায় সংগঠন' : 'Chapters'}</h3>
+                <div className="step-icon"><PencilLine size={20} /></div>
+                <h3>{lang === 'bn' ? '১. জেন ও টাইপরাইটার ফোকাস' : '1. Zen Focus & Typewriter'}</h3>
                 <p>
                   {lang === 'bn'
-                    ? 'বইকে অধ্যায়ে ভাগ করুন, টেনে সাজান, প্রতিটি অধ্যায়ের শব্দসংখ্যা দেখুন।'
-                    : 'Split the book into chapters, drag to reorder, and watch live word counts.'}
+                    ? 'টাইপরাইটার স্ক্রোলিং সর্বদা কার্সারকে চোখের সোজাসুজি সেন্টারে রাখে। লাইট, সেপিয়া, পার্চমেন্ট, স্লেট ডার্ক ও ওলেড ব্ল্যাক ৫টি প্রিমিয়াম পেপার থিম।'
+                    : 'Typewriter mode keeps the active line centered vertically. 5 premium paper ambience themes prevent eye strain during long drafting sessions.'}
                 </p>
               </div>
+
               <div className="feature-step-card">
-                <div className="step-icon"><SpellCheck size={18} /></div>
-                <div className="step-num">২</div>
-                <h3>{lang === 'bn' ? 'স্মার্ট প্রুফরিড' : 'Smart proofread'}</h3>
+                <div className="step-icon"><History size={20} /></div>
+                <h3>{lang === 'bn' ? '২. ভার্সন কন্ট্রোল ও রোলব্যাক' : '2. Version History & Rollback'}</h3>
                 <p>
                   {lang === 'bn'
-                    ? 'প্রমিত বানান, বাহুল্য দোষ ও ব্যাকরণ হাইলাইট হয়। এক ক্লিকে সংশোধন নিন।'
-                    : 'Spelling, redundancy, and grammar highlight as you write. Accept a fix in one click.'}
+                    ? 'প্রতিটি অধ্যায়ের আনলিমিটেড স্ন্যাপশট সংরক্ষণ। যেকোনো বড় পরিবর্তনের আগে স্বয়ংক্রিয় সেফটি ব্যাকআপ এবং ভিজুয়াল ডিফারেন্স দেখে ১-ক্লিক রোলব্যাক।'
+                    : 'Unlimited chapter snapshots with auto-safety backups before major edits. Compare side-by-side diffs and restore any version with 1 click.'}
                 </p>
               </div>
+
               <div className="feature-step-card">
-                <div className="step-icon"><FileOutput size={18} /></div>
-                <div className="step-num">৩</div>
-                <h3>{lang === 'bn' ? 'প্রকাশনা' : 'Publish'}</h3>
+                <div className="step-icon"><FileUp size={20} /></div>
+                <h3>{lang === 'bn' ? '৩. মাল্টি-ফরম্যাট ইমপোর্ট' : '3. Multi-Format Import'}</h3>
                 <p>
                   {lang === 'bn'
-                    ? 'ফ্রিতে HTML ও টেক্সট। প্রোতে প্রিন্ট-রেডি DOCX, PDF ও EPUB।'
-                    : 'HTML and text on Free. Print-ready DOCX, PDF, and EPUB on Pro.'}
+                    ? 'Word (.docx), Markdown (.md), Plain Text (.txt) ও JSON ব্যাকআপ ড্র্যাগ-অ্যান্ড-ড্রপ করে সরাসরি অধ্যায়ভিত্তিক পাণ্ডুলিপিতে রূপান্তর।'
+                    : 'Drag & drop Word (.docx), Markdown (.md), Plain Text (.txt), or JSON backups with smart heading/chapter split and instant preview.'}
                 </p>
               </div>
             </div>
 
-            <div className="doc-callout info">
+            {/* Shortcode Embed Callout */}
+            <div className="doc-callout info" style={{ marginTop: '24px' }}>
               <div>
-                <strong>{lang === 'bn' ? 'ফ্রন্টএন্ডে স্টুডিও' : 'Embed on the site'}</strong>
+                <strong>{lang === 'bn' ? 'ফ্রন্টএন্ড শর্টকোড ব্যবহার' : 'Frontend Shortcode Integration'}</strong>
                 <p>
                   {lang === 'bn'
-                    ? 'যেকোনো পেজ বা পোস্টে শর্টকোড বসালে স্টুডিও সেখানেই খুলবে।'
-                    : 'Place the shortcode on any page or post to open the studio there.'}
+                    ? 'যেকোনো পাসওয়ার্ড প্রোটেক্টেড পেজ বা মেম্বার পোর্টালে সম্পূর্ণ স্টুডিও এডিটর লোড করতে নিচের শর্টকোডটি বসিয়ে দিন:'
+                    : 'Embed the complete studio on any password-protected or member page using this shortcode:'}
                 </p>
               </div>
               <div className="shortcode-box">
                 <code>[lipishilpo]</code>
                 <button type="button" className="copy-btn" onClick={copyShortcode}>
                   {copied ? <Check size={14} /> : <Copy size={14} />}
-                  {copied ? (lang === 'bn' ? 'কপি হয়েছে' : 'Copied') : (lang === 'bn' ? 'কপি' : 'Copy')}
                 </button>
               </div>
             </div>
           </div>
         )}
 
+        {/* Tab 2: Formatting & Slash Commands */}
         {activeTab === 'formatting' && (
           <div className="doc-pane">
-            <h2>{lang === 'bn' ? 'টেক্সট ফরম্যাটিং ও সাহিত্যিক নির্দেশিকা' : 'Text Formatting & Literary Guide'}</h2>
+            <h2>{lang === 'bn' ? 'টেক্সট ফরম্যাটিং, স্ল্যাশ কমান্ড ও সাহিত্যিক সিনট্যাক্স' : 'Text Formatting & Slash Commands Guide'}</h2>
             <p>
               {lang === 'bn'
-                ? 'লিপিশিল্পের পাওয়ারফুল সিনট্যাক্স, নোশন-স্টাইল স্ল্যাশ কমান্ড, ডায়লগ, কবিতা, পাদটীকা এবং কালার হাইলাইটিং দিয়ে আপনার পাণ্ডুলিপিকে পেশাদার বইয়ের মতো সাজান।'
-                : 'Format your manuscript like a professionally published book using Notion-style slash commands, dialogue dashes, poems, footnotes, and multi-color markers.'}
+                ? 'লিপিশিল্পে মাউস ছাড়া দ্রুত লেখার জন্য রয়েছে নোশন-স্টাইল স্ল্যাশ কমান্ড (/) এবং সাহিত্যিক সিনট্যাক্স।'
+                : 'Format your manuscript at the speed of thought with Notion-style slash commands (/) and literary fiction blocks.'}
             </p>
 
-            {/* Quick Slash Commands Showcase */}
-            <div className="doc-feature-highlight">
-              <div className="highlight-header">
-                <span className="pill-badge"><Sparkles size={13} /> {lang === 'bn' ? 'সুপার পাওয়ার ফিচার' : 'Superpower Feature'}</span>
-                <h3>{lang === 'bn' ? 'স্ল্যাশ কমান্ড (/) মেনু' : 'Slash Commands (/) Menu'}</h3>
-                <p>
-                  {lang === 'bn'
-                    ? 'এডিটরের যেকোনো লাইনে শুধু "/" টাইপ করলেই ভেসে উঠবে ইনস্ট্যান্ট কমান্ড প্যালেট। মাউস না ছুঁয়েই কীবোর্ডের তীরচিহ্ন (↑ / ↓) ও Enter চেপে ফরম্যাট সিলেক্ট করুন।'
-                    : 'Type "/" on any line in the editor to pop up the command palette. Navigate with arrow keys (↑ / ↓) and press Enter to select without touching your mouse.'}
-                </p>
-              </div>
-
-              <div className="slash-cmd-table-wrapper">
-                <table className="docs-table">
-                  <thead>
-                    <tr>
-                      <th>{lang === 'bn' ? 'কমান্ড' : 'Command'}</th>
-                      <th>{lang === 'bn' ? 'কাজ ও বর্ণনা' : 'Action & Purpose'}</th>
-                      <th>{lang === 'bn' ? 'সিনট্যাক্স / শর্টকাট' : 'Syntax / Shortcut'}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td><code>/h2</code></td>
-                      <td>{lang === 'bn' ? 'অধ্যায়ের প্রধান উপ-পরিচ্ছেদ শিরোনাম' : 'Major chapter subheading'}</td>
-                      <td><code>## শিরোনাম</code></td>
-                    </tr>
-                    <tr>
-                      <td><code>/h3</code></td>
-                      <td>{lang === 'bn' ? 'ছোট পরিচ্ছেদ বা অনুচ্ছেদ শিরোনাম' : 'Minor paragraph subsection'}</td>
-                      <td><code>### ছোট শিরোনাম</code></td>
-                    </tr>
-                    <tr>
-                      <td><code>/dialogue</code></td>
-                      <td>{lang === 'bn' ? 'বাংলা উপন্যাসের প্রমিত সংলাপ (ড্যাশ ও কোট)' : 'Standard Bengali character dialogue'}</td>
-                      <td><code>— “উক্তি”</code> <span className="kbd-pill">Ctrl+Shift+D</span></td>
-                    </tr>
-                    <tr>
-                      <td><code>/quote</code></td>
-                      <td>{lang === 'bn' ? 'সাহিত্যিক উদ্ধৃতি বা এপিগ্রাফ ব্লক' : 'Literary quote or epigraph block'}</td>
-                      <td><code>&gt; উক্তি</code></td>
-                    </tr>
-                    <tr>
-                      <td><code>/poem</code></td>
-                      <td>{lang === 'bn' ? 'কবিতার চরণ ও ছন্দবদ্ধ স্তবক' : 'Poem stanzas and indented verse'}</td>
-                      <td><code>:::poem ... :::</code></td>
-                    </tr>
-                    <tr>
-                      <td><code>/box</code></td>
-                      <td>{lang === 'bn' ? 'তথ্য, ইসলামিক নোট বা হাদিস বক্স' : 'Callout box for notes or Hadith'}</td>
-                      <td><code>:::box[শিরোনাম] ... :::</code></td>
-                    </tr>
-                    <tr>
-                      <td><code>/citation</code></td>
-                      <td>{lang === 'bn' ? 'বই বা প্রামাণ্য দলিলের তথ্যসূত্র' : 'Source reference attribution'}</td>
-                      <td><code>তথ্যসূত্র: বই, পৃষ্ঠা ১২</code></td>
-                    </tr>
-                    <tr>
-                      <td><code>/footnote</code></td>
-                      <td>{lang === 'bn' ? 'পাতার নিচে পাদটীকা ও বিস্তারিত ব্যাখ্যা' : 'Footnote reference & bottom note'}</td>
-                      <td><code>[^১]</code> এবং <code>[^১]: টীকা...</code></td>
-                    </tr>
-                    <tr>
-                      <td><code>/dropcap</code></td>
-                      <td>{lang === 'bn' ? 'অধ্যায়ের শুরুর প্রথম অক্ষর অলঙ্করণ' : 'Decorative drop cap initial'}</td>
-                      <td><code>:::dropcap ... :::</code></td>
-                    </tr>
-                    <tr>
-                      <td><code>/divider</code></td>
-                      <td>{lang === 'bn' ? 'দৃশ্য বিভাজক মোটিফ (❖ ❖ ❖, ~ ❦ ~, — ✦ —)' : 'Artistic scene break divider'}</td>
-                      <td><code>❖ ❖ ❖</code></td>
-                    </tr>
-                    <tr>
-                      <td><code>/list</code>, <code>/number</code></td>
-                      <td>{lang === 'bn' ? 'বুলেট ও ক্রমিক তালিকা (১, ২, ৩)' : 'Bullet points & ordered numbered list'}</td>
-                      <td><code>* আইটেম</code> বা <code>১. আইটেম</code></td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Literary & Fiction Styling Cards */}
-            <h3 style={{ marginTop: '28px', marginBottom: '14px' }}>
-              {lang === 'bn' ? 'সাহিত্য ও উপন্যাস রচনার বিশেষ টুলস' : 'Literary & Fiction Writing Tools'}
-            </h3>
-
-            <div className="formatting-guide-grid">
-              {/* Dialogue card */}
+            <div className="formatting-grid">
+              {/* Slash Command */}
               <div className="fmt-guide-card">
                 <div className="fmt-card-head">
-                  <div className="fmt-icon-box"><MessageSquareQuote size={16} /></div>
-                  <h4>{lang === 'bn' ? 'চরিত্রের সংলাপ (Dialogue)' : 'Character Dialogue'}</h4>
+                  <div className="fmt-icon-box"><Keyboard size={16} /></div>
+                  <h4>{lang === 'bn' ? 'স্ল্যাশ কমান্ড প্যালেট (/)' : 'Slash Commands Palette (/)'}</h4>
                 </div>
                 <p>
                   {lang === 'bn'
-                    ? 'বাংলা কথাসাহিত্যে সংলাপ লেখার প্রমিত নিয়ম হলো এম-ড্যাশ (—) ও বাঁকা বাংলা উদ্ধৃতি (“ ”)।'
-                    : 'The standard for Bengali fiction dialogue is an em-dash followed by curly quotes.'}
+                    ? 'এডিটরের যেকোনো নতুন লাইনে / লিখলেই কমান্ড তালিকা ওপেন হবে। কি-বোর্ডের অ্যারো দিয়ে বেছে এন্টার চাপুন।'
+                    : 'Type / on any new line to open the instant command palette (/dialogue, /poem, /box, /h2).'}
                 </p>
                 <div className="fmt-code-box">
-                  <code>— “আপনি কাল কখন আসছেন?” সাজিদ জানতে চাইল।</code>
-                  <button
-                    type="button"
-                    className="copy-syntax-btn"
-                    onClick={() => copyCode('— “আপনি কাল কখন আসছেন?” সাজিদ জানতে চাইল।', 'diag')}
-                  >
-                    {copiedSyntax === 'diag' ? <Check size={12} /> : <Copy size={12} />}
+                  <code>/dialogue, /poem, /box, /h2, /divider, /quote</code>
+                </div>
+              </div>
+
+              {/* Bengali Dialogue */}
+              <div className="fmt-guide-card">
+                <div className="fmt-card-head">
+                  <div className="fmt-icon-box"><MessageSquareQuote size={16} /></div>
+                  <h4>{lang === 'bn' ? 'প্রমিত বাংলা সংলাপ (Dialogue)' : 'Bangla Dialogue Standard'}</h4>
+                </div>
+                <p>
+                  {lang === 'bn'
+                    ? 'বাংলা সাহিত্যের প্রমিত রীতি অনুযায়ী এম-ড্যাশ এবং বাঁকা কোটেশন চিহ্নে সংলাপ সাজান।'
+                    : 'Standard literary dialogue with em-dash and smart curly quotes.'}
+                </p>
+                <div className="fmt-code-box">
+                  <code>— “তুমি কি আজ আসবে?”</code>
+                  <button type="button" className="copy-syntax-btn" onClick={() => copyCode('— “তুমি কি আজ আসবে?”', 'dlg')}>
+                    {copiedSyntax === 'dlg' ? <Check size={12} /> : <Copy size={12} />}
                   </button>
                 </div>
               </div>
 
-              {/* Poem card */}
+              {/* Poem Stanza */}
               <div className="fmt-guide-card">
                 <div className="fmt-card-head">
                   <div className="fmt-icon-box"><Feather size={16} /></div>
-                  <h4>{lang === 'bn' ? 'কবিতা ও স্তবক (Poem Block)' : 'Poem & Verse Block'}</h4>
+                  <h4>{lang === 'bn' ? 'কবিতা ও স্তবক (Poem Block)' : 'Poem & Verse Stanza'}</h4>
                 </div>
                 <p>
                   {lang === 'bn'
-                    ? 'উপন্যাসের মাঝে কবিতার লাইন বা স্তবক সুন্দর ছন্দময় মার্জিনে সাজাতে :::poem সিনট্যাক্স ব্যবহার করুন।'
-                    : 'Wrap poems or rhyming stanzas in :::poem tags for balanced indentation and rhythm.'}
+                    ? 'উপন্যাস বা কাব্যের ভেতরে ছন্দবদ্ধ স্তবক সুন্দর ইন্ডেন্টেশনে প্রদর্শন করার জন্য :::poem ব্যবহার করুন।'
+                    : 'Center-aligned indented poem stanzas inside manuscripts.'}
                 </p>
                 <div className="fmt-code-box">
                   <code>{`:::poem\nমেঘ বলেছে যাব যাব,\nরাত বলেছে যাই।\n:::`}</code>
-                  <button
-                    type="button"
-                    className="copy-syntax-btn"
-                    onClick={() => copyCode(':::poem\nমেঘ বলেছে যাব যাব,\nরাত বলেছে যাই।\n:::', 'poem')}
-                  >
+                  <button type="button" className="copy-syntax-btn" onClick={() => copyCode(':::poem\nমেঘ বলেছে যাব যাব,\nরাত বলেছে যাই।\n:::', 'poem')}>
                     {copiedSyntax === 'poem' ? <Check size={12} /> : <Copy size={12} />}
                   </button>
                 </div>
               </div>
 
-              {/* Callout box */}
+              {/* Callout Box */}
               <div className="fmt-guide-card">
                 <div className="fmt-card-head">
                   <div className="fmt-icon-box"><Box size={16} /></div>
-                  <h4>{lang === 'bn' ? 'তথ্য ও ইসলামিক বক্স (Callout)' : 'Callout & Reference Box'}</h4>
+                  <h4>{lang === 'bn' ? 'তথ্য ও ইসলামিক বক্স (Callout Box)' : 'Callout & Reference Box'}</h4>
                 </div>
                 <p>
                   {lang === 'bn'
-                    ? 'বিশেষ টিকা, কুরআনের আয়াত, হাদিসের উদ্ধৃতি বা ঐতিহাসিক তথ্যের জন্য বক্স ব্যবহার করুন।'
-                    : 'Callout boxes for Islamic citations, historical facts, or special side notes.'}
+                    ? 'ঐতিহাসিক রেফারেন্স, কুরআনের আয়াত বা বিশেষ সূত্রের জন্য বক্স সিনট্যাক্স ব্যবহার করুন।'
+                    : 'Highlighted callout boxes for Islamic references, historical citations, or notes.'}
                 </p>
                 <div className="fmt-code-box">
                   <code>{`:::box[ইসলামের আলোকে]\nকুরআনের আয়াত বা হাদিস এখানে লিখুন\n:::`}</code>
-                  <button
-                    type="button"
-                    className="copy-syntax-btn"
-                    onClick={() => copyCode(':::box[ইসলামের আলোকে]\nকুরআনের আয়াত বা হাদিস এখানে লিখুন\n:::', 'box')}
-                  >
+                  <button type="button" className="copy-syntax-btn" onClick={() => copyCode(':::box[ইসলামের আলোকে]\nকুরআনের আয়াত বা হাদিস এখানে লিখুন\n:::', 'box')}>
                     {copiedSyntax === 'box' ? <Check size={12} /> : <Copy size={12} />}
                   </button>
                 </div>
               </div>
 
-              {/* Multi-color Highlighter card */}
+              {/* Multi-color Highlighter */}
               <div className="fmt-guide-card">
                 <div className="fmt-card-head">
                   <div className="fmt-icon-box"><Sparkles size={16} /></div>
-                  <h4>{lang === 'bn' ? 'রঙিন মার্কার হাইলাইট' : 'Multi-Color Highlighter'}</h4>
+                  <h4>{lang === 'bn' ? 'রঙিন মার্কার হাইলাইট' : 'Multi-Color Semantic Highlighter'}</h4>
                 </div>
                 <p>
                   {lang === 'bn'
-                    ? 'প্লট, চরিত্রের তথ্য বা যাচাইয়ের জন্য ৪টি ভিন্ন রঙের মার্কার ব্যবহার করুন:'
-                    : 'Highlight text with 4 semantic marker colors:'}
+                    ? 'প্লট, চরিত্রের তথ্য বা পরিমার্জনের জন্য ৪টি ভিন্ন রঙের মার্কার ব্যবহার করুন:'
+                    : 'Highlight passages with 4 semantic color codes:'}
                 </p>
                 <div className="fmt-marker-pills">
-                  <span className="marker-pill hl-yellow">{lang === 'bn' ? 'হলুদ: মূল কাহিনী' : 'Yellow: Plot'}</span>
+                  <span className="marker-pill hl-yellow">{lang === 'bn' ? 'হলুদ: মূল প্লট' : 'Yellow: Plot'}</span>
                   <span className="marker-pill hl-green">{lang === 'bn' ? 'সবুজ: তথ্যসূত্র' : 'Green: Fact'}</span>
                   <span className="marker-pill hl-purple">{lang === 'bn' ? 'বেগুনি: চরিত্র' : 'Purple: Character'}</span>
                   <span className="marker-pill hl-pink">{lang === 'bn' ? 'গোলাপি: সংশোধন' : 'Pink: Revise'}</span>
+                </div>
+              </div>
+
+              {/* Footnotes */}
+              <div className="fmt-guide-card">
+                <div className="fmt-card-head">
+                  <div className="fmt-icon-box"><Bookmark size={16} /></div>
+                  <h4>{lang === 'bn' ? 'পাদটীকা ও তথ্যসূত্র (Footnotes)' : 'Footnotes & Citations'}</h4>
+                </div>
+                <p>
+                  {lang === 'bn'
+                    ? 'গবেষণা বা উপন্যাসের ব্যাখ্যার জন্য বাংলা সংখ্যাযুক্ত পাদটীকা ব্যবহার করুন।'
+                    : 'Scholarly footnotes and references with Bengali numeral support.'}
+                </p>
+                <div className="fmt-code-box">
+                  <code>শব্দ[^১] ... [^১]: বিস্তারিত ব্যাখ্যা বা তথ্যসূত্র</code>
                 </div>
               </div>
             </div>
@@ -403,11 +341,11 @@ export const DocsView: React.FC<DocsViewProps> = ({ lang, onOpenEditor, onOpenSe
             {/* In-Editor Cheat Sheet reminder */}
             <div className="doc-callout info" style={{ marginTop: '24px' }}>
               <div>
-                <strong>{lang === 'bn' ? 'এডিটরে যেকোনো সময় চিটশিট ওপেন করুন' : 'Open the Cheat Sheet anytime'}</strong>
+                <strong>{lang === 'bn' ? 'ইন্টারেক্টিভ চিটশিট পপআপ (Ctrl + /)' : 'Interactive Cheat Sheet (Ctrl + /)'}</strong>
                 <p>
                   {lang === 'bn'
-                    ? 'কীবোর্ডে Ctrl + / চাপুন অথবা এডিটরের কুইক বারে থাকা "চিটশিট" বাটনে ক্লিক করলে সম্পূর্ণ সিনট্যাক্স ও শর্টকাটের পপআপ চলে আসবে এবং ১-ক্লিকেই এডিটরে ইনসার্ট করতে পারবেন।'
-                    : 'Press Ctrl + / on your keyboard or click the "Cheat Sheet" button in the editor toolbar to view all syntaxes and insert them with 1-click.'}
+                    ? 'এডিটরে থাকাকালে যেকোনো মুহূর্তে Ctrl + / চাপলে সম্পূর্ণ ফরম্যাটিং গাইড পপআপ হবে এবং সরাসরি এডিটরে সিনট্যাক্স যুক্ত করতে পারবেন।'
+                    : 'Press Ctrl + / anywhere in the editor to open the floating cheat sheet and insert any literary block with 1 click.'}
                 </p>
               </div>
               <div className="shortcode-box">
@@ -417,193 +355,116 @@ export const DocsView: React.FC<DocsViewProps> = ({ lang, onOpenEditor, onOpenSe
           </div>
         )}
 
-        {activeTab === 'proofread' && (
+        {/* Tab 3: Version History & Snapshots */}
+        {activeTab === 'snapshots' && (
           <div className="doc-pane">
-            <h2>{lang === 'bn' ? 'বাংলা ব্যাকরণ ও প্রুফরিড' : 'Bangla grammar & style'}</h2>
+            <h2>{lang === 'bn' ? 'ভার্সন হিস্ট্রি, স্ন্যাপশট ও রোলব্যাক' : 'Version History & Snapshot Management'}</h2>
             <p>
               {lang === 'bn'
-                ? 'লিন্টার লোকাল ব্রাউজারেই চলে — বাংলা একাডেমির নিয়মে, নেট ছাড়া।'
-                : 'The linter runs in the browser against Bangla Academy rules, with no network delay.'}
+                ? 'লিপিশিল্প আপনার প্রতি মুহূর্তের লেখাকে সুরক্ষিত রাখে। যেকোনো পরিবর্তন নির্ভয়ে করতে পারবেন কারণ যেকোনো মুহূর্তে পূর্বের অবস্থায় ফিরে যাওয়া সম্ভব।'
+                : 'Never lose a single word or good paragraph. Track changes, create safety backups, and rollback effortlessly.'}
             </p>
 
-            <div className="rules-showcase-grid">
-              <div className="rule-badge-card">
-                <span className="rule-dot red" />
-                <h4>{lang === 'bn' ? 'বাহুল্য দোষ' : 'Redundancy'}</h4>
-                <p>{lang === 'bn' ? '«সকল শিক্ষকগণ» → শিক্ষকগণ, «গতকালকে» → গতকাল, «শুধুমাত্র» → শুধু।' : 'Double plurals and tautology such as “শুধুমাত্র” → “শুধু”.'}</p>
-              </div>
-              <div className="rule-badge-card">
-                <span className="rule-dot gold" />
-                <h4>{lang === 'bn' ? 'সাধু-চলিত মিশ্রণ' : 'Sadhu–Cholit mix'}</h4>
-                <p>{lang === 'bn' ? 'একই অনুচ্ছেদে সাধু ক্রিয়া (করিলেন) ও চলিত রূপ মিলিয়ে গেলে ধরে।' : 'Flags classical and contemporary verb forms mixed in one passage.'}</p>
-              </div>
-              <div className="rule-badge-card">
-                <span className="rule-dot green" />
-                <h4>{lang === 'bn' ? 'প্রমিত বানান' : 'Standard spelling'}</h4>
-                <p>{lang === 'bn' ? '«বেশী» → বেশি, «শ্রেণী» → শ্রেণি, «পাখী» → পাখি।' : 'Modern Bangla Academy spellings: বেশী → বেশি, শ্রেণী → শ্রেণি.'}</p>
-              </div>
-              <div className="rule-badge-card">
-                <span className="rule-dot blue" />
-                <h4>{lang === 'bn' ? 'যতিচিহ্ন ও স্পেস' : 'Punctuation'}</h4>
-                <p>{lang === 'bn' ? 'দাঁড়ি ও কমার আগে বাড়তি স্পেস সরায়, যতিচিহ্ন গোছায়।' : 'Removes stray spaces before dari (।) and tidies punctuation.'}</p>
-              </div>
-            </div>
-
-            <div className="playground-box">
-              <h3>{lang === 'bn' ? 'প্রুফরিড টেস্ট' : 'Proofread lab'}</h3>
-              <p>{lang === 'bn' ? 'নিচে বাংলা লিখে দেখুন ইঞ্জিন কী ধরে।' : 'Edit the Bengali sample and run a check.'}</p>
-
-              <div className="pg-sample-buttons">
-                <button type="button" className="pg-sample-btn" onClick={() => setPlaygroundText('আমি গতকালকে বাজারে গিয়েছিলাম কিন্তু কোন ফল পেলাম না।')}>
-                  {lang === 'bn' ? 'নমুনা ১' : 'Sample 1'}
-                </button>
-                <button type="button" className="pg-sample-btn" onClick={() => setPlaygroundText('সকল শিক্ষকগণ অনুষ্ঠানে উপস্থিত হইলেন এবং বক্তৃতা দিলেন।')}>
-                  {lang === 'bn' ? 'নমুনা ২' : 'Sample 2'}
-                </button>
-                <button type="button" className="pg-sample-btn" onClick={() => setPlaygroundText('তিনি অনেকক্ষণ যাবত অপেক্ষা করছেন কিন্তু শুধুমাত্র তিনিই আসেননি ।')}>
-                  {lang === 'bn' ? 'নমুনা ৩' : 'Sample 3'}
-                </button>
+            <div className="feature-steps-grid three">
+              <div className="feature-step-card">
+                <div className="step-icon"><History size={20} /></div>
+                <h3>{lang === 'bn' ? '১. কাস্টম স্ন্যাপশট সংরক্ষণ' : '1. Named Snapshots'}</h3>
+                <p>
+                  {lang === 'bn'
+                    ? 'সাইডবারের «স্ন্যাপশট» ট্যাবে নাম লিখে (যেমন: "প্রথম খসড়া", "ক্লাইম্যাক্স পুনর্লিখন") সংরক্ষণ করে রাখুন।'
+                    : 'Save custom-named snapshots (e.g. "Draft 1.0", "Pre-climax rewrite") for each chapter.'}
+                </p>
               </div>
 
-              <textarea
-                rows={3}
-                className="pg-textarea"
-                value={playgroundText}
-                onChange={(e) => setPlaygroundText(e.target.value)}
-              />
-
-              <div className="pg-actions">
-                <button className="primary" onClick={runTest}>
-                  <Sparkles size={15} /> {lang === 'bn' ? 'পরীক্ষা করুন' : 'Run check'}
-                </button>
+              <div className="feature-step-card">
+                <div className="step-icon"><Sparkles size={20} /></div>
+                <h3>{lang === 'bn' ? '২. স্বয়ংক্রিয় সেফটি ব্যাকআপ' : '2. Automatic Safety Snapshots'}</h3>
+                <p>
+                  {lang === 'bn'
+                    ? 'সব প্রুফরিড ফিক্স প্রয়োগ, সার্বিক প্রতিস্থাপন (Ctrl+Shift+F) বা রোলব্যাক করার ঠিক আগে স্বয়ংক্রিয় সেফটি স্ন্যাপশট তৈরি হয়।'
+                    : 'Safety snapshots are auto-created before running Apply All Fixes, Global Replace, or version rollbacks.'}
+                </p>
               </div>
 
-              {testResults !== null && (
-                <div className="pg-results-box">
-                  {testResults.length === 0 ? (
-                    <div className="pg-clean">
-                      <Check size={16} /> {lang === 'bn' ? 'কোনো ভুল পাওয়া যায়নি।' : 'No issues found.'}
-                    </div>
-                  ) : (
-                    <div className="pg-issues">
-                      <strong>{lang === 'bn' ? `চিহ্নিত ত্রুটি (${testResults.length})` : `${testResults.length} suggestion(s)`}</strong>
-                      <ul>
-                        {testResults.map((r: string, i: number) => (
-                          <li key={i}>{r}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              )}
+              <div className="feature-step-card">
+                <div className="step-icon"><RotateCcw size={20} /></div>
+                <h3>{lang === 'bn' ? '৩. ভিজুয়াল ডিফারেন্স ও রোলব্যাক' : '3. Visual Diff & 1-Click Rollback'}</h3>
+                <p>
+                  {lang === 'bn'
+                    ? 'বর্তমান লেখার সাথে যেকোনো পুরনো সংস্করণের শব্দভিত্তিক যোগ (সবুজ) ও বিয়োগ (লাল) পাশাপাশি তুলনা করে ১-ক্লিকেই ফিরে যান।'
+                    : 'Compare additions (green) and deletions (red) side-by-side and restore any previous state with 1 click.'}
+                </p>
+              </div>
             </div>
           </div>
         )}
 
-        {activeTab === 'continuity' && (
+        {/* Tab 4: Import & Export */}
+        {activeTab === 'importexport' && (
           <div className="doc-pane">
-            <h2>{lang === 'bn' ? 'ধারাবাহিকতা ও চরিত্র' : 'Continuity & characters'}</h2>
+            <h2>{lang === 'bn' ? 'মাল্টি-ফরম্যাট ইমপোর্ট ও এক্সপোর্ট' : 'Manuscript Import & Export Suite'}</h2>
             <p>
               {lang === 'bn'
-                ? 'বড় উপন্যাসে চরিত্রের বয়স, সম্পর্ক বা সময়ের অসঙ্গতি সহজেই পালিয়ে যায়। স্টুডিও সেগুলো এক জায়গায় রাখে।'
-                : 'In a long novel, age, relationships, and timeline slips are easy to miss. The studio keeps those notes in one place.'}
+                ? 'আপনার পুরোনো বা অন্য অ্যাপে লেখা পাণ্ডুলিপি লিপিশিল্পে সহজেই নিয়ে আসুন এবং যেকোনো স্ট্যান্ডার্ড ফরম্যাটে এক্সপোর্ট করুন।'
+                : 'Bring existing manuscripts from Word, Markdown, or plain text into Lipishilpo and export to your desired formats.'}
             </p>
+
             <div className="feature-steps-grid two">
               <div className="feature-step-card">
-                <div className="step-icon"><Users size={18} /></div>
-                <h3>{lang === 'bn' ? 'চরিত্র খতিয়ান' : 'Character registry'}</h3>
+                <div className="step-icon"><FileUp size={20} /></div>
+                <h3>{lang === 'bn' ? 'পাণ্ডুলিপি ইমপোর্ট (Word, MD, TXT, JSON)' : 'Import Manuscript'}</h3>
                 <p>
                   {lang === 'bn'
-                    ? 'প্রধান ও পার্শ্ব চরিত্রের নাম, বয়স ও বৈশিষ্ট্য সংরক্ষণ করুন।'
-                    : 'Keep names, ages, and traits for main and supporting characters.'}
+                    ? 'পাণ্ডুলিপি ড্যাশবোর্ডে «পাণ্ডুলিপি ইমপোর্ট» বাটনে ক্লিক করে ফাইল দিন। স্বয়ংক্রিয়ভাবে অধ্যায়গুলো আলাদা হয়ে যাবে এবং নতুন বই তৈরি অথবা চলমান বইতে যোগ করতে পারবেন।'
+                    : 'Upload .docx, .md, .txt, or .json files with smart chapter splitting. Choose to create a new book or append to your active manuscript.'}
                 </p>
               </div>
+
               <div className="feature-step-card">
-                <div className="step-icon"><Clock size={18} /></div>
-                <h3>{lang === 'bn' ? 'টাইমলাইন' : 'Timeline'}</h3>
+                <div className="step-icon"><FileDown size={20} /></div>
+                <h3>{lang === 'bn' ? 'ইউনিভার্সাল এক্সপোর্ট' : 'Universal Export Options'}</h3>
                 <p>
                   {lang === 'bn'
-                    ? 'অধ্যায়ভিত্তিক দিন ও ঘটনার ক্রম রাখুন, যাতে গল্পে ফাটল না ধরে।'
-                    : 'Track days and events by chapter so the story stays in order.'}
+                    ? 'Clean DOCX (Word), Markdown (.md), Plain Text (.txt), Clean HTML এবং JSON ব্যাকআপে ১-ক্লিকে ডাউনলোড করুন।'
+                    : 'Export clean manuscripts to Word (DOCX), Markdown, Text, HTML, or full LipiShilpo JSON backups.'}
                 </p>
               </div>
             </div>
-          </div>
-        )}
 
-        {activeTab === 'ai' && (
-          <div className="doc-pane">
-            <h2>
-              {lang === 'bn' ? 'এআই সাহিত্যিক সহায়ক' : 'AI editorial assistant'}
-              <span className="doc-pro-badge">Pro</span>
-            </h2>
-            <p>
-              {lang === 'bn'
-                ? 'প্রোতে OpenAI GPT-4o দিয়ে শৈলী পরিমার্জন, চরিত্রের ধারাবাহিকতা এবং শুনে শুনে প্রুফ।'
-                : 'Pro uses OpenAI GPT-4o for style polish, character consistency, and audio proofreading.'}
-            </p>
-            <div className="ai-card-grid">
-              <div className="ai-feature-card">
-                <div className="step-icon"><PencilLine size={18} /></div>
-                <h4>{lang === 'bn' ? 'বাক্য ও শৈলী' : 'Phrasing & style'}</h4>
-                <p>{lang === 'bn' ? 'কঠিন বাক্যকে সাবলীল করে, লেখকের স্বর না মুছে।' : 'Smooths dense sentences without erasing the author’s voice.'}</p>
-              </div>
-              <div className="ai-feature-card">
-                <div className="step-icon"><Users size={18} /></div>
-                <h4>{lang === 'bn' ? 'চরিত্রের ধারা' : 'Character consistency'}</h4>
-                <p>{lang === 'bn' ? 'আগের স্বভাবের বিপরীতে হঠাৎ আচরণ ধরতে সাহায্য করে।' : 'Flags a character acting against earlier motivation or backstory.'}</p>
-              </div>
-              <div className="ai-feature-card">
-                <div className="step-icon"><Volume2 size={18} /></div>
-                <h4>{lang === 'bn' ? 'অডিও প্রুফ' : 'Audio proof'}</h4>
-                <p>{lang === 'bn' ? 'বাক্য ধরে ধরে পড়ে শোনায়, ছন্দপতন তাড়াতাড়ি ধরা পড়ে।' : 'Reads sentence by sentence so rhythm problems surface faster.'}</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'export' && (
-          <div className="doc-pane">
-            <h2>{lang === 'bn' ? 'এক্সপোর্ট ও প্রকাশনা' : 'Export & publishing'}</h2>
-            <p>
-              {lang === 'bn'
-                ? 'খসড়া শেষ হলে যে ফরম্যাট দরকার, সেটা নিন।'
-                : 'When the draft is ready, pick the format you need.'}
-            </p>
-            <div className="export-comparison-table">
+            <div className="export-comparison-table" style={{ marginTop: '20px' }}>
               <table className="docs-table">
                 <thead>
                   <tr>
                     <th>{lang === 'bn' ? 'ফরম্যাট' : 'Format'}</th>
                     <th>{lang === 'bn' ? 'স্তর' : 'Tier'}</th>
-                    <th>{lang === 'bn' ? 'কাজে লাগে' : 'Best for'}</th>
+                    <th>{lang === 'bn' ? 'ব্যবহার ক্ষেত্র' : 'Best For'}</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
-                    <td><strong>HTML</strong></td>
+                    <td><strong>DOCX (Word)</strong></td>
                     <td><span className="badge free">Free</span></td>
-                    <td>{lang === 'bn' ? 'ওয়েব বা ব্লগে প্রকাশ' : 'Web or blog'}</td>
+                    <td>{lang === 'bn' ? 'সম্পাদক বা প্রকাশকের কাছে জমা দেওয়ার জন্য' : 'Editorial submissions & Word processing'}</td>
                   </tr>
                   <tr>
-                    <td><strong>Text / Markdown</strong></td>
+                    <td><strong>Markdown (.md)</strong></td>
                     <td><span className="badge free">Free</span></td>
-                    <td>{lang === 'bn' ? 'ব্যাকআপ ও সাধারণ এডিট' : 'Backup and plain editing'}</td>
+                    <td>{lang === 'bn' ? 'গিটহাব বা টেক্সট এডিটর' : 'Modern markdown workflows'}</td>
                   </tr>
                   <tr>
-                    <td><strong>Word (.docx)</strong></td>
-                    <td><span className="badge pro">Pro</span></td>
-                    <td>{lang === 'bn' ? 'প্রকাশক বা সম্পাদকের কাছে জমা' : 'Submission to editors'}</td>
+                    <td><strong>HTML / TXT</strong></td>
+                    <td><span className="badge free">Free</span></td>
+                    <td>{lang === 'bn' ? 'ওয়েবে প্রকাশ বা সাধারণ ব্যাকআপ' : 'Web publishing and plain backup'}</td>
                   </tr>
                   <tr>
-                    <td><strong>PDF</strong></td>
-                    <td><span className="badge pro">Pro</span></td>
-                    <td>{lang === 'bn' ? 'বাংলা ফন্টসহ প্রিন্ট' : 'Print with Bengali fonts'}</td>
+                    <td><strong>JSON Backup</strong></td>
+                    <td><span className="badge free">Free</span></td>
+                    <td>{lang === 'bn' ? '১০০% পাণ্ডুলিপি রিস্টোর' : 'Full project data migration & restore'}</td>
                   </tr>
                   <tr>
-                    <td><strong>EPUB</strong></td>
+                    <td><strong>Print PDF / EPUB</strong></td>
                     <td><span className="badge pro">Pro</span></td>
-                    <td>{lang === 'bn' ? 'কিন্ডল ও ই-বুক রিডার' : 'Kindle and e-readers'}</td>
+                    <td>{lang === 'bn' ? 'বুক লেআউট, অলঙ্কৃত হেডার ও প্রিন্ট' : 'Print-ready layout & Kindle e-books'}</td>
                   </tr>
                 </tbody>
               </table>
@@ -611,9 +472,151 @@ export const DocsView: React.FC<DocsViewProps> = ({ lang, onOpenEditor, onOpenSe
           </div>
         )}
 
+        {/* Tab 5: Proofread & Analytics */}
+        {activeTab === 'proofread' && (
+          <div className="doc-pane">
+            <h2>{lang === 'bn' ? 'বাংলা ব্যাকরণ, প্রুফরিড ও সাহিত্যিক অ্যানালিটিক্স' : 'Bangla Grammar, Proofread & Literary Analytics'}</h2>
+            <p>
+              {lang === 'bn'
+                ? 'লিপিশিল্পের অফলাইন প্রুফরিডার বাংলা একাডেমির প্রমিত বানানরীতি অনুসরণ করে রিয়েল-টাইমে ভুল সংশোধন করে।'
+                : 'Rule-based offline Bengali grammar linter and deep narrative analytics running directly in your browser.'}
+            </p>
+
+            <div className="rules-showcase-grid">
+              <div className="rule-badge-card">
+                <span className="rule-dot red" />
+                <h4>{lang === 'bn' ? 'বাহুল্য দোষ' : 'Redundancy'}</h4>
+                <p>{lang === 'bn' ? '«সকল শিক্ষকগণ» → শিক্ষকগণ, «গতকালকে» → গতকাল, «শুধুমাত্র» → শুধু।' : 'Tautology & double plurals like “শুধুমাত্র” → “শুধু”.'}</p>
+              </div>
+              <div className="rule-badge-card">
+                <span className="rule-dot gold" />
+                <h4>{lang === 'bn' ? 'সাধু-চলিত মিশ্রণ' : 'Sadhu–Cholit mix'}</h4>
+                <p>{lang === 'bn' ? 'একই অনুচ্ছেদে সাধু ক্রিয়া (করিলেন) ও চলিত রূপ মিলিয়ে গেলে সতর্ক করে।' : 'Flags classical and contemporary verb forms mixed together.'}</p>
+              </div>
+              <div className="rule-badge-card">
+                <span className="rule-dot green" />
+                <h4>{lang === 'bn' ? 'প্রমিত বানান' : 'Standard spelling'}</h4>
+                <p>{lang === 'bn' ? '«বেশী» → বেশি, «শ্রেণী» → শ্রেণি, «পাখী» → পাখি।' : 'Bangla Academy standard spellings.'}</p>
+              </div>
+              <div className="rule-badge-card">
+                <span className="rule-dot blue" />
+                <h4>{lang === 'bn' ? 'যতিচিহ্ন ও স্পেস' : 'Punctuation & Spaces'}</h4>
+                <p>{lang === 'bn' ? 'দাঁড়ি ও কমার আগে অবাঞ্ছিত স্পেস অপসারণ এবং ফাঁকা ঠিক করে।' : 'Cleans up stray spaces before dari (।) and punctuation.'}</p>
+              </div>
+            </div>
+
+            {/* Interactive Playground */}
+            <div className="playground-card" style={{ marginTop: '24px' }}>
+              <h3>{lang === 'bn' ? 'ইন্টারেক্টিভ প্রুফরিডার টেস্ট ল্যাব' : 'Interactive Proofreader Test Lab'}</h3>
+              <p>{lang === 'bn' ? 'নিচের বক্সে যেকোনো বাংলা বাক্য লিখে পরীক্ষা করে দেখুন:' : 'Test the offline proofreader directly below:'}</p>
+              <textarea
+                value={playgroundText}
+                onChange={(e) => setPlaygroundText(e.target.value)}
+                rows={3}
+                style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontFamily: 'inherit' }}
+              />
+              <div style={{ marginTop: '10px', display: 'flex', gap: '10px' }}>
+                <button type="button" className="btn-primary" onClick={runTest}>
+                  <Sparkles size={14} />
+                  <span>{lang === 'bn' ? 'পরীক্ষা করুন' : 'Run Test'}</span>
+                </button>
+              </div>
+              {testResults && (
+                <div style={{ marginTop: '12px', padding: '12px', background: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                  <strong>{lang === 'bn' ? `পাওয়া গেছে (${testResults.length}টি সংশোধন):` : `Detected (${testResults.length} issues):`}</strong>
+                  {testResults.length === 0 ? (
+                    <p style={{ color: '#16a34a', margin: '6px 0 0' }}>{lang === 'bn' ? 'কোনো ভুল পাওয়া যায়নি, লেখা নিখুঁত!' : 'No errors found, text is clean!'}</p>
+                  ) : (
+                    <ul style={{ margin: '6px 0 0', paddingLeft: '20px', fontSize: '0.9rem' }}>
+                      {testResults.map((r, i) => <li key={i}>{r}</li>)}
+                    </ul>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Tab 6: Codex & Workflow */}
+        {activeTab === 'continuity' && (
+          <div className="doc-pane">
+            <h2>{lang === 'bn' ? 'চরিত্র কোডেক্স ও ৪-ধাপের ওয়ার্কফ্লো' : 'World Codex & Chapter Workflow'}</h2>
+            <p>
+              {lang === 'bn'
+                ? 'দীর্ঘ উপন্যাসে চরিত্রের স্বভাব, বয়স, টাইমলাইন ও অধ্যায়ের অগ্রগতি ট্র্যাক করার সম্পূর্ণ ব্যবস্থা।'
+                : 'Track character profiles, world lore, and chapter drafting progress with structured workflows.'}
+            </p>
+
+            <div className="feature-steps-grid three">
+              <div className="feature-step-card">
+                <div className="step-icon"><Users size={20} /></div>
+                <h3>{lang === 'bn' ? 'চরিত্র ও বিশ্ব কোডেক্স' : 'Character & World Codex'}</h3>
+                <p>
+                  {lang === 'bn'
+                    ? 'চরিত্রের ভূমিকা, বয়স, ব্যাকস্টোরি ও লোকেশন নোট রাখুন। ১-ক্লিকেই এডিটরে নাম ইনসার্ট করুন।'
+                    : 'Manage character cards, roles, traits, and world lore with 1-click name insertion.'}
+                </p>
+              </div>
+
+              <div className="feature-step-card">
+                <div className="step-icon"><Layers size={20} /></div>
+                <h3>{lang === 'bn' ? '৪-স্টেজ ওয়ার্কফ্লো ব্যাজ' : '4-Stage Workflow Badges'}</h3>
+                <p>
+                  {lang === 'bn'
+                    ? 'অধ্যায়ভিত্তিক অগ্রগতি ট্র্যাক করুন: খসড়া (Draft), চলমান (In Progress), সংশোধিত (Revised), এবং চূড়ান্ত (Final)।'
+                    : 'Track each chapter across Draft, In Progress, Revised, and Final status badges.'}
+                </p>
+              </div>
+
+              <div className="feature-step-card">
+                <div className="step-icon"><Replace size={20} /></div>
+                <h3>{lang === 'bn' ? 'সার্বিক সার্চ ও রিপ্লেস (Ctrl+Shift+F)' : 'Global Search & Replace'}</h3>
+                <p>
+                  {lang === 'bn'
+                    ? 'সমগ্র বইয়ের সমস্ত অধ্যায়ে একসাথে যেকোনো নাম বা শব্দ খুঁজে বের করে ১-ক্লিকে প্রতিস্থাপন করুন।'
+                    : 'Find and replace character names or keywords across all book chapters simultaneously.'}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tab 7: AI Editorial (Pro) */}
+        {activeTab === 'ai' && (
+          <div className="doc-pane">
+            <h2>
+              {lang === 'bn' ? 'এআই সাহিত্যিক সহায়ক' : 'AI Editorial Assistant'}
+              <span className="doc-pro-badge">Pro</span>
+            </h2>
+            <p>
+              {lang === 'bn'
+                ? 'লিপিশিল্প প্রোতে OpenAI GPT-4o দিয়ে গভীর সাহিত্যিক পরিমার্জন ও অডিও প্রুফরিডিং সুবিধা পাওয়া যায়।'
+                : 'Pro unlocks OpenAI GPT-4o style enhancement, character consistency audits, and Bengali audio text-to-speech.'}
+            </p>
+            <div className="ai-card-grid">
+              <div className="ai-feature-card">
+                <div className="step-icon"><PencilLine size={18} /></div>
+                <h4>{lang === 'bn' ? 'বাক্য ও শৈলী পরিমার্জন' : 'Phrasing & Style Polish'}</h4>
+                <p>{lang === 'bn' ? 'জটিল বাক্যকে সাবলীল করে, লেখকের নিজস্ব শৈলী বজায় রেখে।' : 'Enhances sentence cadence while preserving your unique author voice.'}</p>
+              </div>
+              <div className="ai-feature-card">
+                <div className="step-icon"><Users size={18} /></div>
+                <h4>{lang === 'bn' ? 'চরিত্রের ধারাবাহিকতা অডিট' : 'Character Consistency Audit'}</h4>
+                <p>{lang === 'bn' ? 'আগের স্বভাবের বিপরীতে হঠাৎ অসঙ্গতি থাকলে ধরিয়ে দেয়।' : 'Flags inconsistencies with character motivation, backstory, or timeline.'}</p>
+              </div>
+              <div className="ai-feature-card">
+                <div className="step-icon"><Volume2 size={18} /></div>
+                <h4>{lang === 'bn' ? 'বাংলা অডিও প্রুফরিডিং' : 'Bengali Audio Proofing'}</h4>
+                <p>{lang === 'bn' ? 'বাক্য ধরে ধরে স্বাভাবিক বাংলায় পড়ে শোনায়, ছন্দপতন দ্রুত ধরা পড়ে।' : 'Listens to your manuscript in natural Bengali voice for rhythm cadence.'}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tab 8: FAQ */}
         {activeTab === 'faq' && (
           <div className="doc-pane">
-            <h2>{lang === 'bn' ? 'সাধারণ প্রশ্ন' : 'Frequently asked questions'}</h2>
+            <h2>{lang === 'bn' ? 'সাধারণ জিজ্ঞাসা (FAQ)' : 'Frequently Asked Questions'}</h2>
             <div className="faq-accordion">
               {faqs.map((faq, idx) => {
                 const open = expandedFaq === idx;
