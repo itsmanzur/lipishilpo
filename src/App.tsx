@@ -7,7 +7,7 @@ import {
   Maximize2, Minimize2, Sun, Moon, Coffee, History, Target,
   MessageSquare, MessageSquarePlus, CheckCircle, Eye, Edit3,
   BookA, Share2, StickyNote, FileUp, Keyboard, Compass,
-  Bold, Italic, Heading2, Quote, List, Box, Bookmark, GripVertical, Replace,
+  Bold, Italic, Heading2, Quote, List, Box, Bookmark, GripVertical, Replace, MessageSquareQuote,
 } from 'lucide-react';
 import {
   type Project, type Chapter, type ChapterStatus,
@@ -30,6 +30,8 @@ import { ConjunctsModal } from './components/ConjunctsModal';
 import { FloatingBubbleToolbar } from './components/FloatingBubbleToolbar';
 import { ProofreadWalkthroughBar } from './components/ProofreadWalkthroughBar';
 import { PersonalDictionaryModal } from './components/PersonalDictionaryModal';
+import { SlashCommandMenu, type SlashCommandItem } from './components/SlashCommandMenu';
+import { FormattingCheatSheetModal } from './components/FormattingCheatSheetModal';
 import { renderFormattedSpan } from './lib/render-review';
 import { GlobalFindReplaceModal } from './components/GlobalFindReplaceModal';
 import { ShortcutsModal } from './components/ShortcutsModal';
@@ -136,6 +138,18 @@ export default function App() {
   });
 
   const [bubblePosition, setBubblePosition] = useState<{ top: number; left: number } | null>(null);
+  const [slashMenu, setSlashMenu] = useState<{
+    isOpen: boolean;
+    query: string;
+    position: { top: number; left: number } | null;
+    startIdx: number;
+  }>({
+    isOpen: false,
+    query: '',
+    position: null,
+    startIdx: -1,
+  });
+  const [showCheatSheetModal, setShowCheatSheetModal] = useState(false);
   const [showGlobalFindModal, setShowGlobalFindModal] = useState(false);
   const [draggedChapterIndex, setDraggedChapterIndex] = useState<number | null>(null);
   const paperContainerRef = useRef<HTMLDivElement>(null);
@@ -665,8 +679,63 @@ export default function App() {
     }
   }
 
-  function handleBubbleFormat(format: 'bold' | 'italic' | 'quote' | 'single-quote' | 'h2' | 'h3' | 'emdash' | 'scene-break' | 'mark' | 'comment') {
+  function handleBubbleFormat(format: string) {
     applyFormatting(format);
+  }
+
+  function checkSlashTrigger(textarea: HTMLTextAreaElement) {
+    const cursor = textarea.selectionStart;
+    const val = textarea.value;
+    const textBefore = val.substring(0, cursor);
+    const lastLine = textBefore.split('\n').pop() || '';
+    const slashIdxInLine = lastLine.lastIndexOf('/');
+
+    if (slashIdxInLine !== -1 && (slashIdxInLine === 0 || /\s/.test(lastLine[slashIdxInLine - 1]))) {
+      const query = lastLine.slice(slashIdxInLine + 1);
+      if (!query.includes(' ') && !query.includes('\n') && query.length <= 15) {
+        const rect = textarea.getBoundingClientRect();
+        const lines = textBefore.split('\n');
+        const lineIndex = lines.length;
+        const computed = window.getComputedStyle(textarea);
+        const lineHeight = parseFloat(computed.lineHeight) || (parseFloat(computed.fontSize) * 1.8) || 28;
+
+        const topPos = rect.top + Math.min(lineIndex * lineHeight, rect.height) + window.scrollY;
+        const leftPos = Math.min(rect.right - 280, Math.max(rect.left + 20, rect.left + (slashIdxInLine * 10)));
+
+        setSlashMenu({
+          isOpen: true,
+          query,
+          position: { top: topPos + 6, left: leftPos },
+          startIdx: cursor - query.length - 1,
+        });
+        return;
+      }
+    }
+    setSlashMenu((prev) => (prev.isOpen ? { ...prev, isOpen: false } : prev));
+  }
+
+  function handleSelectSlashCommand(command: SlashCommandItem) {
+    if (!editor.current) return;
+    const textarea = editor.current;
+    const start = slashMenu.startIdx >= 0 ? slashMenu.startIdx : textarea.selectionStart;
+    const end = textarea.selectionStart;
+
+    // Remove the typed /query
+    const beforeSlash = text.substring(0, start);
+    const afterSlash = text.substring(end);
+    const cleanedText = beforeSlash + afterSlash;
+
+    updateText(cleanedText, 'type');
+    setSlashMenu({ isOpen: false, query: '', position: null, startIdx: -1 });
+
+    setTimeout(() => {
+      if (editor.current) {
+        editor.current.focus();
+        editor.current.setSelectionRange(start, start);
+        savedSelectionRef.current = { start, end: start };
+        applyFormatting(command.format);
+      }
+    }, 20);
   }
 
   // ── Theme Switcher ─────────────────────────────────────────────────────────
@@ -940,7 +1009,7 @@ window.addEventListener('keydown', handleKeyDown);
     );
   }
 
-  function applyFormatting(format: 'bold' | 'italic' | 'heading' | 'quote' | 'callout' | 'citation' | 'list' | 'divider' | 'h2' | 'h3' | 'single-quote' | 'emdash' | 'scene-break' | 'mark' | 'comment') {
+  function applyFormatting(format: string) {
     if (format === 'comment') {
       handleSelectTextInEditor();
       setShowCommentDialog(true);
@@ -964,7 +1033,7 @@ window.addEventListener('keydown', handleKeyDown);
     const lineEndIdx = text.indexOf('\n', end);
     const lineEnd = lineEndIdx === -1 ? text.length : lineEndIdx;
     const currentLine = text.substring(lineStart, lineEnd);
-    const cleanLine = currentLine.replace(/^(\s*(#{1,6}|>|\*|-)\s*)/, '');
+    const cleanLine = currentLine.replace(/^(\s*(#{1,6}|>|\*|-|([0-9]+|[০-৯]+)\.)\s*)/, '');
 
     let selected = text.substring(start, end);
     let replacement = '';
@@ -1092,6 +1161,13 @@ window.addEventListener('keydown', handleKeyDown);
         }
         break;
       }
+      case 'dialogue': {
+        const inner = selected || (lang === 'bn' ? 'সংলাপ বা উক্তি এখানে লিখুন' : 'Dialogue quote here');
+        replacement = `— “${inner}”`;
+        selStart = start + 3;
+        selEnd = selStart + inner.length;
+        break;
+      }
       case 'quote': {
         if (start !== end && !selected.includes('\n')) {
           // Inline Bengali curly quote toggle
@@ -1149,30 +1225,96 @@ window.addEventListener('keydown', handleKeyDown);
         }
         break;
       }
+      case 'poem': {
+        const inner = selected || (lang === 'bn' ? 'প্রথম চরণ\nদ্বিতীয় চরণ' : 'First line of poem\nSecond line of poem');
+        const prefix = (start > 0 && text[start - 1] !== '\n') ? '\n\n' : '';
+        const suffix = (end < text.length && text[end] !== '\n') ? '\n\n' : '';
+        replacement = `${prefix}:::poem\n${inner}\n:::${suffix}`;
+        selStart = start + prefix.length + ':::poem\n'.length;
+        selEnd = selStart + inner.length;
+        break;
+      }
+      case 'dropcap': {
+        const inner = selected || (lang === 'bn' ? 'অধ্যায়ের শুরুর প্রথম বাক্য...' : 'First sentence of chapter...');
+        const prefix = (start > 0 && text[start - 1] !== '\n') ? '\n\n' : '';
+        const suffix = (end < text.length && text[end] !== '\n') ? '\n\n' : '';
+        replacement = `${prefix}:::dropcap\n${inner}\n:::${suffix}`;
+        selStart = start + prefix.length + ':::dropcap\n'.length;
+        selEnd = selStart + inner.length;
+        break;
+      }
+      case 'footnote': {
+        const fnMatches = text.match(/\[\^([0-9\u09E6-\u09EF]+)\]/g) || [];
+        const count = Math.floor(fnMatches.length / 2) + 1;
+        const fnNum = lang === 'bn' ? count.toLocaleString('bn-BD') : String(count);
+        const fnRef = `[^${fnNum}]`;
+        const fnBottomNote = `\n\n[^${fnNum}]: ${lang === 'bn' ? 'পাদটীকা বা বিস্তারিত ব্যাখ্যা এখানে লিখুন...' : 'Footnote explanation here...'}`;
+
+        const nextText = text.substring(0, start) + fnRef + text.substring(end) + fnBottomNote;
+        setHistory((h) => [...h.slice(-49), text]);
+        typedTextRef.current = nextText;
+        updateText(nextText, 'type');
+        scheduleManualLog();
+        setChecked(false);
+        setBubblePosition(null);
+        const newPos = start + fnRef.length;
+        savedSelectionRef.current = { start: newPos, end: newPos };
+        setTimeout(() => {
+          if (editor.current) {
+            editor.current.focus();
+            editor.current.setSelectionRange(newPos, newPos);
+          }
+        }, 30);
+        return;
+      }
       case 'emdash': {
         replacement = `—`;
         selStart = start + 1;
         selEnd = selStart;
         break;
       }
-      case 'scene-break': {
+      case 'scene-break':
+      case 'divider-diamond':
+      case 'divider-floral':
+      case 'divider-sparkle':
+      case 'divider-asterisk':
+      case 'divider-leaf': {
+        const motif = format === 'divider-floral' ? '~ ❦ ~'
+          : format === 'divider-sparkle' ? '— ✦ —'
+          : format === 'divider-asterisk' ? '* * *'
+          : format === 'divider-leaf' ? '❧ ❧ ❧'
+          : '❖ ❖ ❖';
         const prefix = (start > 0 && text[start - 1] !== '\n') ? '\n\n' : '';
         const suffix = (end < text.length && text[end] !== '\n') ? '\n\n' : '';
-        replacement = `${prefix}❖ ❖ ❖${suffix}`;
+        replacement = `${prefix}${motif}${suffix}`;
         selStart = start + replacement.length;
         selEnd = selStart;
         break;
       }
-      case 'mark': {
-        if (selected.startsWith('<mark>') && selected.endsWith('</mark>')) {
+      case 'mark':
+      case 'mark-yellow':
+      case 'mark-green':
+      case 'mark-purple':
+      case 'mark-pink': {
+        const colorClass = format === 'mark-green' ? 'hl-green'
+          : format === 'mark-purple' ? 'hl-purple'
+          : format === 'mark-pink' ? 'hl-pink'
+          : 'hl-yellow';
+
+        if (selected.startsWith(`<mark class="${colorClass}">`) && selected.endsWith('</mark>')) {
+          const unwrapped = selected.slice(`<mark class="${colorClass}">`.length, -7);
+          replacement = unwrapped;
+          selStart = start;
+          selEnd = start + unwrapped.length;
+        } else if (selected.startsWith('<mark>') && selected.endsWith('</mark>')) {
           const unwrapped = selected.slice(6, -7);
           replacement = unwrapped;
           selStart = start;
           selEnd = start + unwrapped.length;
         } else {
           const inner = selected || (lang === 'bn' ? 'হাইলাইট' : 'highlight');
-          replacement = `<mark>${inner}</mark>`;
-          selStart = start + 6;
+          replacement = `<mark class="${colorClass}">${inner}</mark>`;
+          selStart = start + `<mark class="${colorClass}">`.length;
           selEnd = selStart + inner.length;
         }
         break;
@@ -1205,6 +1347,35 @@ window.addEventListener('keydown', handleKeyDown);
           ? lines.map((l) => l.replace(/^\s*(\*|-)\s*/, ''))
           : lines.map((l) => (l.trim() ? (l.trim().startsWith('* ') ? l : `* ${l.replace(/^\s*-\s*/, '')}`) : `* ${lang === 'bn' ? 'পয়েন্ট' : 'item'}`));
         const newLine = newLines.join('\n');
+        const next = text.substring(0, lineStart) + newLine + text.substring(lineEnd);
+        setHistory((h) => [...h.slice(-49), text]);
+        typedTextRef.current = next;
+        updateText(next, 'type');
+        scheduleManualLog();
+        setChecked(false);
+        setBubblePosition(null);
+        savedSelectionRef.current = { start: lineStart, end: lineStart + newLine.length };
+        setTimeout(() => {
+          if (editor.current) {
+            editor.current.focus();
+            editor.current.setSelectionRange(lineStart, lineStart + newLine.length);
+          }
+        }, 30);
+        return;
+      }
+      case 'number': {
+        const lines = text.substring(lineStart, lineEnd).split('\n');
+        const allNumbered = lines.every((l) => /^\s*([0-9]+|[০-৯]+)\.\s*/.test(l));
+        let newLine = '';
+        if (allNumbered) {
+          newLine = lines.map((l) => l.replace(/^\s*([0-9]+|[০-৯]+)\.\s*/, '')).join('\n');
+        } else {
+          newLine = lines.map((l, idx) => {
+            const clean = l.replace(/^\s*([0-9]+|[০-৯]+|\*|-)\.\s*/, '').replace(/^\s*(\*|-)\s*/, '');
+            const numStr = lang === 'bn' ? (idx + 1).toLocaleString('bn-BD') : String(idx + 1);
+            return `${numStr}. ${clean || (lang === 'bn' ? 'আইটেম' : 'item')}`;
+          }).join('\n');
+        }
         const next = text.substring(0, lineStart) + newLine + text.substring(lineEnd);
         setHistory((h) => [...h.slice(-49), text]);
         typedTextRef.current = next;
@@ -2433,6 +2604,16 @@ ${chaptersHtml}
                   onFormat={handleBubbleFormat}
                 />
 
+                {/* Floating Slash Command Palette (/) */}
+                <SlashCommandMenu
+                  isOpen={slashMenu.isOpen}
+                  query={slashMenu.query}
+                  position={slashMenu.position}
+                  lang={lang}
+                  onSelect={handleSelectSlashCommand}
+                  onClose={() => setSlashMenu({ isOpen: false, query: '', position: null, startIdx: -1 })}
+                />
+
                 <div className="toolbar">
                   <div className="chapter-label-group">
                     <span>
@@ -2615,6 +2796,16 @@ ${chaptersHtml}
                         type="button"
                         className="format-action-btn"
                         onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => applyFormatting('dialogue')}
+                        title={lang === 'bn' ? 'সংলাপ — “উক্তি” [Ctrl+Shift+D]' : 'Dialogue — “Quote” [Ctrl+Shift+D]'}
+                      >
+                        <MessageSquareQuote size={13} />
+                        <span>{lang === 'bn' ? 'সংলাপ' : 'Dialogue'}</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="format-action-btn"
+                        onMouseDown={(e) => e.preventDefault()}
                         onClick={() => applyFormatting('heading')}
                         title={lang === 'bn' ? 'উপ-শিরোনাম (Subheading) ## সেকশন' : 'Subheading ## Section'}
                       >
@@ -2630,6 +2821,16 @@ ${chaptersHtml}
                       >
                         <Quote size={13} />
                         <span>{lang === 'bn' ? 'উদ্ধৃতি' : 'Quote'}</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="format-action-btn"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => applyFormatting('poem')}
+                        title={lang === 'bn' ? 'কবিতা ও স্তবক :::poem' : 'Poem :::poem'}
+                      >
+                        <Feather size={13} />
+                        <span>{lang === 'bn' ? 'কবিতা' : 'Poem'}</span>
                       </button>
                       <button
                         type="button"
@@ -2655,6 +2856,15 @@ ${chaptersHtml}
                         type="button"
                         className="format-action-btn"
                         onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => applyFormatting('footnote')}
+                        title={lang === 'bn' ? 'পাদটীকা ও টীকা [^১]' : 'Footnote [^1]'}
+                      >
+                        <span>[^১]</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="format-action-btn"
+                        onMouseDown={(e) => e.preventDefault()}
                         onClick={() => applyFormatting('list')}
                         title={lang === 'bn' ? 'তালিকা বা পয়েন্ট * পয়েন্ট' : 'Bullet List * item'}
                       >
@@ -2664,10 +2874,25 @@ ${chaptersHtml}
                         type="button"
                         className="format-action-btn"
                         onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => applyFormatting('divider')}
-                        title={lang === 'bn' ? 'অধ্যায় ডিভাইডার প্রতীক ---' : 'Divider ---'}
+                        onClick={() => applyFormatting('divider-diamond')}
+                        title={lang === 'bn' ? 'দৃশ্য বিভাজক মোটিফ ❖ ❖ ❖' : 'Scene Break Motif ❖ ❖ ❖'}
                       >
                         <span>❖</span>
+                      </button>
+                    </div>
+
+                    <span className="format-divider" />
+
+                    <div className="format-btn-group">
+                      <button
+                        type="button"
+                        className="format-action-btn cheatsheet-btn"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => setShowCheatSheetModal(true)}
+                        title={lang === 'bn' ? 'ফরম্যাটিং চিটশিট সহায়িকা [Ctrl+/]' : 'Formatting Cheat Sheet [Ctrl+/]'}
+                      >
+                        <Keyboard size={13} />
+                        <span>{lang === 'bn' ? 'চিটশিট' : 'Cheat Sheet'}</span>
                       </button>
                     </div>
                   </div>
@@ -2696,10 +2921,26 @@ ${chaptersHtml}
                       value={text}
                       placeholder={t.editorPlaceholder}
                       spellCheck={false}
-                      onMouseUp={handleSelectTextInEditor}
-                      onKeyUp={handleSelectTextInEditor}
+                      onMouseUp={() => {
+                        handleSelectTextInEditor();
+                        if (editor.current) checkSlashTrigger(editor.current);
+                      }}
+                      onKeyUp={(e) => {
+                        handleSelectTextInEditor();
+                        if (editor.current) checkSlashTrigger(editor.current);
+                      }}
                       onSelect={handleSelectTextInEditor}
                       onKeyDown={(e) => {
+                        if (e.key === 'Escape' && slashMenu.isOpen) {
+                          e.preventDefault();
+                          setSlashMenu({ isOpen: false, query: '', position: null, startIdx: -1 });
+                          return;
+                        }
+                        if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'd') {
+                          e.preventDefault();
+                          applyFormatting('dialogue');
+                          return;
+                        }
                         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
                           e.preventDefault();
                           applyFormatting('bold');
@@ -2722,6 +2963,7 @@ ${chaptersHtml}
                               if (editor.current) {
                                 editor.current.focus();
                                 editor.current.setSelectionRange(smart.newCursor, smart.newCursor);
+                                checkSlashTrigger(editor.current);
                               }
                             }, 10);
                             return;
@@ -2735,6 +2977,7 @@ ${chaptersHtml}
                         updateText(next, 'type');
                         scheduleManualLog();
                         setChecked(false);
+                        checkSlashTrigger(e.currentTarget);
                         if (typewriterMode) {
                           adjustTypewriterScroll();
                         }
@@ -3839,6 +4082,32 @@ ${chaptersHtml}
           </div>
         </div>
       )}
+
+      {/* ── Interactive Formatting & Literary Cheat Sheet Modal ── */}
+      <FormattingCheatSheetModal
+        isOpen={showCheatSheetModal}
+        lang={lang}
+        onClose={() => setShowCheatSheetModal(false)}
+        onInsertSyntax={(syntax) => {
+          if (!editor.current) return;
+          const textarea = editor.current;
+          let start = textarea.selectionStart;
+          let end = textarea.selectionEnd;
+          if (start === end && savedSelectionRef.current.start !== savedSelectionRef.current.end) {
+            start = savedSelectionRef.current.start;
+            end = savedSelectionRef.current.end;
+          }
+          const nextText = text.substring(0, start) + syntax + text.substring(end);
+          updateText(nextText, 'type');
+          const newPos = start + syntax.length;
+          setTimeout(() => {
+            if (editor.current) {
+              editor.current.focus();
+              editor.current.setSelectionRange(newPos, newPos);
+            }
+          }, 30);
+        }}
+      />
 
       {/* ── 1-Click Publish to WordPress Modal ── */}
       {showPublishModal && (

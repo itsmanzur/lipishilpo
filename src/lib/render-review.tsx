@@ -1,21 +1,25 @@
-﻿import React from 'react';
+import React from 'react';
 
 /**
- * Parses inline rich typography and tags (<mark>, **bold**, *italic*, etc.)
+ * Parses inline rich typography and tags (<mark>, **bold**, *italic*, :::poem, :::dropcap, etc.)
  * into React elements for the Visual Review Paper Surface.
  */
 export function renderFormattedSpan(rawText: string, keyPrefix: string): React.ReactNode {
   if (!rawText) return null;
 
-  // Regex pattern for all supported inline/block constructs
+  // Regex pattern for all supported inline/block constructs:
   // 1: Callout box :::box[Title] Content :::
-  // 2: Scene divider (--- or ❖ ❖ ❖)
-  // 3: Headings ## or ###
-  // 4: Blockquote >
-  // 5: <mark>...</mark>
-  // 6: **bold**
-  // 7: *italic*
-  const pattern = /(:::box\[(.*?)\]([\s\S]*?):::)|(\n?---\n?|\n?❖ ❖ ❖\n?)|(\n?#{2,3}\s+[^\n]+)|(\n?>\s+[^\n]+)|(<mark(?:\s+[^>]*)?>([\s\S]*?)<\/mark>)|(\*\*[^*]+\*\*)|(\*[^*]+\*)/g;
+  // 2: Poem block :::poem Content :::
+  // 3: Drop cap block :::dropcap Content :::
+  // 4: Scene dividers (--- | ❖ ❖ ❖ | ~ ❦ ~ | — ✦ — | * * * | ❧ ❧ ❧)
+  // 5: Headings ## or ###
+  // 6: Blockquote >
+  // 7: <mark class="...">...</mark> or <mark>...</mark>
+  // 8: Footnote definition [^N]: Text
+  // 9: Footnote reference [^N]
+  // 10: **bold**
+  // 11: *italic*
+  const pattern = /(:::box\[(.*?)\]([\s\S]*?):::)|(:::poem([\s\S]*?):::)|(:::dropcap([\s\S]*?):::)|(\n?(?:---|\u2756\s+\u2756\s+\u2756|~\s*\u2766\s*~|—\s*\u2726\s*—|\*\s*\*\s*\*|\u2767\s+\u2767\s+\u2767)\n?)|(\n?#{2,3}\s+[^\n]+)|(\n?>\s+[^\n]+)|(<mark(?:\s+class="([^"]*)")?>([\s\S]*?)<\/mark>)|(\n?\[\^([0-9\u09E6-\u09EF]+)\]:\s*([^\n]+))|(\[\^([0-9\u09E6-\u09EF]+)\])|(\*\*[^*]+\*\*)|(\*[^*]+\*)/g;
 
   const parts: React.ReactNode[] = [];
   let lastIndex = 0;
@@ -49,16 +53,38 @@ export function renderFormattedSpan(rawText: string, keyPrefix: string): React.R
         </div>
       );
     }
-    // 2. Scene Divider --- or ❖ ❖ ❖
+    // 2. Poem Block :::poem Content :::
     else if (match[4]) {
+      const poemBody = match[5] || '';
       parts.push(
-        <div key={`${keyPrefix}-div-${idx++}`} className="review-scene-divider">
-          <span>❖ ❖ ❖</span>
+        <div key={`${keyPrefix}-poem-${idx++}`} className="review-poem-block">
+          <div className="review-poem-content">{poemBody.trim()}</div>
         </div>
       );
     }
-    // 3. Headings ## / ###
-    else if (match[5]) {
+    // 3. Drop Cap Block :::dropcap Content :::
+    else if (match[6]) {
+      const dropBody = (match[7] || '').trim();
+      const firstChar = dropBody.charAt(0);
+      const restText = dropBody.slice(1);
+      parts.push(
+        <div key={`${keyPrefix}-dropcap-${idx++}`} className="review-dropcap-block">
+          <span className="review-dropcap-letter">{firstChar}</span>
+          <span className="review-dropcap-text">{restText}</span>
+        </div>
+      );
+    }
+    // 4. Scene Divider
+    else if (match[8]) {
+      const dividerContent = matchedStr.trim() || '❖ ❖ ❖';
+      parts.push(
+        <div key={`${keyPrefix}-div-${idx++}`} className="review-scene-divider">
+          <span>{dividerContent}</span>
+        </div>
+      );
+    }
+    // 5. Headings ## / ###
+    else if (match[9]) {
       const hText = matchedStr.replace(/^\n?#{2,3}\s+/, '').trim();
       if (matchedStr.includes('###')) {
         parts.push(
@@ -74,8 +100,8 @@ export function renderFormattedSpan(rawText: string, keyPrefix: string): React.R
         );
       }
     }
-    // 4. Blockquote >
-    else if (match[6]) {
+    // 6. Blockquote >
+    else if (match[10]) {
       const qText = matchedStr.replace(/^\n?>\s+/, '').trim();
       parts.push(
         <blockquote key={`${keyPrefix}-bq-${idx++}`} className="review-blockquote">
@@ -83,17 +109,38 @@ export function renderFormattedSpan(rawText: string, keyPrefix: string): React.R
         </blockquote>
       );
     }
-    // 5. <mark>...</mark>
-    else if (match[7]) {
-      const markContent = match[8] || '';
+    // 7. <mark class="...">...</mark>
+    else if (match[11]) {
+      const markClass = match[12] || 'hl-yellow';
+      const markContent = match[13] || '';
       parts.push(
-        <mark key={`${keyPrefix}-mk-${idx++}`} className="review-mark-highlight">
+        <mark key={`${keyPrefix}-mk-${idx++}`} className={`review-mark-highlight ${markClass}`}>
           {markContent}
         </mark>
       );
     }
-    // 6. **bold**
-    else if (match[9]) {
+    // 8. Footnote definition [^N]: Text
+    else if (match[14]) {
+      const fnNum = match[15];
+      const fnText = match[16];
+      parts.push(
+        <div key={`${keyPrefix}-fndef-${idx++}`} className="review-footnote-def">
+          <span className="review-footnote-num">[{fnNum}]</span>
+          <span className="review-footnote-text">{fnText}</span>
+        </div>
+      );
+    }
+    // 9. Footnote reference [^N]
+    else if (match[17]) {
+      const fnNum = match[18];
+      parts.push(
+        <sup key={`${keyPrefix}-fnref-${idx++}`} className="review-footnote-ref">
+          [{fnNum}]
+        </sup>
+      );
+    }
+    // 10. **bold**
+    else if (match[19]) {
       const boldContent = matchedStr.slice(2, -2);
       parts.push(
         <strong key={`${keyPrefix}-b-${idx++}`} className="review-bold">
@@ -101,8 +148,8 @@ export function renderFormattedSpan(rawText: string, keyPrefix: string): React.R
         </strong>
       );
     }
-    // 7. *italic*
-    else if (match[10]) {
+    // 11. *italic*
+    else if (match[20]) {
       const italicContent = matchedStr.slice(1, -1);
       parts.push(
         <em key={`${keyPrefix}-i-${idx++}`} className="review-italic">

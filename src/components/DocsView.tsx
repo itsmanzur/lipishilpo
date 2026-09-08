@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import {
   BookOpen, Sparkles, Wand2, ShieldAlert, FileDown,
   HelpCircle, ChevronDown, ChevronRight, Check, Copy, Sliders, Compass,
-  Layers, SpellCheck, FileOutput, Users, Clock, PencilLine, Volume2
+  Layers, SpellCheck, FileOutput, Users, Clock, PencilLine, Volume2,
+  Feather, MessageSquareQuote, Quote, Box, Bookmark, Type, Divide, Keyboard
 } from 'lucide-react';
 import { type Language } from '../i18n';
 import { findIssues, type ProofMatch } from '../proofread';
@@ -14,7 +15,7 @@ interface DocsViewProps {
   onStartTour?: () => void;
 }
 
-type DocsTab = 'intro' | 'proofread' | 'continuity' | 'ai' | 'export' | 'faq';
+type DocsTab = 'intro' | 'formatting' | 'proofread' | 'continuity' | 'ai' | 'export' | 'faq';
 
 export const DocsView: React.FC<DocsViewProps> = ({ lang, onOpenEditor, onOpenSettings, onStartTour }) => {
   const [activeTab, setActiveTab] = useState<DocsTab>('intro');
@@ -24,6 +25,13 @@ export const DocsView: React.FC<DocsViewProps> = ({ lang, onOpenEditor, onOpenSe
   const [testResults, setTestResults] = useState<string[] | null>(null);
   const [expandedFaq, setExpandedFaq] = useState<number | null>(0);
   const [copied, setCopied] = useState(false);
+  const [copiedSyntax, setCopiedSyntax] = useState<string | null>(null);
+
+  function copyCode(code: string, id: string) {
+    void navigator.clipboard.writeText(code);
+    setCopiedSyntax(id);
+    setTimeout(() => setCopiedSyntax(null), 2000);
+  }
 
   async function runTest() {
     const issues = await findIssues(playgroundText, 'bn', lang, []);
@@ -42,6 +50,7 @@ export const DocsView: React.FC<DocsViewProps> = ({ lang, onOpenEditor, onOpenSe
 
   const tabs: Array<{ id: DocsTab; label: string; icon: React.ReactNode; pro?: boolean }> = [
     { id: 'intro', label: lang === 'bn' ? 'পরিচিতি' : 'Overview', icon: <BookOpen size={15} /> },
+    { id: 'formatting', label: lang === 'bn' ? 'টেক্সট ফরম্যাটিং' : 'Formatting Guide', icon: <PencilLine size={15} /> },
     { id: 'proofread', label: lang === 'bn' ? 'প্রুফরিড' : 'Proofread', icon: <Sparkles size={15} /> },
     { id: 'continuity', label: lang === 'bn' ? 'ধারাবাহিকতা' : 'Continuity', icon: <ShieldAlert size={15} /> },
     { id: 'ai', label: lang === 'bn' ? 'এআই সহায়ক' : 'AI Editorial', icon: <Wand2 size={15} />, pro: true },
@@ -205,6 +214,209 @@ export const DocsView: React.FC<DocsViewProps> = ({ lang, onOpenEditor, onOpenSe
           </div>
         )}
 
+        {activeTab === 'formatting' && (
+          <div className="doc-pane">
+            <h2>{lang === 'bn' ? 'টেক্সট ফরম্যাটিং ও সাহিত্যিক নির্দেশিকা' : 'Text Formatting & Literary Guide'}</h2>
+            <p>
+              {lang === 'bn'
+                ? 'লিপিশিল্পের পাওয়ারফুল সিনট্যাক্স, নোশন-স্টাইল স্ল্যাশ কমান্ড, ডায়লগ, কবিতা, পাদটীকা এবং কালার হাইলাইটিং দিয়ে আপনার পাণ্ডুলিপিকে পেশাদার বইয়ের মতো সাজান।'
+                : 'Format your manuscript like a professionally published book using Notion-style slash commands, dialogue dashes, poems, footnotes, and multi-color markers.'}
+            </p>
+
+            {/* Quick Slash Commands Showcase */}
+            <div className="doc-feature-highlight">
+              <div className="highlight-header">
+                <span className="pill-badge"><Sparkles size={13} /> {lang === 'bn' ? 'সুপার পাওয়ার ফিচার' : 'Superpower Feature'}</span>
+                <h3>{lang === 'bn' ? 'স্ল্যাশ কমান্ড (/) মেনু' : 'Slash Commands (/) Menu'}</h3>
+                <p>
+                  {lang === 'bn'
+                    ? 'এডিটরের যেকোনো লাইনে শুধু "/" টাইপ করলেই ভেসে উঠবে ইনস্ট্যান্ট কমান্ড প্যালেট। মাউস না ছুঁয়েই কীবোর্ডের তীরচিহ্ন (↑ / ↓) ও Enter চেপে ফরম্যাট সিলেক্ট করুন।'
+                    : 'Type "/" on any line in the editor to pop up the command palette. Navigate with arrow keys (↑ / ↓) and press Enter to select without touching your mouse.'}
+                </p>
+              </div>
+
+              <div className="slash-cmd-table-wrapper">
+                <table className="docs-table">
+                  <thead>
+                    <tr>
+                      <th>{lang === 'bn' ? 'কমান্ড' : 'Command'}</th>
+                      <th>{lang === 'bn' ? 'কাজ ও বর্ণনা' : 'Action & Purpose'}</th>
+                      <th>{lang === 'bn' ? 'সিনট্যাক্স / শর্টকাট' : 'Syntax / Shortcut'}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><code>/h2</code></td>
+                      <td>{lang === 'bn' ? 'অধ্যায়ের প্রধান উপ-পরিচ্ছেদ শিরোনাম' : 'Major chapter subheading'}</td>
+                      <td><code>## শিরোনাম</code></td>
+                    </tr>
+                    <tr>
+                      <td><code>/h3</code></td>
+                      <td>{lang === 'bn' ? 'ছোট পরিচ্ছেদ বা অনুচ্ছেদ শিরোনাম' : 'Minor paragraph subsection'}</td>
+                      <td><code>### ছোট শিরোনাম</code></td>
+                    </tr>
+                    <tr>
+                      <td><code>/dialogue</code></td>
+                      <td>{lang === 'bn' ? 'বাংলা উপন্যাসের প্রমিত সংলাপ (ড্যাশ ও কোট)' : 'Standard Bengali character dialogue'}</td>
+                      <td><code>— “উক্তি”</code> <span className="kbd-pill">Ctrl+Shift+D</span></td>
+                    </tr>
+                    <tr>
+                      <td><code>/quote</code></td>
+                      <td>{lang === 'bn' ? 'সাহিত্যিক উদ্ধৃতি বা এপিগ্রাফ ব্লক' : 'Literary quote or epigraph block'}</td>
+                      <td><code>&gt; উক্তি</code></td>
+                    </tr>
+                    <tr>
+                      <td><code>/poem</code></td>
+                      <td>{lang === 'bn' ? 'কবিতার চরণ ও ছন্দবদ্ধ স্তবক' : 'Poem stanzas and indented verse'}</td>
+                      <td><code>:::poem ... :::</code></td>
+                    </tr>
+                    <tr>
+                      <td><code>/box</code></td>
+                      <td>{lang === 'bn' ? 'তথ্য, ইসলামিক নোট বা হাদিস বক্স' : 'Callout box for notes or Hadith'}</td>
+                      <td><code>:::box[শিরোনাম] ... :::</code></td>
+                    </tr>
+                    <tr>
+                      <td><code>/citation</code></td>
+                      <td>{lang === 'bn' ? 'বই বা প্রামাণ্য দলিলের তথ্যসূত্র' : 'Source reference attribution'}</td>
+                      <td><code>তথ্যসূত্র: বই, পৃষ্ঠা ১২</code></td>
+                    </tr>
+                    <tr>
+                      <td><code>/footnote</code></td>
+                      <td>{lang === 'bn' ? 'পাতার নিচে পাদটীকা ও বিস্তারিত ব্যাখ্যা' : 'Footnote reference & bottom note'}</td>
+                      <td><code>[^১]</code> এবং <code>[^১]: টীকা...</code></td>
+                    </tr>
+                    <tr>
+                      <td><code>/dropcap</code></td>
+                      <td>{lang === 'bn' ? 'অধ্যায়ের শুরুর প্রথম অক্ষর অলঙ্করণ' : 'Decorative drop cap initial'}</td>
+                      <td><code>:::dropcap ... :::</code></td>
+                    </tr>
+                    <tr>
+                      <td><code>/divider</code></td>
+                      <td>{lang === 'bn' ? 'দৃশ্য বিভাজক মোটিফ (❖ ❖ ❖, ~ ❦ ~, — ✦ —)' : 'Artistic scene break divider'}</td>
+                      <td><code>❖ ❖ ❖</code></td>
+                    </tr>
+                    <tr>
+                      <td><code>/list</code>, <code>/number</code></td>
+                      <td>{lang === 'bn' ? 'বুলেট ও ক্রমিক তালিকা (১, ২, ৩)' : 'Bullet points & ordered numbered list'}</td>
+                      <td><code>* আইটেম</code> বা <code>১. আইটেম</code></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Literary & Fiction Styling Cards */}
+            <h3 style={{ marginTop: '28px', marginBottom: '14px' }}>
+              {lang === 'bn' ? 'সাহিত্য ও উপন্যাস রচনার বিশেষ টুলস' : 'Literary & Fiction Writing Tools'}
+            </h3>
+
+            <div className="formatting-guide-grid">
+              {/* Dialogue card */}
+              <div className="fmt-guide-card">
+                <div className="fmt-card-head">
+                  <div className="fmt-icon-box"><MessageSquareQuote size={16} /></div>
+                  <h4>{lang === 'bn' ? 'চরিত্রের সংলাপ (Dialogue)' : 'Character Dialogue'}</h4>
+                </div>
+                <p>
+                  {lang === 'bn'
+                    ? 'বাংলা কথাসাহিত্যে সংলাপ লেখার প্রমিত নিয়ম হলো এম-ড্যাশ (—) ও বাঁকা বাংলা উদ্ধৃতি (“ ”)।'
+                    : 'The standard for Bengali fiction dialogue is an em-dash followed by curly quotes.'}
+                </p>
+                <div className="fmt-code-box">
+                  <code>— “আপনি কাল কখন আসছেন?” সাজিদ জানতে চাইল।</code>
+                  <button
+                    type="button"
+                    className="copy-syntax-btn"
+                    onClick={() => copyCode('— “আপনি কাল কখন আসছেন?” সাজিদ জানতে চাইল।', 'diag')}
+                  >
+                    {copiedSyntax === 'diag' ? <Check size={12} /> : <Copy size={12} />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Poem card */}
+              <div className="fmt-guide-card">
+                <div className="fmt-card-head">
+                  <div className="fmt-icon-box"><Feather size={16} /></div>
+                  <h4>{lang === 'bn' ? 'কবিতা ও স্তবক (Poem Block)' : 'Poem & Verse Block'}</h4>
+                </div>
+                <p>
+                  {lang === 'bn'
+                    ? 'উপন্যাসের মাঝে কবিতার লাইন বা স্তবক সুন্দর ছন্দময় মার্জিনে সাজাতে :::poem সিনট্যাক্স ব্যবহার করুন।'
+                    : 'Wrap poems or rhyming stanzas in :::poem tags for balanced indentation and rhythm.'}
+                </p>
+                <div className="fmt-code-box">
+                  <code>{`:::poem\nমেঘ বলেছে যাব যাব,\nরাত বলেছে যাই।\n:::`}</code>
+                  <button
+                    type="button"
+                    className="copy-syntax-btn"
+                    onClick={() => copyCode(':::poem\nমেঘ বলেছে যাব যাব,\nরাত বলেছে যাই।\n:::', 'poem')}
+                  >
+                    {copiedSyntax === 'poem' ? <Check size={12} /> : <Copy size={12} />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Callout box */}
+              <div className="fmt-guide-card">
+                <div className="fmt-card-head">
+                  <div className="fmt-icon-box"><Box size={16} /></div>
+                  <h4>{lang === 'bn' ? 'তথ্য ও ইসলামিক বক্স (Callout)' : 'Callout & Reference Box'}</h4>
+                </div>
+                <p>
+                  {lang === 'bn'
+                    ? 'বিশেষ টিকা, কুরআনের আয়াত, হাদিসের উদ্ধৃতি বা ঐতিহাসিক তথ্যের জন্য বক্স ব্যবহার করুন।'
+                    : 'Callout boxes for Islamic citations, historical facts, or special side notes.'}
+                </p>
+                <div className="fmt-code-box">
+                  <code>{`:::box[ইসলামের আলোকে]\nকুরআনের আয়াত বা হাদিস এখানে লিখুন\n:::`}</code>
+                  <button
+                    type="button"
+                    className="copy-syntax-btn"
+                    onClick={() => copyCode(':::box[ইসলামের আলোকে]\nকুরআনের আয়াত বা হাদিস এখানে লিখুন\n:::', 'box')}
+                  >
+                    {copiedSyntax === 'box' ? <Check size={12} /> : <Copy size={12} />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Multi-color Highlighter card */}
+              <div className="fmt-guide-card">
+                <div className="fmt-card-head">
+                  <div className="fmt-icon-box"><Sparkles size={16} /></div>
+                  <h4>{lang === 'bn' ? 'রঙিন মার্কার হাইলাইট' : 'Multi-Color Highlighter'}</h4>
+                </div>
+                <p>
+                  {lang === 'bn'
+                    ? 'প্লট, চরিত্রের তথ্য বা যাচাইয়ের জন্য ৪টি ভিন্ন রঙের মার্কার ব্যবহার করুন:'
+                    : 'Highlight text with 4 semantic marker colors:'}
+                </p>
+                <div className="fmt-marker-pills">
+                  <span className="marker-pill hl-yellow">{lang === 'bn' ? 'হলুদ: মূল কাহিনী' : 'Yellow: Plot'}</span>
+                  <span className="marker-pill hl-green">{lang === 'bn' ? 'সবুজ: তথ্যসূত্র' : 'Green: Fact'}</span>
+                  <span className="marker-pill hl-purple">{lang === 'bn' ? 'বেগুনি: চরিত্র' : 'Purple: Character'}</span>
+                  <span className="marker-pill hl-pink">{lang === 'bn' ? 'গোলাপি: সংশোধন' : 'Pink: Revise'}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* In-Editor Cheat Sheet reminder */}
+            <div className="doc-callout info" style={{ marginTop: '24px' }}>
+              <div>
+                <strong>{lang === 'bn' ? 'এডিটরে যেকোনো সময় চিটশিট ওপেন করুন' : 'Open the Cheat Sheet anytime'}</strong>
+                <p>
+                  {lang === 'bn'
+                    ? 'কীবোর্ডে Ctrl + / চাপুন অথবা এডিটরের কুইক বারে থাকা "চিটশিট" বাটনে ক্লিক করলে সম্পূর্ণ সিনট্যাক্স ও শর্টকাটের পপআপ চলে আসবে এবং ১-ক্লিকেই এডিটরে ইনসার্ট করতে পারবেন।'
+                    : 'Press Ctrl + / on your keyboard or click the "Cheat Sheet" button in the editor toolbar to view all syntaxes and insert them with 1-click.'}
+                </p>
+              </div>
+              <div className="shortcode-box">
+                <code>Ctrl + /</code>
+              </div>
+            </div>
+          </div>
+        )}
+
         {activeTab === 'proofread' && (
           <div className="doc-pane">
             <h2>{lang === 'bn' ? 'বাংলা ব্যাকরণ ও প্রুফরিড' : 'Bangla grammar & style'}</h2>
@@ -276,7 +488,7 @@ export const DocsView: React.FC<DocsViewProps> = ({ lang, onOpenEditor, onOpenSe
                     <div className="pg-issues">
                       <strong>{lang === 'bn' ? `চিহ্নিত ত্রুটি (${testResults.length})` : `${testResults.length} suggestion(s)`}</strong>
                       <ul>
-                        {testResults.map((r, i) => (
+                        {testResults.map((r: string, i: number) => (
                           <li key={i}>{r}</li>
                         ))}
                       </ul>
