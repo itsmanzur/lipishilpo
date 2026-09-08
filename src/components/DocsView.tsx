@@ -106,38 +106,42 @@ export const DocsView: React.FC<DocsViewProps> = ({ lang, onOpenEditor, onOpenSe
   ];
 
   return (
-    <div className="docs-shell">
-      {/* ── Top Bar ── */}
-      <div className="docs-topbar">
-        <div className="docs-brand">
-          <Feather size={20} className="brand-feather" />
-          <div>
-            <h1>{lang === 'bn' ? 'লিপিশিল্প ইউজার গাইড ও ডকুমেন্টেশন' : 'Lipishilpo User Guide & Docs'}</h1>
-            <p>{lang === 'bn' ? 'পাণ্ডুলিপি রচনা, সম্পাদনা ও প্রকাশনার সম্পূর্ণ নির্দেশিকা' : 'Complete Guide to Writing, Editing & Publishing Manuscripts'}</p>
-          </div>
+    <div className="docs-container">
+      {/* ── Hero Header Banner ── */}
+      <div className="docs-hero-card">
+        <div className="docs-hero-content">
+          <span className="docs-hero-badge">
+            <Feather size={13} /> {lang === 'bn' ? 'ব্যবহারকারী নির্দেশিকা ও ডকুমেন্টেশন' : 'User Guide & Documentation'}
+          </span>
+          <h1>{lang === 'bn' ? 'লিপিশিল্পে স্বাগতম: আপনার ডিজিটাল পাণ্ডুলিপি স্টুডিও' : 'Welcome to Lipishilpo: Your Digital Manuscript Studio'}</h1>
+          <p>
+            {lang === 'bn'
+              ? 'বাংলা সাহিত্য ও পেশাদার লেখার জন্য তৈরি একটি অত্যাধুনিক রচনার পরিবেশ। সহজে অধ্যায় সাজান, প্রমিত বানান ও শুদ্ধ ব্যাকরণ নিশ্চিত করুন এবং বই আকারে প্রকাশ করুন।'
+              : 'A dedicated writing studio built for Bengali literature and multilingual authors. Organize chapters, verify grammar and style, and publish clean books.'}
+          </p>
         </div>
-        <div className="docs-actions">
+        <div className="docs-hero-actions">
+          <button type="button" className="docs-cta-btn" onClick={onOpenEditor}>
+            <BookOpen size={16} />
+            <span>{lang === 'bn' ? 'পাণ্ডুলিপি স্টুডিও খুলুন' : 'Open Manuscript Studio'}</span>
+          </button>
           {onStartTour && (
-            <button type="button" className="btn-secondary" onClick={onStartTour}>
-              <Compass size={14} />
+            <button type="button" className="docs-hero-sec-btn" onClick={onStartTour}>
+              <Compass size={15} />
               <span>{lang === 'bn' ? 'স্টুডিও ট্যুর' : 'Studio Tour'}</span>
             </button>
           )}
           {onOpenSettings && (
-            <button type="button" className="btn-secondary" onClick={onOpenSettings}>
-              <Sliders size={14} />
+            <button type="button" className="docs-hero-sec-btn" onClick={onOpenSettings}>
+              <Sliders size={15} />
               <span>{lang === 'bn' ? 'সেটিংস' : 'Settings'}</span>
             </button>
           )}
-          <button type="button" className="btn-primary" onClick={onOpenEditor}>
-            <PencilLine size={14} />
-            <span>{lang === 'bn' ? 'স্টুডিও এডিটরে যান' : 'Open Studio Editor'}</span>
-          </button>
         </div>
       </div>
 
-      {/* ── Main Container ── */}
-      <div className="docs-container">
+      {/* ── Main Content Area ── */}
+      <div className="docs-main-card">
         {/* Navigation Tabs */}
         <div className="docs-tabs-nav" role="tablist">
           {tabs.map((tab) => (
