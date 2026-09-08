@@ -37,11 +37,12 @@ import { GlobalFindReplaceModal } from './components/GlobalFindReplaceModal';
 import { ShortcutsModal } from './components/ShortcutsModal';
 import { OnboardingTour } from './components/OnboardingTour';
 import { SnapshotDiffModal } from './components/SnapshotDiffModal';
+import { ImportManuscriptModal } from './components/ImportManuscriptModal';
 import { CodexPanel, type ProjectCodex } from './components/CodexPanel';
 import { analyzeManuscript } from './lib/analytics';
 import { handleSmartKeyDown } from './lib/smart-typography';
 import { exportProjectToJson } from './lib/project-backup';
-import { importManuscriptFile, ManuscriptImportError } from './lib/manuscript-import';
+import { importManuscriptFile, ManuscriptImportError, type ImportedManuscript } from './lib/manuscript-import';
 import { createId } from './lib/id';
 import { clipEditText, diffManualEdits, type ChapterEdit, type EditKind } from './lib/edit-log';
 import { wpConfig } from './api';
@@ -99,6 +100,7 @@ export default function App() {
   const [statsModal, setStatsModal] = useState(false);
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [showConjuncts, setShowConjuncts] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const importFileRef = useRef<HTMLInputElement>(null);
 
   // Focus mode & Theme & Mode (Edit vs Visual Review)
@@ -443,6 +445,25 @@ export default function App() {
     }
   }, [chapter?.id, project?.id]);
 
+  function saveAutoSnapshot(label: string) {
+    if (!chapter || !text.trim()) return;
+    const snap: ChapterSnapshot = {
+      id: createId(),
+      name: label,
+      date: new Date().toLocaleString(lang === 'bn' ? 'bn-BD' : 'en-US', {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
+      wordCount: stats.words,
+      text,
+    };
+    const updated = [snap, ...snapshots.filter((s) => s.text !== text)].slice(0, 30);
+    setSnapshots(updated);
+    persistChapterMeta('snapshots', chapter.id, updated);
+  }
+
   function handleSaveSnapshot(e?: React.FormEvent) {
     if (e) e.preventDefault();
     if (!chapter || !text.trim()) return;
@@ -459,7 +480,7 @@ export default function App() {
       wordCount: stats.words,
       text,
     };
-    const updated = [snap, ...snapshots];
+    const updated = [snap, ...snapshots].slice(0, 30);
     setSnapshots(updated);
     persistChapterMeta('snapshots', chapter.id, updated);
     setNewSnapshotName('');
@@ -469,9 +490,56 @@ export default function App() {
   function handleRestoreSnapshot(snap: ChapterSnapshot) {
     if (!chapter) return;
     if (!confirm(lang === 'bn' ? 'এই স্ন্যাপশট সংস্করণে ফিরে যেতে চান? বর্তমান পরিবর্তন ব্যাকআপে থাকবে।' : 'Restore this snapshot version? Current text will be pushed to undo history.')) return;
+    saveAutoSnapshot(t.autoSnapshotBeforeRestore);
     setHistory((h) => [...h.slice(-49), text]);
-    updateText(snap.text);
+    updateText(snap.text, 'tool');
     setNotice(t.snapshotRestored);
+  }
+
+  function handleRestoreSnapshotFromDiff(restoredText: string, snapName: string) {
+    if (!chapter) return;
+    saveAutoSnapshot(t.autoSnapshotBeforeRestore);
+    setHistory((h) => [...h.slice(-49), text]);
+    updateText(restoredText, 'tool');
+    setNotice(`${t.snapshotRestored} (${snapName})`);
+  }
+
+  async function handleImportNewProject(data: ImportedManuscript) {
+    try {
+      const created = await createProject({
+        title: data.title,
+        genre: data.genre,
+        language: data.language,
+      });
+      if (data.chapters.length > 0) {
+        await updateProject(created.id, { chapters: data.chapters });
+      }
+      const updatedList = await fetchProjects(1);
+      setProjects(updatedList.items);
+      setProjectPages(updatedList.pages);
+      setProjectPage(1);
+      setPid(created.id);
+      setCid(data.chapters[0]?.id || null);
+      setView('editor');
+      setNotice(t.importDocxSuccess(data.chapters.length));
+    } catch (err) {
+      setNotice(err instanceof Error ? err.message : t.importBackupError);
+    }
+  }
+
+  function handleAppendChaptersToCurrent(newChapters: ImportedManuscript['chapters']) {
+    if (!project) return;
+    const combined = [...project.chapters, ...newChapters];
+    const updated = projects.map((p) =>
+      p.id === project.id ? { ...p, chapters: combined } : p
+    );
+    setProjects(updated);
+    autosave(updated);
+    setNotice(
+      lang === 'bn'
+        ? `চলমান বইতে ${newChapters.length.toLocaleString('bn-BD')}টি নতুন অধ্যায় যুক্ত হয়েছে!`
+        : `Appended ${newChapters.length} new chapter(s) to manuscript!`
+    );
   }
 
   function handleDeleteSnapshot(snapId: string) {
@@ -1523,6 +1591,7 @@ window.addEventListener('keydown', handleKeyDown);
 
   function handleGlobalReplaceAll(updatedChapters: Chapter[], replaceCount: number) {
     if (!project) return;
+    saveAutoSnapshot(t.autoSnapshotBeforeReplace);
     const updated = projects.map((p) =>
       p.id === project.id ? { ...p, chapters: updatedChapters } : p
     );
@@ -1798,6 +1867,7 @@ ${chaptersHtml}
   // ── Smart Typography Formatter ─────────────────────────────────────────────
   function handleFormatTypography() {
     if (!chapter || !text.trim()) return;
+    saveAutoSnapshot(t.autoSnapshotBeforeFix);
     setHistory((h) => [...h.slice(-49), text]);
     const formatted = formatTypography(text);
     updateText(formatted);
@@ -2402,23 +2472,15 @@ ${chaptersHtml}
                 <p>{t.projectsSubtitle}</p>
               </div>
               <div className="page-heading-actions">
-                <input
-                  type="file"
-                  ref={importFileRef}
-                  style={{ display: 'none' }}
-                  accept=".json,.lipishilpo.json,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                  onChange={handleImportBackup}
-                />
                 <button
                   className="secondary-outline-btn import-btn"
-                  onClick={() => importFileRef.current?.click()}
+                  onClick={() => setShowImportModal(true)}
                   title={t.btnImportBackupTitle}
-                  disabled={importing}
                 >
-                  {importing ? <Loader2 size={16} className="spin" /> : <FileUp size={16} />}
+                  <FileUp size={16} />
                   <span className="import-btn-copy">
                     <strong>{t.btnImportBackup}</strong>
-                    <small>JSON · Word (.docx)</small>
+                    <small>Word · MD · TXT · JSON</small>
                   </span>
                 </button>
                 <button className="primary" onClick={() => setModal(true)}>
@@ -2434,14 +2496,13 @@ ${chaptersHtml}
                 <div className="page-heading-actions">
                   <button
                     className="secondary-outline-btn import-btn"
-                    onClick={() => importFileRef.current?.click()}
+                    onClick={() => setShowImportModal(true)}
                     title={t.btnImportBackupTitle}
-                    disabled={importing}
                   >
-                    {importing ? <Loader2 size={16} className="spin" /> : <FileUp size={16} />}
+                    <FileUp size={16} />
                     <span className="import-btn-copy">
                       <strong>{t.btnImportBackup}</strong>
-                      <small>JSON · Word (.docx)</small>
+                      <small>Word · MD · TXT · JSON</small>
                     </span>
                   </button>
                   <button className="primary" onClick={() => setModal(true)}>
@@ -4179,6 +4240,16 @@ ${chaptersHtml}
         />
       )}
 
+      {showImportModal && (
+        <ImportManuscriptModal
+          lang={lang}
+          currentProjectTitle={project?.title}
+          onImportNew={handleImportNewProject}
+          onAppendToCurrent={handleAppendChaptersToCurrent}
+          onClose={() => setShowImportModal(false)}
+        />
+      )}
+
       {diffSnapId && (
         <SnapshotDiffModal
           currentText={text}
@@ -4193,6 +4264,8 @@ ${chaptersHtml}
           removedLabel={t.snapshotDiffRemoved}
           identicalLabel={t.snapshotDiffIdentical}
           closeLabel={t.btnClose}
+          restoreLabel={t.btnRestoreConfirm}
+          onRestore={handleRestoreSnapshotFromDiff}
           onClose={() => setDiffSnapId(null)}
         />
       )}

@@ -5,7 +5,7 @@
 import { createId } from './id';
 import { parseProjectBackup } from './project-backup';
 
-export type ImportSource = 'json' | 'docx';
+export type ImportSource = 'json' | 'docx' | 'markdown' | 'text';
 
 export interface ImportedManuscript {
   title: string;
@@ -34,12 +34,12 @@ export class ManuscriptImportError extends Error {
 const MAX_BYTES = 12 * 1024 * 1024;
 const MAX_CHAPTERS = 200;
 const MAX_CHARS = 500_000;
-const CHAPTER_LINE = /^(?:অধ্যায়|অধ्याय|পরিচ্ছেদ|Chapter|CHAPTER)\s*[\d০-৯IVXLCDM]+/u;
+const CHAPTER_LINE = /^(?:অধ্যায়|অধ্যায়|পরিচ্ছেদ|দৃশ্য|Chapter|CHAPTER)\s*[\d০-৯IVXLCDM]+/u;
 
 function fileNameTitle(file: File): string {
   return file.name
     .replace(/\.lipishilpo\.json$/i, '')
-    .replace(/\.(json|docx|doc|txt|md)$/i, '')
+    .replace(/\.(json|docx|doc|txt|md|markdown)$/i, '')
     .replace(/[_-]+/g, ' ')
     .trim() || 'Imported manuscript';
 }
@@ -110,6 +110,58 @@ function splitByMarkers(text: string): Array<{ title: string; text: string }> | 
     });
   });
   return sections;
+}
+
+function splitMarkdownHeadings(rawText: string, fallbackTitle: string): { title: string; chapters: ImportedManuscript['chapters'] } {
+  const lines = rawText.split(/\r?\n/);
+  const chapters: ImportedManuscript['chapters'] = [];
+  let projectTitle = fallbackTitle;
+  let currentTitle = '';
+  let currentLines: string[] = [];
+
+  const headingMatch = (l: string) => {
+    const m = l.match(/^(#{1,3})\s+(.*)$/);
+    if (m) return { level: m[1].length, text: m[2].trim() };
+    return null;
+  };
+
+  lines.forEach((line) => {
+    const heading = headingMatch(line);
+    if (heading) {
+      if (!currentTitle && currentLines.length === 0 && heading.level === 1) {
+        projectTitle = heading.text;
+        currentTitle = heading.text;
+      } else {
+        if (currentTitle || currentLines.join('\n').trim()) {
+          chapters.push(makeChapter(currentTitle || fallbackTitle, currentLines.join('\n'), chapters.length));
+        }
+        currentTitle = heading.text;
+        currentLines = [];
+      }
+    } else {
+      currentLines.push(line);
+    }
+  });
+
+  if (currentTitle || currentLines.join('\n').trim()) {
+    chapters.push(makeChapter(currentTitle || fallbackTitle, currentLines.join('\n'), chapters.length));
+  }
+
+  if (chapters.length <= 1) {
+    const marked = splitByMarkers(rawText);
+    if (marked && marked.length > 1) {
+      return {
+        title: projectTitle.slice(0, 120),
+        chapters: marked.map((s, i) => makeChapter(s.title, s.text, i)).slice(0, MAX_CHAPTERS),
+      };
+    }
+  }
+
+  if (chapters.length === 0) {
+    chapters.push(makeChapter(fallbackTitle, rawText, 0));
+  }
+
+  return { title: projectTitle.slice(0, 120), chapters: chapters.slice(0, MAX_CHAPTERS) };
 }
 
 function splitHtmlByHeading(root: Element, tag: 'h1' | 'h2', fallbackTitle: string) {
@@ -237,6 +289,49 @@ async function parseDocx(file: File): Promise<ImportedManuscript> {
   };
 }
 
+async function parseMarkdown(file: File): Promise<ImportedManuscript> {
+  const rawText = await file.text();
+  if (!rawText.trim()) throw new ManuscriptImportError('empty');
+  if (rawText.length > MAX_CHARS) throw new ManuscriptImportError('too_long');
+
+  const { title, chapters } = splitMarkdownHeadings(rawText, fileNameTitle(file));
+  const allText = chapters.map((c) => c.text).join('\n');
+
+  return {
+    title,
+    genre: 'General Writing',
+    language: detectLanguage(allText),
+    chapters,
+    source: 'markdown',
+  };
+}
+
+async function parsePlainText(file: File): Promise<ImportedManuscript> {
+  const rawText = await file.text();
+  if (!rawText.trim()) throw new ManuscriptImportError('empty');
+  if (rawText.length > MAX_CHARS) throw new ManuscriptImportError('too_long');
+
+  const fallback = fileNameTitle(file);
+  const marked = splitByMarkers(rawText);
+  let chapters: ImportedManuscript['chapters'];
+
+  if (marked && marked.length > 1) {
+    chapters = marked.map((s, i) => makeChapter(s.title, s.text, i));
+  } else {
+    chapters = [makeChapter(fallback, rawText, 0)];
+  }
+
+  const allText = chapters.map((c) => c.text).join('\n');
+
+  return {
+    title: fallback,
+    genre: 'General Writing',
+    language: detectLanguage(allText),
+    chapters: chapters.slice(0, MAX_CHAPTERS),
+    source: 'text',
+  };
+}
+
 export async function importManuscriptFile(file: File): Promise<ImportedManuscript> {
   if (file.size > MAX_BYTES) throw new ManuscriptImportError('too_large');
 
@@ -256,6 +351,14 @@ export async function importManuscriptFile(file: File): Promise<ImportedManuscri
     }
   }
 
+  if (name.endsWith('.md') || name.endsWith('.markdown')) {
+    return parseMarkdown(file);
+  }
+
+  if (name.endsWith('.txt')) {
+    return parsePlainText(file);
+  }
+
   if (name.endsWith('.docx') || file.type.includes('wordprocessingml') || file.type === 'application/msword') {
     if (file.type === 'application/msword' && !name.endsWith('.docx')) {
       throw new ManuscriptImportError('legacy_doc');
@@ -267,5 +370,6 @@ export async function importManuscriptFile(file: File): Promise<ImportedManuscri
   if (isOleDoc(header)) throw new ManuscriptImportError('legacy_doc');
   if (isZip(header)) return parseDocx(file);
 
-  throw new ManuscriptImportError('unsupported');
+  return parsePlainText(file);
 }
+
