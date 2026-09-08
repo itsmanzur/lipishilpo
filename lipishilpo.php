@@ -31,6 +31,8 @@ require_once LIPISHILPO_DIR . 'includes/class-projects.php';
 add_action( 'plugins_loaded', 'lipishilpo_init', 10 );
 
 function lipishilpo_init() {
+	load_plugin_textdomain( 'lipishilpo', false, dirname( plugin_basename( LIPISHILPO_FILE ) ) . '/languages' );
+
 	Lipishilpo_Admin::init();
 	Lipishilpo_Projects::init();
 
