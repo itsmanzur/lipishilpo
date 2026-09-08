@@ -8753,10 +8753,11 @@ mark.hl-pink,
 
 .docs-hero-actions {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
   flex-shrink: 0;
-  flex-wrap: wrap;
+  width: 195px;
 }
 
 .docs-cta-btn {
@@ -8766,14 +8767,17 @@ mark.hl-pink,
   font-size: 13.5px !important;
   border: none !important;
   border-radius: 8px !important;
-  padding: 9px 18px !important;
+  padding: 8px 16px !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
   white-space: nowrap;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 7px;
   cursor: pointer;
   transition: all 0.15s ease;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .docs-cta-btn:hover {
@@ -8789,13 +8793,16 @@ mark.hl-pink,
   font-size: 13px !important;
   font-weight: 600 !important;
   border-radius: 8px !important;
-  padding: 8px 14px !important;
+  padding: 8px 16px !important;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   cursor: pointer;
   transition: all 0.15s ease;
   backdrop-filter: blur(4px);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .docs-hero-sec-btn:hover {
