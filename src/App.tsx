@@ -959,12 +959,78 @@ window.addEventListener('keydown', handleKeyDown);
       end = savedSelectionRef.current.end;
     }
 
+    // Line boundary helper for line-level and block formatting
+    const lineStart = text.lastIndexOf('\n', Math.max(0, start - 1)) + 1;
+    const lineEndIdx = text.indexOf('\n', end);
+    const lineEnd = lineEndIdx === -1 ? text.length : lineEndIdx;
+    const currentLine = text.substring(lineStart, lineEnd);
+    const cleanLine = currentLine.replace(/^(\s*(#{1,6}|>|\*|-)\s*)/, '');
+
     let selected = text.substring(start, end);
     let replacement = '';
     let selStart = start;
     let selEnd = end;
 
     switch (format) {
+      case 'h2':
+      case 'heading': {
+        // Line-level Heading 2 Toggle
+        let newLine = '';
+        if (currentLine.trim().startsWith('## ') && !currentLine.trim().startsWith('### ')) {
+          // Toggle off H2 -> revert to plain paragraph
+          newLine = cleanLine;
+        } else {
+          // Set line to H2
+          const inner = cleanLine || (lang === 'bn' ? 'উপ-শিরোনাম' : 'Subheading');
+          newLine = `## ${inner}`;
+        }
+        const next = text.substring(0, lineStart) + newLine + text.substring(lineEnd);
+        setHistory((h) => [...h.slice(-49), text]);
+        typedTextRef.current = next;
+        updateText(next, 'type');
+        scheduleManualLog();
+        setChecked(false);
+        setBubblePosition(null);
+        const newSelStart = lineStart + (newLine.startsWith('## ') ? 3 : 0);
+        const newSelEnd = lineStart + newLine.length;
+        savedSelectionRef.current = { start: newSelStart, end: newSelEnd };
+        setTimeout(() => {
+          if (editor.current) {
+            editor.current.focus();
+            editor.current.setSelectionRange(newSelStart, newSelEnd);
+          }
+        }, 30);
+        return;
+      }
+      case 'h3': {
+        // Line-level Heading 3 Toggle
+        let newLine = '';
+        if (currentLine.trim().startsWith('### ')) {
+          // Toggle off H3 -> revert to plain paragraph
+          newLine = cleanLine;
+        } else {
+          // Set line to H3
+          const inner = cleanLine || (lang === 'bn' ? 'অনুচ্ছেদ শিরোনাম' : 'Section Heading');
+          newLine = `### ${inner}`;
+        }
+        const next = text.substring(0, lineStart) + newLine + text.substring(lineEnd);
+        setHistory((h) => [...h.slice(-49), text]);
+        typedTextRef.current = next;
+        updateText(next, 'type');
+        scheduleManualLog();
+        setChecked(false);
+        setBubblePosition(null);
+        const newSelStart = lineStart + (newLine.startsWith('### ') ? 4 : 0);
+        const newSelEnd = lineStart + newLine.length;
+        savedSelectionRef.current = { start: newSelStart, end: newSelEnd };
+        setTimeout(() => {
+          if (editor.current) {
+            editor.current.focus();
+            editor.current.setSelectionRange(newSelStart, newSelEnd);
+          }
+        }, 30);
+        return;
+      }
       case 'bold': {
         if (selected.startsWith('**') && selected.endsWith('**') && selected.length >= 4) {
           const unwrapped = selected.slice(2, -2);
@@ -1027,16 +1093,45 @@ window.addEventListener('keydown', handleKeyDown);
         break;
       }
       case 'quote': {
-        if ((selected.startsWith('“') && selected.endsWith('”')) || (selected.startsWith('"') && selected.endsWith('"'))) {
-          const unwrapped = selected.slice(1, -1);
-          replacement = unwrapped;
-          selStart = start;
-          selEnd = start + unwrapped.length;
+        if (start !== end && !selected.includes('\n')) {
+          // Inline Bengali curly quote toggle
+          if ((selected.startsWith('“') && selected.endsWith('”')) || (selected.startsWith('"') && selected.endsWith('"'))) {
+            const unwrapped = selected.slice(1, -1);
+            replacement = unwrapped;
+            selStart = start;
+            selEnd = start + unwrapped.length;
+          } else {
+            const inner = selected || (lang === 'bn' ? 'উদ্ধৃতি' : 'quote');
+            replacement = `“${inner}”`;
+            selStart = start + 1;
+            selEnd = selStart + inner.length;
+          }
         } else {
-          const inner = selected || (lang === 'bn' ? 'উদ্ধৃতি' : 'quote');
-          replacement = `“${inner}”`;
-          selStart = start + 1;
-          selEnd = selStart + inner.length;
+          // Line-level Blockquote Toggle
+          let newLine = '';
+          if (currentLine.trim().startsWith('> ')) {
+            newLine = cleanLine;
+          } else {
+            const inner = cleanLine || (lang === 'bn' ? 'উদ্ধৃতি বা উক্তি এখানে লিখুন...' : 'Quote here...');
+            newLine = `> ${inner}`;
+          }
+          const next = text.substring(0, lineStart) + newLine + text.substring(lineEnd);
+          setHistory((h) => [...h.slice(-49), text]);
+          typedTextRef.current = next;
+          updateText(next, 'type');
+          scheduleManualLog();
+          setChecked(false);
+          setBubblePosition(null);
+          const newSelStart = lineStart + (newLine.startsWith('> ') ? 2 : 0);
+          const newSelEnd = lineStart + newLine.length;
+          savedSelectionRef.current = { start: newSelStart, end: newSelEnd };
+          setTimeout(() => {
+            if (editor.current) {
+              editor.current.focus();
+              editor.current.setSelectionRange(newSelStart, newSelEnd);
+            }
+          }, 30);
+          return;
         }
         break;
       }
@@ -1054,28 +1149,9 @@ window.addEventListener('keydown', handleKeyDown);
         }
         break;
       }
-      case 'h2':
-      case 'heading': {
-        const inner = selected || (lang === 'bn' ? 'উপ-শিরোনাম' : 'Subheading');
-        const prefix = (start > 0 && text[start - 1] !== '\n') ? '\n\n' : '';
-        const suffix = (end < text.length && text[end] !== '\n') ? '\n\n' : '';
-        replacement = `${prefix}## ${inner}${suffix}`;
-        selStart = start + prefix.length + 3;
-        selEnd = selStart + inner.length;
-        break;
-      }
-      case 'h3': {
-        const inner = selected || (lang === 'bn' ? 'অনুচ্ছেদ শিরোনাম' : 'Section Heading');
-        const prefix = (start > 0 && text[start - 1] !== '\n') ? '\n\n' : '';
-        const suffix = (end < text.length && text[end] !== '\n') ? '\n\n' : '';
-        replacement = `${prefix}### ${inner}${suffix}`;
-        selStart = start + prefix.length + 4;
-        selEnd = selStart + inner.length;
-        break;
-      }
       case 'emdash': {
-        replacement = ` — `;
-        selStart = start + replacement.length;
+        replacement = `—`;
+        selStart = start + 1;
         selEnd = selStart;
         break;
       }
@@ -1122,15 +1198,28 @@ window.addEventListener('keydown', handleKeyDown);
         break;
       }
       case 'list': {
-        const p1 = lang === 'bn' ? 'প্রথম পয়েন্ট' : 'First item';
-        const p2 = lang === 'bn' ? 'দ্বিতীয় পয়েন্ট' : 'Second item';
-        const inner = selected ? selected.split('\n').map((l) => `* ${l.replace(/^\*\s*/, '')}`).join('\n') : `* ${p1}\n* ${p2}`;
-        const prefix = (start > 0 && text[start - 1] !== '\n') ? '\n\n' : '';
-        const suffix = (end < text.length && text[end] !== '\n') ? '\n\n' : '';
-        replacement = `${prefix}${inner}${suffix}`;
-        selStart = start + prefix.length + 2;
-        selEnd = start + prefix.length + inner.length;
-        break;
+        // Multi-line / line list toggle
+        const lines = text.substring(lineStart, lineEnd).split('\n');
+        const allList = lines.every((l) => l.trim().startsWith('* ') || l.trim().startsWith('- '));
+        const newLines = allList
+          ? lines.map((l) => l.replace(/^\s*(\*|-)\s*/, ''))
+          : lines.map((l) => (l.trim() ? (l.trim().startsWith('* ') ? l : `* ${l.replace(/^\s*-\s*/, '')}`) : `* ${lang === 'bn' ? 'পয়েন্ট' : 'item'}`));
+        const newLine = newLines.join('\n');
+        const next = text.substring(0, lineStart) + newLine + text.substring(lineEnd);
+        setHistory((h) => [...h.slice(-49), text]);
+        typedTextRef.current = next;
+        updateText(next, 'type');
+        scheduleManualLog();
+        setChecked(false);
+        setBubblePosition(null);
+        savedSelectionRef.current = { start: lineStart, end: lineStart + newLine.length };
+        setTimeout(() => {
+          if (editor.current) {
+            editor.current.focus();
+            editor.current.setSelectionRange(lineStart, lineStart + newLine.length);
+          }
+        }, 30);
+        return;
       }
       case 'divider': {
         const prefix = (start > 0 && text[start - 1] !== '\n') ? '\n\n' : '';
