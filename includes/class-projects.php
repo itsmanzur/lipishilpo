@@ -66,15 +66,23 @@ class Lipishilpo_Projects {
 					'permission_callback' => array( __CLASS__, 'require_writer' ),
 					'args'                => array(
 						'page'     => array(
-							'type'    => 'integer',
-							'default' => 1,
-							'minimum' => 1,
+							'type'              => 'integer',
+							'default'           => 1,
+							'minimum'           => 1,
+							'sanitize_callback' => 'absint',
+							'validate_callback' => function( $param ) {
+								return is_numeric( $param ) && (int) $param > 0;
+							},
 						),
 						'per_page' => array(
-							'type'    => 'integer',
-							'default' => 40,
-							'minimum' => 1,
-							'maximum' => 50,
+							'type'              => 'integer',
+							'default'           => 40,
+							'minimum'           => 1,
+							'maximum'           => 50,
+							'sanitize_callback' => 'absint',
+							'validate_callback' => function( $param ) {
+								return is_numeric( $param ) && (int) $param > 0 && (int) $param <= 50;
+							},
 						),
 					),
 				),
@@ -95,7 +103,14 @@ class Lipishilpo_Projects {
 					'methods'             => WP_REST_Server::READABLE,
 					'callback'            => array( __CLASS__, 'get_project' ),
 					'permission_callback' => array( __CLASS__, 'require_writer' ),
-					'args'                => array( 'id' => array( 'validate_callback' => 'is_numeric' ) ),
+					'args'                => array(
+						'id' => array(
+							'validate_callback' => function( $param ) {
+								return is_numeric( $param ) && (int) $param > 0;
+							},
+							'sanitize_callback' => 'absint',
+						),
+					),
 				),
 				array(
 					'methods'             => WP_REST_Server::EDITABLE,
@@ -107,7 +122,14 @@ class Lipishilpo_Projects {
 					'methods'             => WP_REST_Server::DELETABLE,
 					'callback'            => array( __CLASS__, 'delete_project' ),
 					'permission_callback' => array( __CLASS__, 'require_writer' ),
-					'args'                => array( 'id' => array( 'validate_callback' => 'is_numeric' ) ),
+					'args'                => array(
+						'id' => array(
+							'validate_callback' => function( $param ) {
+								return is_numeric( $param ) && (int) $param > 0;
+							},
+							'sanitize_callback' => 'absint',
+						),
+					),
 				),
 			)
 		);
@@ -120,6 +142,31 @@ class Lipishilpo_Projects {
 					'methods'             => WP_REST_Server::CREATABLE,
 					'callback'            => array( __CLASS__, 'publish_to_wordpress' ),
 					'permission_callback' => array( __CLASS__, 'require_publish_permission' ),
+					'args'                => array(
+						'title'     => array(
+							'type'              => 'string',
+							'sanitize_callback' => 'sanitize_text_field',
+							'default'           => 'Untitled Draft',
+							'maxLength'         => 200,
+						),
+						'content'   => array(
+							'type'              => 'string',
+							'sanitize_callback' => 'wp_kses_post',
+							'default'           => '',
+						),
+						'status'    => array(
+							'type'              => 'string',
+							'enum'              => array( 'publish', 'draft' ),
+							'default'           => 'draft',
+							'sanitize_callback' => 'sanitize_key',
+						),
+						'post_type' => array(
+							'type'              => 'string',
+							'enum'              => array( 'post', 'page' ),
+							'default'           => 'post',
+							'sanitize_callback' => 'sanitize_key',
+						),
+					),
 				),
 			)
 		);
@@ -217,10 +264,11 @@ class Lipishilpo_Projects {
 				continue;
 			}
 			$clean[] = array(
-				'id'    => ! empty( $c['id'] ) ? sanitize_text_field( $c['id'] ) : wp_generate_uuid4(),
-				'title' => isset( $c['title'] ) ? sanitize_text_field( $c['title'] ) : '',
-				'text'  => isset( $c['text'] ) ? wp_kses_post( $c['text'] ) : '',
-				'notes' => isset( $c['notes'] ) ? wp_kses_post( $c['notes'] ) : '',
+				'id'     => ! empty( $c['id'] ) ? sanitize_text_field( $c['id'] ) : wp_generate_uuid4(),
+				'title'  => isset( $c['title'] ) ? sanitize_text_field( $c['title'] ) : '',
+				'text'   => isset( $c['text'] ) ? wp_kses_post( $c['text'] ) : '',
+				'notes'  => isset( $c['notes'] ) ? wp_kses_post( $c['notes'] ) : '',
+				'status' => ( isset( $c['status'] ) && in_array( $c['status'], array( 'draft', 'in_progress', 'revised', 'final' ), true ) ) ? $c['status'] : 'draft',
 			);
 		}
 

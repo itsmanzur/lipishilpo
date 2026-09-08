@@ -1,12 +1,12 @@
 === LipiShilpo – Bengali & Multilingual Manuscript Studio ===
 Contributors: itsmanzur
 Donate link: https://lipishilpo.com
-Tags: bengali, writing, novel, manuscript, book, avro, bijoy, proofreading, editor, distraction-free
+Tags: bengali, writing, novel, manuscript, book, proofreading, editor, distraction-free, slash-commands, poetry
 Requires at least: 6.0
 Tested up to: 6.7
 Requires PHP: 7.4
 Stable tag: 1.0.0
-License: GPLv2 or later
+License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 A professional, distraction-free manuscript studio for novelists, authors, editors, and publishers writing in Bengali and multilingual scripts.
@@ -19,8 +19,12 @@ It bridges the gap between distraction-free writing environments (like Ulysses a
 
 ### 🌟 Key Highlights
 
+* **Notion-Style Slash Commands (`/`):** Type `/` anywhere on a line to open an instant command palette and insert headings, dialogues, poems, boxes, footnotes, and dividers with zero friction.
+* **Literary & Fiction Formatting Suite:** 1-click Bengali dialogue (`— “উক্তি”`), formatted poem stanzas (`:::poem`), scholarly footnotes (`[^১]`), decorative drop caps (`:::dropcap`), and artistic scene break motifs (`❖ ❖ ❖`, `~ ❦ ~`, `— ✦ —`, `* * *`, `❧ ❧ ❧`).
+* **Multi-Color Semantic Highlighter:** Mark plot twists (Yellow), source verifications (Green), character traits (Purple), and revisions (Pink).
+* **Interactive In-Editor Cheat Sheet (Ctrl+/):** Quick floating syntax helper with 1-click syntax copying and direct insertion into the editor.
 * **Zen & Typewriter Focus Mode:** Vertically centered active typing line keeps authors in deep focus without neck or eye strain.
-* **Floating Selection Bubble Toolbar:** Select any sentence to instantly apply bold, italic, Bengali smart curly quotes, headings, scene dividers, and highlights.
+* **Floating Selection Bubble Toolbar:** Select any text to instantly apply bold, italic, Bengali smart curly quotes, headings, scene dividers, and highlights.
 * **Smart Bengali Typography Engine:** Keystrokes automatically transform into literary curved quotation marks (“ ” and ‘ ’), em-dashes (—), and ellipses (…).
 * **5 Premium Paper Ambience Themes:** Light Paper, Sepia Warm, Parchment Manuscript, Slate Dark, and OLED Pure Black.
 * **Drag & Drop Chapter Organizer:** Sidebar visual grip handles to easily reorder novel chapters with automatic persistence.
@@ -42,6 +46,9 @@ It bridges the gap between distraction-free writing environments (like Ulysses a
 = Is my manuscript private and secure? =
 Yes! Every manuscript is saved in your local WordPress database and is strictly private to your user account. No external tracking or telemetry is used.
 
+= How do Slash Commands work? =
+Type `/` on any line in the editor to pop up the command palette. You can type keywords like `/dialogue`, `/poem`, `/h2`, or use the arrow keys and press Enter.
+
 = Does it support Bijoy and Avro typing? =
 Yes! LipiShilpo includes a dual-engine converter that allows 1-click bi-directional conversion between Bijoy and standard Unicode, along with an Avro cheat sheet for complex Bengali conjuncts (যুক্তবর্ণ).
 
@@ -53,21 +60,21 @@ Lipishilpo Pro unlocks the full Book Get-Up Studio (print-ready PDF & EPUB layou
 
 == Screenshots ==
 
-1. **Zen Studio Editor** – Distraction-free writing paper with typewriter scrolling and floating selection bubble toolbar.
-2. **Manuscript Outliner** – Drag-and-drop chapter organizer with 4-stage workflow status badges.
-3. **World-Building Codex** – Character profiles and lore notes manager.
-4. **Writing Analytics** – Dialogue vs Narrative ratio bar and sentence rhythm cadence analyzer.
-5. **Find, replace, and bilingual spellcheck** – Project-wide search plus offline Bengali and English Hunspell.
+1. **Zen Studio Editor** – Distraction-free writing paper with typewriter scrolling, slash commands palette, and floating selection bubble toolbar.
+2. **Formatting Cheat Sheet & Literary Tools** – Interactive syntax guide with dialogue dashes, poetry blocks, footnotes, and color highlighters.
+3. **Manuscript Outliner** – Drag-and-drop chapter organizer with 4-stage workflow status badges.
+4. **World-Building Codex** – Character profiles and lore notes manager.
+5. **Writing Analytics** – Dialogue vs Narrative ratio bar and sentence rhythm cadence analyzer.
+6. **Find, replace, and bilingual spellcheck** – Project-wide search plus offline Bengali and English Hunspell.
 
 == Changelog ==
 
-= 1.0.1 =
-* Offline English Hunspell spellcheck alongside Bengali.
-* Keyboard shortcut cheat sheet (? or Ctrl+/).
-* WordPress.org plugin icons and banners.
-
 = 1.0.0 =
-* Initial international release of LipiShilpo Free Studio.
+* Full release of LipiShilpo Free Manuscript Studio.
+* Notion-style slash commands (`/`) for rapid formatting without mouse interaction.
+* Literary writing tools: dialogue standard, poem stanzas, footnotes, drop caps, and scene break motifs.
+* Multi-color semantic text highlighter (Yellow, Green, Purple, Pink).
+* Interactive in-editor formatting cheat sheet modal (`Ctrl+/`).
 * Typewriter scrolling and 5 paper ambience themes.
 * Floating bubble toolbar and smart typographic keystroke engine.
 * Drag-and-drop chapter reordering and workflow status badges.
@@ -79,4 +86,5 @@ Lipishilpo Pro unlocks the full Book Get-Up Studio (print-ready PDF & EPUB layou
 == Upgrade Notice ==
 
 = 1.0.0 =
-Initial release of LipiShilpo Free Manuscript Studio.
+Initial international release of LipiShilpo Free Manuscript Studio.
+
