@@ -212,6 +212,7 @@ export default function App() {
   const trackedTextRef = useRef('');
   const typedTextRef = useRef('');
   const manualLogTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const savedSelectionRef = useRef<{ start: number; end: number }>({ start: 0, end: 0 });
 
   // ── Language Switcher Handler ──────────────────────────────────────────────
   function toggleLanguage() {
@@ -636,6 +637,8 @@ export default function App() {
     const textarea = editor.current;
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
+    savedSelectionRef.current = { start, end };
+
     if (start !== end) {
       const selected = text.slice(start, end).trim();
       if (selected.length > 0 && selected.length < 300) {
@@ -663,72 +666,7 @@ export default function App() {
   }
 
   function handleBubbleFormat(format: 'bold' | 'italic' | 'quote' | 'single-quote' | 'h2' | 'h3' | 'emdash' | 'scene-break' | 'mark' | 'comment') {
-    if (format === 'comment') {
-      handleSelectTextInEditor();
-      setShowCommentDialog(true);
-      setBubblePosition(null);
-      return;
-    }
-    
-    if (!editor.current) return;
-    const textarea = editor.current;
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selected = text.substring(start, end);
-    let replacement = '';
-    let newCursorPos = start;
-
-    switch (format) {
-      case 'bold':
-        replacement = `**${selected || (lang === 'bn' ? 'গাঢ় লেখা' : 'bold text')}**`;
-        newCursorPos = selected ? end + 4 : start + 2;
-        break;
-      case 'italic':
-        replacement = `*${selected || (lang === 'bn' ? 'বাঁকা লেখা' : 'italic text')}*`;
-        newCursorPos = selected ? end + 2 : start + 1;
-        break;
-      case 'quote':
-        replacement = `“${selected || (lang === 'bn' ? 'উদ্ধৃতি' : 'quote')}”`;
-        newCursorPos = selected ? end + 2 : start + 1;
-        break;
-      case 'single-quote':
-        replacement = `‘${selected || (lang === 'bn' ? 'একক উদ্ধৃতি' : 'quote')}’`;
-        newCursorPos = selected ? end + 2 : start + 1;
-        break;
-      case 'h2':
-        replacement = `\n## ${selected || (lang === 'bn' ? 'উপ-শিরোনাম' : 'Subheading')}\n`;
-        newCursorPos = start + replacement.length;
-        break;
-      case 'h3':
-        replacement = `\n### ${selected || (lang === 'bn' ? 'অনুচ্ছেদ শিরোনাম' : 'Section Heading')}\n`;
-        newCursorPos = start + replacement.length;
-        break;
-      case 'emdash':
-        replacement = `—`;
-        newCursorPos = start + 1;
-        break;
-      case 'scene-break':
-        replacement = `\n\n❖ ❖ ❖\n\n`;
-        newCursorPos = start + replacement.length;
-        break;
-      case 'mark':
-        replacement = `<mark>${selected || (lang === 'bn' ? 'হাইলাইট' : 'highlight')}</mark>`;
-        newCursorPos = selected ? end + 15 : start + 6;
-        break;
-    }
-
-    const nextText = text.substring(0, start) + replacement + text.substring(end);
-    setHistory((h) => [...h.slice(-49), text]);
-    typedTextRef.current = nextText;
-    updateText(nextText, 'type');
-    scheduleManualLog();
-    setChecked(false);
-    setBubblePosition(null);
-
-    setTimeout(() => {
-      textarea.focus();
-      textarea.setSelectionRange(newCursorPos, newCursorPos);
-    }, 50);
+    applyFormatting(format);
   }
 
   // ── Theme Switcher ─────────────────────────────────────────────────────────
@@ -1002,48 +940,208 @@ window.addEventListener('keydown', handleKeyDown);
     );
   }
 
-  function applyFormatting(format: 'bold' | 'italic' | 'heading' | 'quote' | 'callout' | 'citation' | 'list' | 'divider') {
+  function applyFormatting(format: 'bold' | 'italic' | 'heading' | 'quote' | 'callout' | 'citation' | 'list' | 'divider' | 'h2' | 'h3' | 'single-quote' | 'emdash' | 'scene-break' | 'mark' | 'comment') {
+    if (format === 'comment') {
+      handleSelectTextInEditor();
+      setShowCommentDialog(true);
+      setBubblePosition(null);
+      return;
+    }
+
     if (!editor.current) return;
     const textarea = editor.current;
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selected = text.substring(start, end);
+    let start = textarea.selectionStart;
+    let end = textarea.selectionEnd;
+
+    // Use saved selection if active selection collapsed on button click
+    if (start === end && savedSelectionRef.current.start !== savedSelectionRef.current.end) {
+      start = savedSelectionRef.current.start;
+      end = savedSelectionRef.current.end;
+    }
+
+    let selected = text.substring(start, end);
     let replacement = '';
-    let newCursorPos = start;
+    let selStart = start;
+    let selEnd = end;
 
     switch (format) {
-      case 'bold':
-        replacement = `**${selected || (lang === 'bn' ? 'গাঢ় লেখা' : 'bold text')}**`;
-        newCursorPos = selected ? end + 4 : start + 2;
+      case 'bold': {
+        if (selected.startsWith('**') && selected.endsWith('**') && selected.length >= 4) {
+          const unwrapped = selected.slice(2, -2);
+          replacement = unwrapped;
+          selStart = start;
+          selEnd = start + unwrapped.length;
+        } else if (start >= 2 && text.substring(start - 2, start) === '**' && text.substring(end, end + 2) === '**') {
+          // Surrounding bold
+          const next = text.substring(0, start - 2) + selected + text.substring(end + 2);
+          setHistory((h) => [...h.slice(-49), text]);
+          typedTextRef.current = next;
+          updateText(next, 'type');
+          scheduleManualLog();
+          setChecked(false);
+          setBubblePosition(null);
+          savedSelectionRef.current = { start: start - 2, end: start - 2 + selected.length };
+          setTimeout(() => {
+            if (editor.current) {
+              editor.current.focus();
+              editor.current.setSelectionRange(start - 2, start - 2 + selected.length);
+            }
+          }, 30);
+          return;
+        } else {
+          const inner = selected || (lang === 'bn' ? 'গাঢ় লেখা' : 'bold text');
+          replacement = `**${inner}**`;
+          selStart = start + 2;
+          selEnd = selStart + inner.length;
+        }
         break;
-      case 'italic':
-        replacement = `*${selected || (lang === 'bn' ? 'বাঁকা লেখা' : 'italic text')}*`;
-        newCursorPos = selected ? end + 2 : start + 1;
+      }
+      case 'italic': {
+        if (selected.startsWith('*') && selected.endsWith('*') && !selected.startsWith('**') && selected.length >= 2) {
+          const unwrapped = selected.slice(1, -1);
+          replacement = unwrapped;
+          selStart = start;
+          selEnd = start + unwrapped.length;
+        } else if (start >= 1 && text[start - 1] === '*' && text[start - 2] !== '*' && text[end] === '*' && text[end + 1] !== '*') {
+          const next = text.substring(0, start - 1) + selected + text.substring(end + 1);
+          setHistory((h) => [...h.slice(-49), text]);
+          typedTextRef.current = next;
+          updateText(next, 'type');
+          scheduleManualLog();
+          setChecked(false);
+          setBubblePosition(null);
+          savedSelectionRef.current = { start: start - 1, end: start - 1 + selected.length };
+          setTimeout(() => {
+            if (editor.current) {
+              editor.current.focus();
+              editor.current.setSelectionRange(start - 1, start - 1 + selected.length);
+            }
+          }, 30);
+          return;
+        } else {
+          const inner = selected || (lang === 'bn' ? 'বাঁকা লেখা' : 'italic text');
+          replacement = `*${inner}*`;
+          selStart = start + 1;
+          selEnd = selStart + inner.length;
+        }
         break;
-      case 'heading':
-        replacement = `\n## ${selected || (lang === 'bn' ? 'উপ-শিরোনাম' : 'Subheading')}\n`;
-        newCursorPos = start + replacement.length;
+      }
+      case 'quote': {
+        if ((selected.startsWith('“') && selected.endsWith('”')) || (selected.startsWith('"') && selected.endsWith('"'))) {
+          const unwrapped = selected.slice(1, -1);
+          replacement = unwrapped;
+          selStart = start;
+          selEnd = start + unwrapped.length;
+        } else {
+          const inner = selected || (lang === 'bn' ? 'উদ্ধৃতি' : 'quote');
+          replacement = `“${inner}”`;
+          selStart = start + 1;
+          selEnd = selStart + inner.length;
+        }
         break;
-      case 'quote':
-        replacement = `\n> ${selected || (lang === 'bn' ? 'উদ্ধৃতি বা উক্তি এখানে লিখুন...' : 'Quote or epigraph here...')}\n`;
-        newCursorPos = start + replacement.length;
+      }
+      case 'single-quote': {
+        if ((selected.startsWith('‘') && selected.endsWith('’')) || (selected.startsWith("'") && selected.endsWith("'"))) {
+          const unwrapped = selected.slice(1, -1);
+          replacement = unwrapped;
+          selStart = start;
+          selEnd = start + unwrapped.length;
+        } else {
+          const inner = selected || (lang === 'bn' ? 'একক উদ্ধৃতি' : 'quote');
+          replacement = `‘${inner}’`;
+          selStart = start + 1;
+          selEnd = selStart + inner.length;
+        }
         break;
-      case 'callout':
-        replacement = `\n:::box[${lang === 'bn' ? 'ইসলামের আলোকে' : 'Special Note'}]\n${selected || (lang === 'bn' ? 'বক্সের বিষয়বস্তু বা তথ্য এখানে লিখুন...' : 'Box content goes here...')}\n:::\n`;
-        newCursorPos = start + replacement.length;
+      }
+      case 'h2':
+      case 'heading': {
+        const inner = selected || (lang === 'bn' ? 'উপ-শিরোনাম' : 'Subheading');
+        const prefix = (start > 0 && text[start - 1] !== '\n') ? '\n\n' : '';
+        const suffix = (end < text.length && text[end] !== '\n') ? '\n\n' : '';
+        replacement = `${prefix}## ${inner}${suffix}`;
+        selStart = start + prefix.length + 3;
+        selEnd = selStart + inner.length;
         break;
-      case 'citation':
-        replacement = `\n${lang === 'bn' ? 'তথ্যসূত্র' : 'Reference'}: ${selected || (lang === 'bn' ? 'উৎস বা রেফারেন্সের বিবরণ' : 'Citation details')}\n`;
-        newCursorPos = start + replacement.length;
+      }
+      case 'h3': {
+        const inner = selected || (lang === 'bn' ? 'অনুচ্ছেদ শিরোনাম' : 'Section Heading');
+        const prefix = (start > 0 && text[start - 1] !== '\n') ? '\n\n' : '';
+        const suffix = (end < text.length && text[end] !== '\n') ? '\n\n' : '';
+        replacement = `${prefix}### ${inner}${suffix}`;
+        selStart = start + prefix.length + 4;
+        selEnd = selStart + inner.length;
         break;
-      case 'list':
-        replacement = `\n* ${selected || (lang === 'bn' ? 'প্রথম পয়েন্ট' : 'First item')}\n* ${lang === 'bn' ? 'দ্বিতীয় পয়েন্ট' : 'Second item'}\n`;
-        newCursorPos = start + replacement.length;
+      }
+      case 'emdash': {
+        replacement = ` — `;
+        selStart = start + replacement.length;
+        selEnd = selStart;
         break;
-      case 'divider':
-        replacement = `\n---\n`;
-        newCursorPos = start + replacement.length;
+      }
+      case 'scene-break': {
+        const prefix = (start > 0 && text[start - 1] !== '\n') ? '\n\n' : '';
+        const suffix = (end < text.length && text[end] !== '\n') ? '\n\n' : '';
+        replacement = `${prefix}❖ ❖ ❖${suffix}`;
+        selStart = start + replacement.length;
+        selEnd = selStart;
         break;
+      }
+      case 'mark': {
+        if (selected.startsWith('<mark>') && selected.endsWith('</mark>')) {
+          const unwrapped = selected.slice(6, -7);
+          replacement = unwrapped;
+          selStart = start;
+          selEnd = start + unwrapped.length;
+        } else {
+          const inner = selected || (lang === 'bn' ? 'হাইলাইট' : 'highlight');
+          replacement = `<mark>${inner}</mark>`;
+          selStart = start + 6;
+          selEnd = selStart + inner.length;
+        }
+        break;
+      }
+      case 'callout': {
+        const label = lang === 'bn' ? 'ইসলামের আলোকে' : 'Special Note';
+        const inner = selected || (lang === 'bn' ? 'বক্সের বিষয়বস্তু বা তথ্য এখানে লিখুন...' : 'Box content goes here...');
+        const prefix = (start > 0 && text[start - 1] !== '\n') ? '\n\n' : '';
+        const suffix = (end < text.length && text[end] !== '\n') ? '\n\n' : '';
+        replacement = `${prefix}:::box[${label}]\n${inner}\n:::${suffix}`;
+        selStart = start + prefix.length + `:::box[${label}]\n`.length;
+        selEnd = selStart + inner.length;
+        break;
+      }
+      case 'citation': {
+        const prefixLabel = lang === 'bn' ? 'তথ্যসূত্র' : 'Reference';
+        const inner = selected || (lang === 'bn' ? 'উৎস বা রেফারেন্সের বিবরণ' : 'Citation details');
+        const prefix = (start > 0 && text[start - 1] !== '\n') ? '\n\n' : '';
+        const suffix = (end < text.length && text[end] !== '\n') ? '\n\n' : '';
+        replacement = `${prefix}${prefixLabel}: ${inner}${suffix}`;
+        selStart = start + prefix.length + `${prefixLabel}: `.length;
+        selEnd = selStart + inner.length;
+        break;
+      }
+      case 'list': {
+        const p1 = lang === 'bn' ? 'প্রথম পয়েন্ট' : 'First item';
+        const p2 = lang === 'bn' ? 'দ্বিতীয় পয়েন্ট' : 'Second item';
+        const inner = selected ? selected.split('\n').map((l) => `* ${l.replace(/^\*\s*/, '')}`).join('\n') : `* ${p1}\n* ${p2}`;
+        const prefix = (start > 0 && text[start - 1] !== '\n') ? '\n\n' : '';
+        const suffix = (end < text.length && text[end] !== '\n') ? '\n\n' : '';
+        replacement = `${prefix}${inner}${suffix}`;
+        selStart = start + prefix.length + 2;
+        selEnd = start + prefix.length + inner.length;
+        break;
+      }
+      case 'divider': {
+        const prefix = (start > 0 && text[start - 1] !== '\n') ? '\n\n' : '';
+        const suffix = (end < text.length && text[end] !== '\n') ? '\n\n' : '';
+        replacement = `${prefix}---\n${suffix}`;
+        selStart = start + replacement.length;
+        selEnd = selStart;
+        break;
+      }
+      default:
+        return;
     }
 
     const nextText = text.substring(0, start) + replacement + text.substring(end);
@@ -1052,11 +1150,15 @@ window.addEventListener('keydown', handleKeyDown);
     updateText(nextText, 'type');
     scheduleManualLog();
     setChecked(false);
+    setBubblePosition(null);
+    savedSelectionRef.current = { start: selStart, end: selEnd };
 
     setTimeout(() => {
-      textarea.focus();
-      textarea.setSelectionRange(newCursorPos, newCursorPos);
-    }, 50);
+      if (editor.current) {
+        editor.current.focus();
+        editor.current.setSelectionRange(selStart, selEnd);
+      }
+    }, 30);
   }
 
   function selectChapter(id: string) {
@@ -2395,21 +2497,23 @@ ${chaptersHtml}
 
                 {/* Quick Book & Text Formatting Action Bar */}
                 {editorMode === 'edit' && (
-                  <div className="editor-quick-format-bar">
+                  <div className="editor-quick-format-bar" onMouseDown={(e) => e.preventDefault()}>
                     <div className="format-btn-group">
                       <button
                         type="button"
                         className="format-action-btn"
+                        onMouseDown={(e) => e.preventDefault()}
                         onClick={() => applyFormatting('bold')}
-                        title={lang === 'bn' ? 'গাঢ় করুন (Bold) **লেখা**' : 'Bold **text**'}
+                        title={lang === 'bn' ? 'গাঢ় করুন (Bold) **লেখা** [Ctrl+B]' : 'Bold **text** [Ctrl+B]'}
                       >
                         <Bold size={13} />
                       </button>
                       <button
                         type="button"
                         className="format-action-btn"
+                        onMouseDown={(e) => e.preventDefault()}
                         onClick={() => applyFormatting('italic')}
-                        title={lang === 'bn' ? 'বাঁকা করুন (Italic) *লেখা*' : 'Italic *text*'}
+                        title={lang === 'bn' ? 'বাঁকা করুন (Italic) *লেখা* [Ctrl+I]' : 'Italic *text* [Ctrl+I]'}
                       >
                         <Italic size={13} />
                       </button>
@@ -2421,6 +2525,7 @@ ${chaptersHtml}
                       <button
                         type="button"
                         className="format-action-btn"
+                        onMouseDown={(e) => e.preventDefault()}
                         onClick={() => applyFormatting('heading')}
                         title={lang === 'bn' ? 'উপ-শিরোনাম (Subheading) ## সেকশন' : 'Subheading ## Section'}
                       >
@@ -2430,6 +2535,7 @@ ${chaptersHtml}
                       <button
                         type="button"
                         className="format-action-btn"
+                        onMouseDown={(e) => e.preventDefault()}
                         onClick={() => applyFormatting('quote')}
                         title={lang === 'bn' ? 'উদ্ধৃতি বা এপিগ্রাফ (Quote) > উক্তি' : 'Quote > Text'}
                       >
@@ -2439,6 +2545,7 @@ ${chaptersHtml}
                       <button
                         type="button"
                         className="format-action-btn highlight-box"
+                        onMouseDown={(e) => e.preventDefault()}
                         onClick={() => applyFormatting('callout')}
                         title={lang === 'bn' ? 'ইসলামের আলোকে / তথ্য বক্স :::box' : 'Callout Box :::box'}
                       >
@@ -2448,6 +2555,7 @@ ${chaptersHtml}
                       <button
                         type="button"
                         className="format-action-btn"
+                        onMouseDown={(e) => e.preventDefault()}
                         onClick={() => applyFormatting('citation')}
                         title={lang === 'bn' ? 'তথ্যসূত্র বা সাইটেশন তথ্যসূত্র:' : 'Citation / Source'}
                       >
@@ -2457,6 +2565,7 @@ ${chaptersHtml}
                       <button
                         type="button"
                         className="format-action-btn"
+                        onMouseDown={(e) => e.preventDefault()}
                         onClick={() => applyFormatting('list')}
                         title={lang === 'bn' ? 'তালিকা বা পয়েন্ট * পয়েন্ট' : 'Bullet List * item'}
                       >
@@ -2465,6 +2574,7 @@ ${chaptersHtml}
                       <button
                         type="button"
                         className="format-action-btn"
+                        onMouseDown={(e) => e.preventDefault()}
                         onClick={() => applyFormatting('divider')}
                         title={lang === 'bn' ? 'অধ্যায় ডিভাইডার প্রতীক ---' : 'Divider ---'}
                       >
@@ -2501,6 +2611,16 @@ ${chaptersHtml}
                       onKeyUp={handleSelectTextInEditor}
                       onSelect={handleSelectTextInEditor}
                       onKeyDown={(e) => {
+                        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
+                          e.preventDefault();
+                          applyFormatting('bold');
+                          return;
+                        }
+                        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'i') {
+                          e.preventDefault();
+                          applyFormatting('italic');
+                          return;
+                        }
                         if (smartTyping) {
                           const smart = handleSmartKeyDown(e, text);
                           if (smart) {

@@ -30,8 +30,9 @@ export const FloatingBubbleToolbar: React.FC<FloatingBubbleToolbarProps> = ({
       <button
         type="button"
         className="bubble-btn"
+        onMouseDown={(e) => e.preventDefault()}
         onClick={() => onFormat('bold')}
-        title={lang === 'bn' ? 'গাঢ় (Bold)' : 'Bold'}
+        title={lang === 'bn' ? 'গাঢ় (Bold) **লেখা**' : 'Bold **text**'}
       >
         <Bold size={13} />
       </button>
@@ -39,8 +40,9 @@ export const FloatingBubbleToolbar: React.FC<FloatingBubbleToolbarProps> = ({
       <button
         type="button"
         className="bubble-btn"
+        onMouseDown={(e) => e.preventDefault()}
         onClick={() => onFormat('italic')}
-        title={lang === 'bn' ? 'বাঁকা (Italic)' : 'Italic'}
+        title={lang === 'bn' ? 'বাঁকা (Italic) *লেখা*' : 'Italic *text*'}
       >
         <Italic size={13} />
       </button>
@@ -48,6 +50,7 @@ export const FloatingBubbleToolbar: React.FC<FloatingBubbleToolbarProps> = ({
       <button
         type="button"
         className="bubble-btn"
+        onMouseDown={(e) => e.preventDefault()}
         onClick={() => onFormat('quote')}
         title={lang === 'bn' ? 'বাংলা উদ্ধৃতি (“ ”)' : 'Bengali Curly Quotes (“ ”)'}
       >
@@ -57,6 +60,7 @@ export const FloatingBubbleToolbar: React.FC<FloatingBubbleToolbarProps> = ({
       <button
         type="button"
         className="bubble-btn text-icon"
+        onMouseDown={(e) => e.preventDefault()}
         onClick={() => onFormat('single-quote')}
         title={lang === 'bn' ? 'একক উদ্ধৃতি (‘ ’)' : 'Single Quotes (‘ ’)'}
       >
@@ -68,6 +72,7 @@ export const FloatingBubbleToolbar: React.FC<FloatingBubbleToolbarProps> = ({
       <button
         type="button"
         className="bubble-btn text-icon"
+        onMouseDown={(e) => e.preventDefault()}
         onClick={() => onFormat('h2')}
         title={lang === 'bn' ? 'উপ-শিরোনাম (H2)' : 'Subheading (H2)'}
       >
@@ -77,6 +82,7 @@ export const FloatingBubbleToolbar: React.FC<FloatingBubbleToolbarProps> = ({
       <button
         type="button"
         className="bubble-btn text-icon"
+        onMouseDown={(e) => e.preventDefault()}
         onClick={() => onFormat('h3')}
         title={lang === 'bn' ? 'ছোট শিরোনাম (H3)' : 'Minor Heading (H3)'}
       >
@@ -86,6 +92,7 @@ export const FloatingBubbleToolbar: React.FC<FloatingBubbleToolbarProps> = ({
       <button
         type="button"
         className="bubble-btn text-icon"
+        onMouseDown={(e) => e.preventDefault()}
         onClick={() => onFormat('emdash')}
         title={lang === 'bn' ? 'সাহিত্যিক ড্যাশ (—)' : 'Em Dash (—)'}
       >
@@ -95,6 +102,7 @@ export const FloatingBubbleToolbar: React.FC<FloatingBubbleToolbarProps> = ({
       <button
         type="button"
         className="bubble-btn text-icon"
+        onMouseDown={(e) => e.preventDefault()}
         onClick={() => onFormat('scene-break')}
         title={lang === 'bn' ? 'দৃশ্য বিভাজক (❖ ❖ ❖)' : 'Scene Divider (❖ ❖ ❖)'}
       >
@@ -106,6 +114,7 @@ export const FloatingBubbleToolbar: React.FC<FloatingBubbleToolbarProps> = ({
       <button
         type="button"
         className="bubble-btn"
+        onMouseDown={(e) => e.preventDefault()}
         onClick={() => onFormat('mark')}
         title={lang === 'bn' ? 'হাইলাইট রঙ' : 'Highlight Tag'}
       >
@@ -115,6 +124,7 @@ export const FloatingBubbleToolbar: React.FC<FloatingBubbleToolbarProps> = ({
       <button
         type="button"
         className="bubble-btn comment-btn"
+        onMouseDown={(e) => e.preventDefault()}
         onClick={() => onFormat('comment')}
         title={lang === 'bn' ? 'মন্তব্য বা নোট যোগ করুন' : 'Add Comment / Annotation'}
       >
