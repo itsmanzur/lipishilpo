@@ -100,8 +100,8 @@ export const DocsView: React.FC<DocsViewProps> = ({ lang, onOpenEditor, onOpenSe
     {
       q: lang === 'bn' ? 'লিপিশিল্প প্রোতে কী কী অতিরিক্ত সুবিধা আছে?' : 'What additional features are in Lipishilpo Pro?',
       a: lang === 'bn'
-        ? 'লিপিশিল্প প্রোতে রয়েছে বুক গেট-আপ স্টুডিও (প্রিন্ট-রেডি PDF, EPUB ও Word এক্সপোর্ট, ড্রপক্যাপ, হেডার ও সূচিপত্র), OpenAI GPT-4o সম্পাদকীয় সহ-লেখক এবং বাংলা টেক্সট-টু-স্পিচ।'
-        : 'Lipishilpo Pro unlocks the Book Get-Up Studio (print-ready PDF, EPUB, and Word export, headers, footers, drop caps, and table of contents), OpenAI GPT-4o editorial co-writer, and Bengali text-to-speech.'
+        ? 'লিপিশিল্প প্রোতে রয়েছে বুক গেট-আপ স্টুডিও (প্রিভিউ ডেমো, লাইসেন্সে PDF/EPUB/Word এক্সপোর্ট, কভার ছবি, বারকোড), ইউনিভার্সাল AI সম্পাদক (OpenAI, Gemini, Claude, OpenRouter) এবং ব্রাউজার টেক্সট-টু-স্পিচ।'
+        : 'Lipishilpo Pro unlocks the Book Get-Up Studio (preview demo, licensed PDF/EPUB/Word export, cover image, barcode), universal AI editorial (OpenAI, Gemini, Claude, OpenRouter), and browser text-to-speech.'
     },
   ];
 
@@ -597,8 +597,8 @@ export const DocsView: React.FC<DocsViewProps> = ({ lang, onOpenEditor, onOpenSe
             </h2>
             <p>
               {lang === 'bn'
-                ? 'লিপিশিল্প প্রোতে OpenAI GPT-4o দিয়ে গভীর সাহিত্যিক পরিমার্জন ও অডিও প্রুফরিডিং সুবিধা পাওয়া যায়।'
-                : 'Pro unlocks OpenAI GPT-4o style enhancement, character consistency audits, and Bengali audio text-to-speech.'}
+                ? 'লিপিশিল্প প্রোতে সেটিংসে সেভ করা AI প্রোভাইডার (OpenAI, Gemini, Claude, OpenRouter বা কাস্টম) দিয়ে সাহিত্যিক পরিমার্জন এবং ব্রাউজার TTS দিয়ে অডিও প্রুফরিডিং পাওয়া যায়।'
+                : 'Pro unlocks literary analysis via the AI provider saved in Settings (OpenAI, Gemini, Claude, OpenRouter, or custom), plus browser text-to-speech proofreading.'}
             </p>
             <div className="ai-card-grid">
               <div className="ai-feature-card">
@@ -614,7 +614,7 @@ export const DocsView: React.FC<DocsViewProps> = ({ lang, onOpenEditor, onOpenSe
               <div className="ai-feature-card">
                 <div className="step-icon"><Volume2 size={18} /></div>
                 <h4>{lang === 'bn' ? 'বাংলা অডিও প্রুফরিডিং' : 'Bengali Audio Proofing'}</h4>
-                <p>{lang === 'bn' ? 'বাক্য ধরে ধরে স্বাভাবিক বাংলায় পড়ে শোনায়, ছন্দপতন দ্রুত ধরা পড়ে।' : 'Listens to your manuscript in natural Bengali voice for rhythm cadence.'}</p>
+                <p>{lang === 'bn' ? 'বাক্য ধরে ধরে ব্রাউজারের Web Speech API দিয়ে পড়ে শোনায় — নিউরাল স্টুডিও ভয়েস নয়।' : 'Reads sentence by sentence with the browser Web Speech API — not a neural studio voice.'}</p>
               </div>
             </div>
           </div>

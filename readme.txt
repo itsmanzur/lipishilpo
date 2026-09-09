@@ -56,7 +56,7 @@ Yes! LipiShilpo includes a dual-engine converter that allows 1-click bi-directio
 You can import .docx into the Free studio. Layout-aware Word (.docx) export, along with print-ready PDF and EPUB, is in Lipishilpo Pro Book Studio. Free exports HTML, Markdown, plain text, and JSON backup.
 
 = What additional features are in Lipishilpo Pro? =
-Lipishilpo Pro unlocks the Book Get-Up Studio (print-ready PDF, EPUB, and Word export, headers, footers, drop caps, and table of contents), OpenAI GPT-4o editorial co-writer, and Bengali audio text-to-speech.
+Lipishilpo Pro unlocks the Book Get-Up Studio (preview demo; licensed PDF, EPUB, and Word export; cover image upload; barcode), universal AI editorial (OpenAI, Gemini, Claude, OpenRouter), and browser Web Speech text-to-speech.
 
 == Screenshots ==
 

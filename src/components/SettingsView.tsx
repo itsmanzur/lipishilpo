@@ -136,10 +136,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             <div className="pro-upgrade-box">
               <h4>{lang === 'bn' ? '✨ লিপিশিল্প Pro-তে যা যা রয়েছে:' : '✨ What unlocks with Lipishilpo Pro:'}</h4>
               <ul className="pro-checklist">
+                <li>📚 {lang === 'bn' ? 'বুক গেট-আপ স্টুডিও (প্রিভিউ ডেমো; PDF/DOCX/EPUB ডাউনলোড লাইসেন্সে)' : 'Book Get-Up Studio (preview demo; PDF/DOCX/EPUB download with license)'}</li>
+                <li>🖼️ {lang === 'bn' ? 'কভার ছবি আপলোড, ফুল র‍্যাপ ও EAN-13 বারকোড' : 'Cover image upload, full wrap, and EAN-13 barcode'}</li>
                 <li>🤖 {lang === 'bn' ? 'ইউনিভার্সাল AI (OpenAI, Gemini, Claude) সাহিত্যিক সম্পাদনা ও শৈলীগত পরামর্শ' : 'Universal AI (OpenAI, Gemini, Claude) literary phrasing polish & tone editing'}</li>
                 <li>🛡️ {lang === 'bn' ? 'সমগ্র পান্ডুলিপির চরিত্র, বয়স ও সম্পর্কের ধারাবাহিকতা' : 'Whole-book character, age, and relationship continuity tracking'}</li>
-                <li>🔊 {lang === 'bn' ? 'শুনে শুনে প্রুফরিডিং (Web Speech API এবং আধুনিক TTS)' : 'Audio Proofreading (Text-to-Speech synthesis with sentence focus)'}</li>
-                <li>📚 {lang === 'bn' ? 'মুদ্রণযোগ্য DOCX, বাংলা ফন্টসহ PDF এবং EPUB ই-বুক এক্সপোর্ট' : 'Print-ready DOCX, PDF with embedded Bengali fonts, and EPUB eBooks'}</li>
+                <li>🔊 {lang === 'bn' ? 'শুনে শুনে প্রুফরিডিং (ব্রাউজার Web Speech API)' : 'Audio Proofreading (browser Web Speech API)'}</li>
+                <li>📄 {lang === 'bn' ? 'লেআউটসহ DOCX, বাংলা ফন্ট এমবেড করা PDF এবং EPUB' : 'Layout DOCX, PDF with embedded Bengali fonts, and EPUB eBooks'}</li>
               </ul>
             </div>
           )}

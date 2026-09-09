@@ -293,7 +293,7 @@ export const translations = {
     aiModeChapter: 'Selected Chapter: Structure & Reader Reaction',
     aiModeBook: 'Full Book: Continuity & Timeline Consistency',
     aiPrivacyNote:
-      'Running analysis will securely send the text to OpenAI. Your manuscript will never change automatically.',
+      'Running analysis sends this text to the AI provider saved in Settings (OpenAI, Gemini, Claude, OpenRouter, or custom). The manuscript is not changed automatically.',
     btnStartAnalysis: 'Start Analysis',
     btnReanalyze: 'Re-analyze',
     btnStopAnalysis: 'Stop',
@@ -670,7 +670,7 @@ export const translations = {
     aiModeChapter: 'নির্বাচিত অধ্যায়: কাঠামো ও পাঠক',
     aiModeBook: 'পুরো বই: ধারাবাহিকতা পরীক্ষা',
     aiPrivacyNote:
-      'বিশ্লেষণ চালালে সংশ্লিষ্ট লেখা OpenAI-তে যাবে। মূল লেখা স্বয়ংক্রিয়ভাবে বদলাবে না।',
+      'বিশ্লেষণ চালালে সংশ্লিষ্ট লেখা সেটিংসে সেভ করা AI প্রোভাইডারে যাবে (OpenAI, Gemini, Claude, OpenRouter বা কাস্টম)। মূল লেখা স্বয়ংক্রিয়ভাবে বদলাবে না।',
     btnStartAnalysis: 'বিশ্লেষণ শুরু করুন',
     btnReanalyze: 'আবার বিশ্লেষণ করুন',
     btnStopAnalysis: 'বন্ধ করুন',

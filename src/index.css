@@ -2844,6 +2844,29 @@ body {
   border-color: #20644f;
   font-weight: 600;
 }
+.audio-voice-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #4b6355;
+}
+.audio-voice-field select {
+  font-weight: 500;
+  font-size: 13px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid #c9dec6;
+  background: #ffffff;
+  color: #1e3d32;
+}
+.audio-honest-note {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #557b64;
+}
 .audio-controls-row {
   display: flex;
   align-items: center;
