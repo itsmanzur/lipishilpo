@@ -1,0 +1,566 @@
+/**
+ * Lipishilpo Admin Settings — Premium Stylesheet
+ * Matching the Lipishilpo Docs & Studio Design System
+ */
+
+/* ── Container & Reset ─────────────────────────────────────────────────── */
+.lipishilpo-settings-wrap {
+  max-width: 960px;
+  margin: 20px 20px 40px 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+  color: #1e293b;
+}
+
+.lipishilpo-settings-wrap * {
+  box-sizing: border-box;
+}
+
+/* ── Hero Banner ────────────────────────────────────────────────────────── */
+.lipishilpo-admin-hero {
+  background: linear-gradient(135deg, #164e3f 0%, #1e5e4b 45%, #23725b 100%);
+  color: #ffffff;
+  padding: 32px 36px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 10px 25px -5px rgba(22, 78, 63, 0.25), 0 8px 10px -6px rgba(22, 78, 63, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+.lipishilpo-admin-hero::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 380px;
+  height: 380px;
+  background: radial-gradient(circle, rgba(52, 211, 153, 0.15) 0%, rgba(255, 255, 255, 0) 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.lipishilpo-hero-content {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.lipishilpo-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.16);
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 10px;
+  color: #d1fae5;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(6px);
+  letter-spacing: 0.3px;
+}
+
+.lipishilpo-admin-hero h1 {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  color: #ffffff;
+  line-height: 1.3;
+  padding: 0;
+}
+
+.lipishilpo-admin-hero p {
+  color: #d1ebe1;
+  font-size: 14px;
+  margin: 0;
+  max-width: 620px;
+  line-height: 1.6;
+}
+
+.lipishilpo-hero-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 205px;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.lipishilpo-hero-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #ffffff;
+  color: #164e3f !important;
+  font-weight: 600;
+  font-size: 13.5px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  text-decoration: none !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+}
+
+.lipishilpo-hero-btn-primary:hover {
+  background: #f8fafc;
+  color: #0f3d30 !important;
+  transform: translateY(-1.5px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.16);
+}
+
+.lipishilpo-hero-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff !important;
+  font-weight: 500;
+  font-size: 13px;
+  padding: 9px 16px;
+  border-radius: 10px;
+  text-decoration: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(4px);
+  transition: all 0.2s ease;
+}
+
+.lipishilpo-hero-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.24);
+  color: #ffffff !important;
+  transform: translateY(-1.5px);
+}
+
+/* ── Pro Status Banner ──────────────────────────────────────────────────── */
+.lipishilpo-status-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+}
+
+.lipishilpo-status-card.is-pro {
+  border-left: 4px solid #10b981;
+  background: linear-gradient(to right, #f0fdf4 0%, #ffffff 100%);
+}
+
+.lipishilpo-status-card.is-free {
+  border-left: 4px solid #0284c7;
+  background: linear-gradient(to right, #f0f9ff 0%, #ffffff 100%);
+}
+
+.lipishilpo-status-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.lipishilpo-status-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.is-pro .lipishilpo-status-icon {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.is-free .lipishilpo-status-icon {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.lipishilpo-status-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 2px 0;
+}
+
+.lipishilpo-status-desc {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+}
+
+.lipishilpo-pill-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.is-pro .lipishilpo-pill-badge {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.is-free .lipishilpo-pill-badge {
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+}
+
+.lipishilpo-pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+  animation: lipiPulse 2s infinite;
+}
+
+@keyframes lipiPulse {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+}
+
+/* ── Section Cards ──────────────────────────────────────────────────────── */
+.lipishilpo-card-section {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 26px 30px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 8px -2px rgba(0, 0, 0, 0.04), 0 2px 4px -2px rgba(0, 0, 0, 0.02);
+  transition: box-shadow 0.2s ease;
+}
+
+.lipishilpo-card-section:hover {
+  box-shadow: 0 6px 14px -2px rgba(0, 0, 0, 0.06), 0 3px 6px -2px rgba(0, 0, 0, 0.03);
+}
+
+.lipishilpo-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.lipishilpo-card-header-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: #f0fdf4;
+  color: #166534;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+  border: 1px solid #dcfce7;
+}
+
+.lipishilpo-card-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.lipishilpo-card-subtitle {
+  font-size: 13.5px;
+  color: #64748b;
+  margin: 0 0 20px 0;
+  line-height: 1.55;
+}
+
+/* ── Modern Form Controls Styling (WP Tables Transformation) ───────────── */
+.lipishilpo-settings-wrap .form-table {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.lipishilpo-settings-wrap .form-table th {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #334155;
+  padding: 16px 14px 16px 0;
+  width: 220px;
+  vertical-align: top;
+}
+
+.lipishilpo-settings-wrap .form-table td {
+  padding: 12px 0 16px 0;
+}
+
+.lipishilpo-settings-wrap select,
+.lipishilpo-settings-wrap input[type="text"],
+.lipishilpo-settings-wrap input[type="password"],
+.lipishilpo-settings-wrap input[type="url"] {
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 9px 14px;
+  font-size: 14px;
+  background-color: #f8fafc;
+  color: #1e293b;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+  min-height: 42px;
+}
+
+.lipishilpo-settings-wrap select:focus,
+.lipishilpo-settings-wrap input[type="text"]:focus,
+.lipishilpo-settings-wrap input[type="password"]:focus,
+.lipishilpo-settings-wrap input[type="url"]:focus {
+  border-color: #10b981;
+  background-color: #ffffff;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18);
+}
+
+.lipishilpo-settings-wrap .regular-text {
+  width: 100%;
+  max-width: 480px;
+}
+
+.lipishilpo-settings-wrap .description {
+  font-size: 12.5px;
+  color: #64748b;
+  margin-top: 6px;
+  line-height: 1.5;
+}
+
+.lipishilpo-settings-wrap .description code {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  padding: 2px 6px;
+  border-radius: 5px;
+  font-size: 12px;
+  color: #0f766e;
+  font-weight: 500;
+}
+
+.lipishilpo-settings-wrap .description a {
+  color: #059669;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.lipishilpo-settings-wrap .description a:hover {
+  text-decoration: underline;
+  color: #047857;
+}
+
+/* ── Interactive Shortcode Box ──────────────────────────────────────────── */
+.lipishilpo-shortcode-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px 18px;
+  margin: 12px 0 14px 0;
+  max-width: 540px;
+}
+
+.lipishilpo-shortcode-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f766e;
+  background: #e6fffa;
+  border: 1px solid #b2f5ea;
+  padding: 4px 12px;
+  border-radius: 6px;
+}
+
+.lipishilpo-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #ffffff;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.lipishilpo-copy-btn:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+.lipishilpo-copy-btn.copied {
+  background: #dcfce7;
+  color: #15803d;
+  border-color: #86efac;
+}
+
+/* ── Tester Box ─────────────────────────────────────────────────────────── */
+.lipishilpo-tester-box {
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 20px 22px;
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.lipishilpo-tester-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.lipishilpo-tester-title {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lipishilpo-test-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #0f766e;
+  color: #ffffff !important;
+  font-size: 13.5px;
+  font-weight: 600;
+  border: none;
+  border-radius: 9px;
+  padding: 9px 18px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(15, 118, 110, 0.2);
+}
+
+.lipishilpo-test-btn:hover:not(:disabled) {
+  background: #115e59;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(15, 118, 110, 0.28);
+}
+
+.lipishilpo-test-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.lipishilpo-test-result-box {
+  font-size: 13px;
+  font-weight: 500;
+  padding: 10px 14px;
+  border-radius: 8px;
+  display: none;
+  line-height: 1.5;
+}
+
+.lipishilpo-test-result-box.active {
+  display: block;
+}
+
+.lipishilpo-test-result-box.success {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #86efac;
+}
+
+.lipishilpo-test-result-box.error {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+}
+
+.lipishilpo-test-result-box.loading {
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+}
+
+/* ── Primary Submit Button ──────────────────────────────────────────────── */
+.lipishilpo-submit-area {
+  margin-top: 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.lipishilpo-save-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%) !important;
+  color: #ffffff !important;
+  font-size: 14.5px !important;
+  font-weight: 600 !important;
+  padding: 11px 26px !important;
+  border-radius: 10px !important;
+  border: none !important;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35) !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  text-shadow: none !important;
+  height: auto !important;
+}
+
+.lipishilpo-save-btn:hover {
+  background: linear-gradient(135deg, #047857 0%, #059669 100%) !important;
+  transform: translateY(-1.5px);
+  box-shadow: 0 6px 18px rgba(16, 185, 129, 0.45) !important;
+}
+
+.lipishilpo-save-btn:active {
+  transform: translateY(0);
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────────── */
+@media (max-width: 782px) {
+  .lipishilpo-admin-hero {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 24px 20px;
+  }
+  .lipishilpo-hero-actions {
+    width: 100%;
+  }
+  .lipishilpo-settings-wrap .form-table th {
+    width: 100%;
+    padding-bottom: 4px;
+  }
+  .lipishilpo-tester-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
