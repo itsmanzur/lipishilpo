@@ -35,15 +35,7 @@ class Lipishilpo_Admin {
 	}
 
 	public static function register_settings() {
-		// Free section
-		add_settings_section(
-			'lipishilpo_free_section',
-			__( 'Shortcode & Integration Guide', 'lipishilpo' ),
-			array( __CLASS__, 'render_free_section' ),
-			'lipishilpo-settings'
-		);
-
-		// Hook for Pro addon settings
+		// Hook for Pro addon settings registration
 		do_action( 'lipishilpo_register_admin_settings' );
 	}
 
@@ -126,8 +118,14 @@ class Lipishilpo_Admin {
 				<form method="post" action="options.php" id="lipishilpo_settings_form">
 					<?php
 					settings_fields( 'lipishilpo_settings' );
-					do_settings_sections( 'lipishilpo-settings' );
+					
+					// Hook to render Pro cards
+					do_action( 'lipishilpo_render_admin_pro_cards' );
 					?>
+
+					<!-- Shortcode & Integration Card -->
+					<?php self::render_free_section(); ?>
+
 					<div class="lipishilpo-submit-area">
 						<button type="submit" class="lipishilpo-save-btn">
 							<span>💾</span> <?php esc_html_e( 'Save Settings (সংরক্ষণ করুন)', 'lipishilpo' ); ?>
@@ -135,15 +133,13 @@ class Lipishilpo_Admin {
 					</div>
 				</form>
 			<?php else : ?>
-				<div class="lipishilpo-card-section">
-					<?php do_settings_sections( 'lipishilpo-settings' ); ?>
-				</div>
-			<?php endif; ?>
+				<!-- Shortcode Card -->
+				<?php self::render_free_section(); ?>
 
-			<?php if ( ! $is_pro ) : ?>
+				<!-- Upgrade Card -->
 				<div class="lipishilpo-card-section" style="border-left: 4px solid #10b981; margin-top: 24px;">
 					<div class="lipishilpo-card-header">
-						<div class="lipishilpo-card-header-icon">💎</div>
+						<div class="lipishilpo-card-header-icon" style="background: #ecfdf5; color: #059669; border-color: #a7f3d0;">💎</div>
 						<h2 class="lipishilpo-card-title"><?php esc_html_e( 'লিপিশিল্প Pro-তে যা যা পাচ্ছেন', 'lipishilpo' ); ?></h2>
 					</div>
 					<p class="lipishilpo-card-subtitle">
@@ -164,11 +160,6 @@ class Lipishilpo_Admin {
 					</p>
 				</div>
 			<?php endif; ?>
-
-			<?php
-			// Pro plugin bottom action
-			do_action( 'lipishilpo_admin_settings_bottom' );
-			?>
 		</div>
 
 		<script>
@@ -209,8 +200,11 @@ class Lipishilpo_Admin {
 		?>
 		<div class="lipishilpo-card-section" style="margin-top: 15px;">
 			<div class="lipishilpo-card-header">
-				<div class="lipishilpo-card-header-icon">📌</div>
-				<h2 class="lipishilpo-card-title"><?php esc_html_e( 'ওয়ার্ডপ্রেস শর্টকোড ও সাইট ইন্টিগ্রেশন', 'lipishilpo' ); ?></h2>
+				<div class="lipishilpo-card-header-icon" style="background: #fdf4ff; color: #a855f7; border-color: #f5d0fe;">📌</div>
+				<div>
+					<h2 class="lipishilpo-card-title"><?php esc_html_e( 'ওয়ার্ডপ্রেস শর্টকোড ও সাইট ইন্টিগ্রেশন', 'lipishilpo' ); ?></h2>
+					<span class="lipishilpo-card-tag"><?php esc_html_e( 'Frontend Embed & Access Control', 'lipishilpo' ); ?></span>
+				</div>
 			</div>
 			<p class="lipishilpo-card-subtitle">
 				<?php esc_html_e( 'আপনার সাইটের যেকোনো পেজ বা পোস্টে নিচের শর্টকোডটি বসিয়ে সম্পূর্ণ পান্ডুলিপি স্টুডিও প্রদর্শন করতে পারেন:', 'lipishilpo' ); ?>
