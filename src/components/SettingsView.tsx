@@ -102,7 +102,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               <h3>{isPro ? (lang === 'bn' ? 'Lipishilpo Pro সক্রিয় রয়েছে' : 'Lipishilpo Pro is Active') : (lang === 'bn' ? 'Lipishilpo (ফ্রি সংস্করণ) সক্রিয়' : 'Lipishilpo (Free Core) is Active')}</h3>
               <p>
                 {isPro
-                  ? (lang === 'bn' ? 'OpenAI GPT-4o এডিটিং, পুরো বইয়ের ধারাবাহিকতা এবং DOCX, PDF ও EPUB পাবলিকেশন ইঞ্জিন আনলক করা হয়েছে।' : 'OpenAI AI editorial analysis, whole-book continuity checking, and publication formats unlocked.')
+                  ? (lang === 'bn' ? 'ইউনিভার্সাল AI এডিটিং (OpenAI, Gemini, Claude, OpenRouter), পুরো বইয়ের ধারাবাহিকতা এবং DOCX, PDF ও EPUB পাবলিকেশন ইঞ্জিন আনলক করা হয়েছে।' : 'Universal AI editorial analysis (OpenAI, Gemini, Claude, OpenRouter), whole-book continuity checking, and publication formats unlocked.')
                   : (lang === 'bn' ? 'বাংলা একাডেমির প্রমিত ব্যাকরণ পরীক্ষণ, পান্ডুলিপি সংগঠন ও অফলাইন স্টুডিও আজীবন ফ্রি।' : 'Standard Bangla Academy proofreading and chapter studio are permanently free.')}
               </p>
             </div>
@@ -111,8 +111,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           {isPro && (
             <p className="settings-admin-hint">
               {lang === 'bn'
-                ? 'OpenAI কী ও প্রো লাইসেন্স ওয়ার্ডপ্রেস অ্যাডমিনের Settings পেজে সংরক্ষণ করুন।'
-                : 'Save your OpenAI key and Pro license on the WordPress admin Settings page.'}
+                ? 'AI এপিআই কী ও প্রো লাইসেন্স ওয়ার্ডপ্রেস অ্যাডমিনের Settings পেজে সংরক্ষণ করুন।'
+                : 'Save your AI key and Pro license on the WordPress admin Settings page.'}
               {' '}
               <a href="/wp-admin/admin.php?page=lipishilpo-settings">
                 {lang === 'bn' ? 'সেটিংস খুলুন' : 'Open Settings'}
@@ -136,7 +136,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             <div className="pro-upgrade-box">
               <h4>{lang === 'bn' ? '✨ লিপিশিল্প Pro-তে যা যা রয়েছে:' : '✨ What unlocks with Lipishilpo Pro:'}</h4>
               <ul className="pro-checklist">
-                <li>🤖 {lang === 'bn' ? 'OpenAI GPT-4o সাহিত্যিক সম্পাদনা ও শৈলীগত পরামর্শ' : 'OpenAI GPT-4o literary phrasing polish & tone editing'}</li>
+                <li>🤖 {lang === 'bn' ? 'ইউনিভার্সাল AI (OpenAI, Gemini, Claude) সাহিত্যিক সম্পাদনা ও শৈলীগত পরামর্শ' : 'Universal AI (OpenAI, Gemini, Claude) literary phrasing polish & tone editing'}</li>
                 <li>🛡️ {lang === 'bn' ? 'সমগ্র পান্ডুলিপির চরিত্র, বয়স ও সম্পর্কের ধারাবাহিকতা' : 'Whole-book character, age, and relationship continuity tracking'}</li>
                 <li>🔊 {lang === 'bn' ? 'শুনে শুনে প্রুফরিডিং (Web Speech API এবং আধুনিক TTS)' : 'Audio Proofreading (Text-to-Speech synthesis with sentence focus)'}</li>
                 <li>📚 {lang === 'bn' ? 'মুদ্রণযোগ্য DOCX, বাংলা ফন্টসহ PDF এবং EPUB ই-বুক এক্সপোর্ট' : 'Print-ready DOCX, PDF with embedded Bengali fonts, and EPUB eBooks'}</li>
