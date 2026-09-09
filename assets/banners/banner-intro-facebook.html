@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="utf-8" />
+  <title>লিপিশিল্প — সোশ্যাল ব্যানার</title>
+  <style>
+    @font-face {
+      font-family: "Noto Serif Bengali";
+      font-weight: 400;
+      src: url("../fonts/NotoSerifBengali-Regular.ttf") format("truetype");
+    }
+    @font-face {
+      font-family: "Noto Serif Bengali";
+      font-weight: 700;
+      src: url("../fonts/NotoSerifBengali-Bold.ttf") format("truetype");
+    }
+    @font-face {
+      font-family: "Hind Siliguri";
+      font-weight: 400;
+      src: url("../fonts/HindSiliguri-Regular.woff2") format("woff2");
+    }
+    @font-face {
+      font-family: "Tiro Bangla";
+      font-weight: 400;
+      src: url("../fonts/TiroBangla-Regular.woff2") format("woff2");
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 1200px;
+      height: 630px;
+      overflow: hidden;
+      background: #102820;
+    }
+
+    .banner {
+      width: 1200px;
+      height: 630px;
+      position: relative;
+      overflow: hidden;
+      background:
+        radial-gradient(640px 420px at 90% 12%, rgba(196, 154, 78, 0.16), transparent 58%),
+        radial-gradient(560px 380px at 6% 108%, rgba(42, 138, 104, 0.22), transparent 62%),
+        linear-gradient(118deg, #0e241e 0%, #16352d 48%, #1a4036 100%);
+      color: #f4efe4;
+    }
+
+    .banner::before {
+      content: "লি";
+      position: absolute;
+      right: -40px;
+      bottom: -140px;
+      font-family: "Noto Serif Bengali", serif;
+      font-weight: 700;
+      font-size: 520px;
+      line-height: 1;
+      color: rgba(244, 239, 228, 0.05);
+      pointer-events: none;
+    }
+
+    .rail {
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 12px;
+      background: linear-gradient(180deg, #c49a4e, #2a8a68 55%, #1d5a47);
+    }
+
+    .grain {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.22;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+
+    .mark {
+      position: absolute;
+      left: 72px;
+      top: 88px;
+      width: 96px;
+      height: 96px;
+      border: 1.5px solid rgba(244, 239, 228, 0.55);
+      border-radius: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: "Noto Serif Bengali", serif;
+      font-weight: 700;
+      font-size: 50px;
+      color: #f4efe4;
+      background: linear-gradient(180deg, #1f5c4c, #14352c);
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+      z-index: 2;
+    }
+
+    .copy {
+      position: absolute;
+      left: 72px;
+      top: 220px;
+      width: 720px;
+      z-index: 2;
+    }
+
+    .kicker {
+      font-family: "Hind Siliguri", sans-serif;
+      font-size: 20px;
+      letter-spacing: 0.22em;
+      color: #c49a4e;
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      font-family: "Noto Serif Bengali", serif;
+      font-weight: 700;
+      font-size: 96px;
+      line-height: 1;
+      color: #f7f3e8;
+    }
+
+    .tagline {
+      margin-top: 16px;
+      font-family: "Tiro Bangla", "Noto Serif Bengali", serif;
+      font-size: 36px;
+      color: #d5e4dc;
+    }
+
+    .sub {
+      margin-top: 16px;
+      font-family: "Hind Siliguri", sans-serif;
+      font-size: 26px;
+      color: #9fb3a8;
+      max-width: 680px;
+    }
+
+    .rule {
+      width: 64px;
+      height: 3px;
+      background: #c49a4e;
+      border-radius: 2px;
+      margin: 28px 0 0;
+    }
+
+    .colophon {
+      position: absolute;
+      right: 56px;
+      bottom: 72px;
+      width: 340px;
+      z-index: 2;
+      padding: 28px 26px 24px;
+      background: rgba(247, 243, 232, 0.06);
+      border: 1px solid rgba(244, 239, 228, 0.14);
+      border-radius: 4px 18px 4px 18px;
+    }
+
+    .colophon .gold {
+      width: 48px;
+      height: 3px;
+      background: #c49a4e;
+      margin-bottom: 14px;
+    }
+
+    .colophon p {
+      font-family: "Noto Serif Bengali", serif;
+      font-size: 24px;
+      line-height: 1.7;
+      color: #e8efe9;
+    }
+
+    .colophon small {
+      display: block;
+      margin-top: 18px;
+      font-family: "Hind Siliguri", sans-serif;
+      font-size: 15px;
+      letter-spacing: 0.12em;
+      color: #c49a4e;
+    }
+  </style>
+</head>
+<body>
+  <div class="banner">
+    <div class="rail"></div>
+    <div class="grain"></div>
+    <div class="mark">লি</div>
+    <div class="copy">
+      <div class="kicker">ওয়ার্ডপ্রেস প্লাগিন</div>
+      <h1>লিপিশিল্প</h1>
+      <p class="tagline">বাংলায় বই লেখার জায়গা</p>
+      <p class="sub">নিরিবিলি লিখুন। অধ্যায় রাখুন। প্রুফ চালান।</p>
+      <div class="rule"></div>
+    </div>
+    <div class="colophon">
+      <div class="gold"></div>
+      <p>আপনার শব্দ। আপনার স্বর।</p>
+      <small>লিপিশিল্প.কম</small>
+    </div>
+  </div>
+</body>
+</html>
