@@ -65,5 +65,28 @@ LipiShilpo হলো ওয়ার্ডপ্রেসের জন্য ত
 ---
 
 ## 📄 লাইসেন্স ও ডকুমেন্টেশন
+- লিপিশিল্প প্লাগিনটি **GPL-2.0-or-later** লাইসেন্সের অধীনে মুক্ত ও উন্মুক্ত সোর্স সফটওয়্যার।
 - বিস্তারিত ফ্রি ফিচারের জন্য দেখুন: [FREE_FEATURES.md](FREE_FEATURES.md)
 - বিস্তারিত প্রো ফিচারের জন্য দেখুন: [PRO_FEATURES.md](PRO_FEATURES.md)
+
+---
+
+## 🏛️ থার্ড-পার্টি লাইব্রেরি ও ফন্ট কৃতজ্ঞতা (Third-Party Assets & Credits)
+
+লিপিশিল্পে ব্যবহৃত সকল থার্ড-পার্টি রিসোর্স ১০০% ওপেন সোর্স এবং ওয়ার্ডপ্রেস নির্দেশিকার সাথে সামঞ্জস্যপূর্ণ:
+
+### ফন্টসমূহ (Fonts)
+* **Noto Sans Bengali / Noto Serif Bengali / Noto Serif:** The Noto Project Authors (Google) — [SIL Open Font License 1.1](http://scripts.sil.org/OFL)
+* **Hind Siliguri:** Indian Type Foundry — [SIL Open Font License 1.1](http://scripts.sil.org/OFL)
+* **Tiro Bangla:** Tiro Typeworks (John Hudson, Fiona Ross) — [SIL Open Font License 1.1](http://scripts.sil.org/OFL)
+
+### অফলাইন ডিকশনারি (Dictionaries)
+* **Bengali (bn-BD) Hunspell:** Bangla Type Foundry / Jacob Thomas — [GNU GPL v2](https://banglatypefoundry.com/spellchecker/)
+* **English (en-US) Hunspell:** LibreOffice / SCOWL (Kevin Atkinson) — BSD / LGPL / MPL
+
+### জাভাস্ক্রিপ্ট লাইব্রেরিসমূহ (Bundled JS Libraries)
+* **React & React-DOM (v19):** Meta Platforms, Inc. — [MIT License](https://github.com/facebook/react/blob/main/LICENSE)
+* **Lucide React:** Lucide Project — [ISC License](https://github.com/lucide-icons/lucide/blob/main/LICENSE)
+* **Mammoth.js:** Michael Williamson — [BSD 2-Clause License](https://github.com/mwilliamson/mammoth.js/blob/master/LICENSE)
+* **Nspell:** Titus Wormer — [MIT License](https://github.com/wooorm/nspell/blob/main/license)
+

@@ -53,6 +53,11 @@ function lipishilpo_uninstall() {
 	delete_option( 'lipishilpo_openai_model' );
 	delete_option( 'lipishilpo_license_key' );
 	delete_option( 'lipishilpo_license_status' );
+	delete_option( 'lipishilpo_ai_provider' );
+	delete_option( 'lipishilpo_ai_key' );
+	delete_option( 'lipishilpo_ai_model' );
+	delete_option( 'lipishilpo_ai_custom_model' );
+	delete_option( 'lipishilpo_ai_base_url' );
 }
 
 lipishilpo_uninstall();
