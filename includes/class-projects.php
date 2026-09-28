@@ -253,6 +253,22 @@ class Lipishilpo_Projects {
 		return (bool) apply_filters( 'lipishilpo_can_access_project', $is_owner, $post_id, get_current_user_id() );
 	}
 
+	/**
+	 * Sanitizes plain-text / markdown manuscript content safely without destroying
+	 * HTML entities, mathematical operators (<, >), or formatting blocks (:::poem).
+	 *
+	 * @param mixed $text Raw input text.
+	 * @return string Sanitized UTF-8 safe string.
+	 */
+	private static function sanitize_manuscript_text( $text ) {
+		if ( ! is_string( $text ) ) {
+			return '';
+		}
+		// Strip null bytes and non-printable control characters except line feeds, CR, and tabs
+		$clean = preg_replace( '/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $text );
+		return ( null !== $clean ) ? $clean : sanitize_textarea_field( $text );
+	}
+
 	private static function sanitize_chapters( $chapters ) {
 		if ( ! is_array( $chapters ) ) {
 			return array();
@@ -264,10 +280,10 @@ class Lipishilpo_Projects {
 				continue;
 			}
 			$clean[] = array(
-				'id'     => ! empty( $c['id'] ) ? sanitize_text_field( $c['id'] ) : wp_generate_uuid4(),
-				'title'  => isset( $c['title'] ) ? sanitize_text_field( $c['title'] ) : '',
-				'text'   => isset( $c['text'] ) ? wp_kses_post( $c['text'] ) : '',
-				'notes'  => isset( $c['notes'] ) ? wp_kses_post( $c['notes'] ) : '',
+				'id'     => ! empty( $c['id'] ) ? sanitize_text_field( (string) $c['id'] ) : wp_generate_uuid4(),
+				'title'  => isset( $c['title'] ) ? sanitize_text_field( (string) $c['title'] ) : '',
+				'text'   => isset( $c['text'] ) ? self::sanitize_manuscript_text( $c['text'] ) : '',
+				'notes'  => isset( $c['notes'] ) ? self::sanitize_manuscript_text( $c['notes'] ) : '',
 				'status' => ( isset( $c['status'] ) && in_array( $c['status'], array( 'draft', 'in_progress', 'revised', 'final' ), true ) ) ? $c['status'] : 'draft',
 			);
 		}
@@ -281,22 +297,22 @@ class Lipishilpo_Projects {
 		}
 
 		$out = array();
-		foreach ( $map as $chapter_id => $items ) {
+		foreach ( array_slice( $map, 0, 50, true ) as $chapter_id => $items ) {
 			if ( ! is_array( $items ) ) {
 				continue;
 			}
 			$cid   = sanitize_text_field( (string) $chapter_id );
 			$clean = array();
-			foreach ( array_slice( $items, 0, 40 ) as $item ) {
+			foreach ( array_slice( $items, 0, 30 ) as $item ) {
 				if ( ! is_array( $item ) ) {
 					continue;
 				}
 				$clean[] = array(
-					'id'        => ! empty( $item['id'] ) ? sanitize_text_field( $item['id'] ) : wp_generate_uuid4(),
-					'name'      => isset( $item['name'] ) ? sanitize_text_field( $item['name'] ) : '',
-					'date'      => isset( $item['date'] ) ? sanitize_text_field( $item['date'] ) : '',
+					'id'        => ! empty( $item['id'] ) ? sanitize_text_field( (string) $item['id'] ) : wp_generate_uuid4(),
+					'name'      => isset( $item['name'] ) ? sanitize_text_field( (string) $item['name'] ) : '',
+					'date'      => isset( $item['date'] ) ? sanitize_text_field( (string) $item['date'] ) : '',
 					'wordCount' => isset( $item['wordCount'] ) ? absint( $item['wordCount'] ) : 0,
-					'text'      => isset( $item['text'] ) ? wp_kses_post( $item['text'] ) : '',
+					'text'      => isset( $item['text'] ) ? self::sanitize_manuscript_text( $item['text'] ) : '',
 				);
 			}
 			$out[ $cid ] = $clean;
@@ -311,7 +327,7 @@ class Lipishilpo_Projects {
 		}
 
 		$out = array();
-		foreach ( $map as $chapter_id => $items ) {
+		foreach ( array_slice( $map, 0, 50, true ) as $chapter_id => $items ) {
 			if ( ! is_array( $items ) ) {
 				continue;
 			}
@@ -322,10 +338,10 @@ class Lipishilpo_Projects {
 					continue;
 				}
 				$clean[] = array(
-					'id'       => ! empty( $item['id'] ) ? sanitize_text_field( $item['id'] ) : wp_generate_uuid4(),
-					'quote'    => isset( $item['quote'] ) ? sanitize_textarea_field( $item['quote'] ) : '',
-					'comment'  => isset( $item['comment'] ) ? sanitize_textarea_field( $item['comment'] ) : '',
-					'date'     => isset( $item['date'] ) ? sanitize_text_field( $item['date'] ) : '',
+					'id'       => ! empty( $item['id'] ) ? sanitize_text_field( (string) $item['id'] ) : wp_generate_uuid4(),
+					'quote'    => isset( $item['quote'] ) ? sanitize_textarea_field( (string) $item['quote'] ) : '',
+					'comment'  => isset( $item['comment'] ) ? sanitize_textarea_field( (string) $item['comment'] ) : '',
+					'date'     => isset( $item['date'] ) ? sanitize_text_field( (string) $item['date'] ) : '',
 					'resolved' => ! empty( $item['resolved'] ),
 				);
 			}
@@ -342,7 +358,7 @@ class Lipishilpo_Projects {
 
 		$allowed = array( 'spelling', 'grammar', 'style', 'punctuation', 'replace', 'custom' );
 		$out     = array();
-		foreach ( $map as $chapter_id => $items ) {
+		foreach ( array_slice( $map, 0, 50, true ) as $chapter_id => $items ) {
 			if ( ! is_array( $items ) ) {
 				continue;
 			}
@@ -357,14 +373,14 @@ class Lipishilpo_Projects {
 					$kind = 'spelling';
 				}
 				$clean[] = array(
-					'id'          => ! empty( $item['id'] ) ? sanitize_text_field( $item['id'] ) : wp_generate_uuid4(),
-					'kind'        => $kind,
-					'from'        => isset( $item['from'] ) ? sanitize_textarea_field( (string) $item['from'] ) : '',
-					'to'          => isset( $item['to'] ) ? sanitize_textarea_field( (string) $item['to'] ) : '',
-					'why'         => isset( $item['why'] ) ? sanitize_textarea_field( (string) $item['why'] ) : '',
-					'count'       => isset( $item['count'] ) ? absint( $item['count'] ) : 1,
-					'date'        => isset( $item['date'] ) ? sanitize_text_field( (string) $item['date'] ) : '',
-					'customized'  => ! empty( $item['customized'] ),
+					'id'         => ! empty( $item['id'] ) ? sanitize_text_field( (string) $item['id'] ) : wp_generate_uuid4(),
+					'kind'       => $kind,
+					'from'       => isset( $item['from'] ) ? sanitize_textarea_field( (string) $item['from'] ) : '',
+					'to'         => isset( $item['to'] ) ? sanitize_textarea_field( (string) $item['to'] ) : '',
+					'why'        => isset( $item['why'] ) ? sanitize_textarea_field( (string) $item['why'] ) : '',
+					'count'      => isset( $item['count'] ) ? absint( $item['count'] ) : 1,
+					'date'       => isset( $item['date'] ) ? sanitize_text_field( (string) $item['date'] ) : '',
+					'customized' => ! empty( $item['customized'] ),
 				);
 			}
 			$out[ $cid ] = $clean;
@@ -373,19 +389,53 @@ class Lipishilpo_Projects {
 		return $out;
 	}
 
+	private static function format_project_summary( $post ) {
+		$genre    = get_post_meta( $post->ID, self::META_GENRE, true ) ?: 'General Writing';
+		$language = get_post_meta( $post->ID, self::META_LANGUAGE, true ) ?: 'English';
+		$chapters = get_post_meta( $post->ID, self::META_CHAPTERS, true );
+		if ( ! is_array( $chapters ) ) {
+			$chapters = array();
+		}
+
+		$chapter_summaries = array();
+		$total_words       = 0;
+		foreach ( $chapters as $c ) {
+			if ( is_array( $c ) ) {
+				$txt = isset( $c['text'] ) && is_string( $c['text'] ) ? $c['text'] : '';
+				$total_words += function_exists( 'mb_strlen' ) ? (int) ceil( mb_strlen( $txt, 'UTF-8' ) / 6 ) : str_word_count( $txt );
+				$chapter_summaries[] = array(
+					'id'     => isset( $c['id'] ) ? (string) $c['id'] : '',
+					'title'  => isset( $c['title'] ) ? (string) $c['title'] : '',
+					'status' => isset( $c['status'] ) ? (string) $c['status'] : 'draft',
+				);
+			}
+		}
+
+		return array(
+			'id'           => (string) $post->ID,
+			'title'        => $post->post_title,
+			'genre'        => $genre,
+			'language'     => $language,
+			'chapterCount' => count( $chapters ),
+			'wordCount'    => $total_words,
+			'chapters'     => $chapter_summaries,
+			'created'      => $post->post_date,
+			'modified'     => $post->post_modified,
+		);
+	}
+
 	private static function format_project( $post ) {
 		$chapters = get_post_meta( $post->ID, self::META_CHAPTERS, true );
 		if ( ! is_array( $chapters ) ) {
 			$chapters = array();
 		}
-		$chapters = self::sanitize_chapters( $chapters );
 
 		$snapshots = get_post_meta( $post->ID, self::META_SNAPSHOTS, true );
 		$comments  = get_post_meta( $post->ID, self::META_COMMENTS, true );
 		$edits     = get_post_meta( $post->ID, self::META_EDITS, true );
 
 		return array(
-			'id'        => $post->ID,
+			'id'        => (string) $post->ID,
 			'title'     => $post->post_title,
 			'genre'     => get_post_meta( $post->ID, self::META_GENRE, true ) ?: 'General Writing',
 			'language'  => get_post_meta( $post->ID, self::META_LANGUAGE, true ) ?: 'English',
@@ -415,7 +465,7 @@ class Lipishilpo_Projects {
 			)
 		);
 
-		$items = array_map( array( __CLASS__, 'format_project' ), $query->posts );
+		$items = array_map( array( __CLASS__, 'format_project_summary' ), $query->posts );
 
 		$response = rest_ensure_response( $items );
 		$response->header( 'X-WP-Total', (string) (int) $query->found_posts );
@@ -458,11 +508,13 @@ class Lipishilpo_Projects {
 		}
 
 		$post_id = wp_insert_post(
-			array(
-				'post_type'   => self::POST_TYPE,
-				'post_title'  => $title,
-				'post_status' => 'publish',
-				'post_author' => get_current_user_id(),
+			wp_slash(
+				array(
+					'post_type'   => self::POST_TYPE,
+					'post_title'  => $title,
+					'post_status' => 'publish',
+					'post_author' => get_current_user_id(),
+				)
 			),
 			true
 		);
@@ -471,12 +523,12 @@ class Lipishilpo_Projects {
 			return new WP_Error( 'lipishilpo_db', __( 'Failed to create project.', 'lipishilpo' ), array( 'status' => 500 ) );
 		}
 
-		update_post_meta( $post_id, self::META_GENRE, $genre );
-		update_post_meta( $post_id, self::META_LANGUAGE, $language );
-		update_post_meta( $post_id, self::META_CHAPTERS, $chapters );
-		update_post_meta( $post_id, self::META_SNAPSHOTS, array() );
-		update_post_meta( $post_id, self::META_COMMENTS, array() );
-		update_post_meta( $post_id, self::META_EDITS, array() );
+		update_post_meta( $post_id, self::META_GENRE, wp_slash( $genre ) );
+		update_post_meta( $post_id, self::META_LANGUAGE, wp_slash( $language ) );
+		update_post_meta( $post_id, self::META_CHAPTERS, wp_slash( $chapters ) );
+		update_post_meta( $post_id, self::META_SNAPSHOTS, wp_slash( array() ) );
+		update_post_meta( $post_id, self::META_COMMENTS, wp_slash( array() ) );
+		update_post_meta( $post_id, self::META_EDITS, wp_slash( array() ) );
 
 		$response = rest_ensure_response( self::format_project( get_post( $post_id ) ) );
 		$response->set_status( 201 );
@@ -500,14 +552,14 @@ class Lipishilpo_Projects {
 		}
 
 		if ( count( $update ) > 1 ) {
-			wp_update_post( $update );
+			wp_update_post( wp_slash( $update ) );
 		}
 
 		if ( $request->has_param( 'genre' ) ) {
-			update_post_meta( $id, self::META_GENRE, sanitize_text_field( $request->get_param( 'genre' ) ) );
+			update_post_meta( $id, self::META_GENRE, wp_slash( sanitize_text_field( $request->get_param( 'genre' ) ) ) );
 		}
 		if ( $request->has_param( 'language' ) ) {
-			update_post_meta( $id, self::META_LANGUAGE, sanitize_text_field( $request->get_param( 'language' ) ) );
+			update_post_meta( $id, self::META_LANGUAGE, wp_slash( sanitize_text_field( $request->get_param( 'language' ) ) ) );
 		}
 		if ( $request->has_param( 'chapters' ) ) {
 			$chapters    = self::sanitize_chapters( $request->get_param( 'chapters' ) );
@@ -515,16 +567,16 @@ class Lipishilpo_Projects {
 			if ( $limit_error ) {
 				return $limit_error;
 			}
-			update_post_meta( $id, self::META_CHAPTERS, $chapters );
+			update_post_meta( $id, self::META_CHAPTERS, wp_slash( $chapters ) );
 		}
 		if ( $request->has_param( 'snapshots' ) ) {
-			update_post_meta( $id, self::META_SNAPSHOTS, self::sanitize_snapshots( $request->get_param( 'snapshots' ) ) );
+			update_post_meta( $id, self::META_SNAPSHOTS, wp_slash( self::sanitize_snapshots( $request->get_param( 'snapshots' ) ) ) );
 		}
 		if ( $request->has_param( 'comments' ) ) {
-			update_post_meta( $id, self::META_COMMENTS, self::sanitize_comments( $request->get_param( 'comments' ) ) );
+			update_post_meta( $id, self::META_COMMENTS, wp_slash( self::sanitize_comments( $request->get_param( 'comments' ) ) ) );
 		}
 		if ( $request->has_param( 'edits' ) ) {
-			update_post_meta( $id, self::META_EDITS, self::sanitize_edits( $request->get_param( 'edits' ) ) );
+			update_post_meta( $id, self::META_EDITS, wp_slash( self::sanitize_edits( $request->get_param( 'edits' ) ) ) );
 		}
 
 		return rest_ensure_response( self::format_project( get_post( $id ) ) );
@@ -573,12 +625,14 @@ class Lipishilpo_Projects {
 		}
 
 		$post_id = wp_insert_post(
-			array(
-				'post_title'   => $title,
-				'post_content' => $content,
-				'post_status'  => $status,
-				'post_type'    => $post_type,
-				'post_author'  => get_current_user_id(),
+			wp_slash(
+				array(
+					'post_title'   => $title,
+					'post_content' => $content,
+					'post_status'  => $status,
+					'post_type'    => $post_type,
+					'post_author'  => get_current_user_id(),
+				)
 			),
 			true
 		);
@@ -627,7 +681,7 @@ class Lipishilpo_Projects {
 					$dict[] = $word;
 				}
 			}
-			update_user_meta( $user_id, self::USER_DICT, array_values( array_unique( $dict ) ) );
+			update_user_meta( $user_id, self::USER_DICT, wp_slash( array_values( array_unique( $dict ) ) ) );
 		}
 
 		if ( isset( $body['dailyTarget'] ) ) {
@@ -639,7 +693,7 @@ class Lipishilpo_Projects {
 		}
 
 		if ( isset( $body['lastStreakDate'] ) ) {
-			update_user_meta( $user_id, self::USER_STREAK_DAY, sanitize_text_field( (string) $body['lastStreakDate'] ) );
+			update_user_meta( $user_id, self::USER_STREAK_DAY, wp_slash( sanitize_text_field( (string) $body['lastStreakDate'] ) ) );
 		}
 
 		return self::get_prefs();
@@ -651,10 +705,20 @@ class Lipishilpo_Projects {
 		}
 		$total = 0;
 		foreach ( $chapters as $c ) {
-			$total += strlen( isset( $c['text'] ) ? $c['text'] : '' );
+			$raw_text = isset( $c['text'] ) && is_string( $c['text'] ) ? $c['text'] : '';
+			$total   += function_exists( 'mb_strlen' ) ? mb_strlen( $raw_text, 'UTF-8' ) : strlen( $raw_text );
 		}
 		if ( $total > 500000 ) {
-			return new WP_Error( 'lipishilpo_limit', __( 'Total character count exceeds the limit.', 'lipishilpo' ), array( 'status' => 400 ) );
+			return new WP_Error(
+				'lipishilpo_limit',
+				sprintf(
+					/* translators: 1: current character count, 2: maximum allowed characters */
+					__( 'Total manuscript character count (%1$s) exceeds the limit of %2$s characters.', 'lipishilpo' ),
+					number_format_i18n( $total ),
+					number_format_i18n( 500000 )
+				),
+				array( 'status' => 400 )
+			);
 		}
 		return null;
 	}

@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import {
   type Project, type Chapter, type ChapterStatus,
-  fetchProjects, createProject, updateProject, deleteProject,
+  fetchProjects, fetchProject, createProject, updateProject, deleteProject,
   fetchPrefs, updatePrefs,
 } from './api';
 import {
@@ -332,13 +332,20 @@ export default function App() {
   // ── Load projects and user prefs from WP API ───────────────────────────────
   useEffect(() => {
     Promise.all([fetchProjects(1), fetchPrefs()])
-      .then(([list, prefs]) => {
+      .then(async ([list, prefs]) => {
         setProjects(list.items);
         setProjectPage(1);
         setProjectPages(list.pages);
         if (list.items.length > 0) {
-          setPid(list.items[0].id);
-          setCid(list.items[0].chapters[0]?.id ?? null);
+          const firstId = list.items[0].id;
+          setPid(firstId);
+          try {
+            const fullFirst = await fetchProject(firstId);
+            setProjects((prev) => prev.map((p) => (p.id === firstId ? fullFirst : p)));
+            setCid(fullFirst.chapters[0]?.id ?? null);
+          } catch {
+            setCid(list.items[0].chapters[0]?.id ?? null);
+          }
         }
         setDailyTarget(prefs.dailyTarget || 500);
         if (prefs.dictionary.length) {
@@ -1518,6 +1525,22 @@ window.addEventListener('keydown', handleKeyDown);
     setView('editor');
   }
 
+  async function openProject(targetPid: string, targetCid?: string) {
+    setPid(targetPid);
+    const target = projects.find((p) => p.id === targetPid);
+    if (!target || !target.chapters || target.chapters.length === 0 || target.chapters[0].text === undefined) {
+      try {
+        const full = await fetchProject(targetPid);
+        setProjects((prev) => prev.map((p) => (p.id === targetPid ? full : p)));
+        selectChapter(targetCid ?? full.chapters[0]?.id ?? '');
+      } catch {
+        selectChapter(targetCid ?? target?.chapters[0]?.id ?? '');
+      }
+    } else {
+      selectChapter(targetCid ?? target.chapters[0]?.id ?? '');
+    }
+  }
+
   const TOUR_KEY = 'lipishilpo_tour_done';
 
   function finishTour() {
@@ -2531,7 +2554,7 @@ ${chaptersHtml}
                   <div key={p.id} className="project-card-wrap">
                     <button
                       className="project-card"
-                      onClick={() => { setPid(p.id); selectChapter(p.chapters[0]?.id ?? ''); }}
+                      onClick={() => { openProject(p.id, p.chapters[0]?.id ?? ''); }}
                     >
                       <div className="book-art">
                         <Feather size={34} />
@@ -2548,9 +2571,16 @@ ${chaptersHtml}
                       <button
                         type="button"
                         className="backup-project-btn"
-                        onClick={(e) => {
+                        onClick={async (e) => {
                           e.stopPropagation();
-                          exportProjectToJson(p);
+                          let exportData = p;
+                          if (!p.chapters || p.chapters.length === 0 || p.chapters[0].text === undefined) {
+                            try {
+                              exportData = await fetchProject(p.id);
+                              setProjects((prev) => prev.map((item) => (item.id === p.id ? exportData : item)));
+                            } catch {}
+                          }
+                          exportProjectToJson(exportData);
                           setNotice(t.btnExportBackup);
                         }}
                         title={t.btnExportBackup}

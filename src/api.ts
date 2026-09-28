@@ -121,6 +121,12 @@ export async function fetchProjects(page = 1, perPage = 40): Promise<ProjectList
   };
 }
 
+export async function fetchProject(id: number | string): Promise<Project> {
+  const r = await wpFetch(`projects/${id}`);
+  if (!r.ok) throw new Error('প্রজেক্ট লোড হয়নি।');
+  return normalizeProject(await r.json() as Project);
+}
+
 export async function createProject(data: {
   title: string;
   genre: string;

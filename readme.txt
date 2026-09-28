@@ -132,3 +132,13 @@ This plugin bundles and utilizes several open-source libraries, fonts, and dicti
   * Author: Titus Wormer
   * Source: https://github.com/wooorm/nspell
   * License: MIT License (https://github.com/wooorm/nspell/blob/main/license)
+
+== Source Code ==
+
+The unminified TypeScript/React source code for Lipishilpo is publicly available in our Git repository:
+* Repository: https://github.com/itsmanzur/lipishilpo
+* Build Instructions:
+  1. Clone repository and navigate to `src/` directory.
+  2. Run `npm install` to install build dependencies.
+  3. Run `npm run build` to compile the TypeScript React application into `/assets/js/` and `/assets/css/`.
+

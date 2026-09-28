@@ -2,7 +2,8 @@
 /**
  * LipiShilpo Uninstall Handler
  *
- * Removes all custom posts, post metadata, options, and user metadata created by Lipishilpo.
+ * Removes all custom posts, post metadata, options, and user metadata created by Lipishilpo
+ * ONLY IF the user has explicitly opted in via the setting 'lipishilpo_delete_data_on_uninstall'.
  *
  * @package Lipishilpo
  * @since   1.0.0
@@ -12,7 +13,15 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 	exit;
 }
 
-function lipishilpo_uninstall() {
+/**
+ * Executes plugin data cleanup for a single blog/site.
+ */
+function lipishilpo_uninstall_single_site() {
+	// Only delete data if administrator explicitly opted in
+	if ( get_option( 'lipishilpo_delete_data_on_uninstall' ) !== '1' ) {
+		return;
+	}
+
 	// 1. Delete all manuscript projects in memory-safe batches
 	$lipishilpo_post_ids = get_posts(
 		array(
@@ -49,6 +58,7 @@ function lipishilpo_uninstall() {
 	// 3. Delete plugin options
 	delete_option( 'lipishilpo_version' );
 	delete_option( 'lipishilpo_daily_target' );
+	delete_option( 'lipishilpo_delete_data_on_uninstall' );
 	delete_option( 'lipishilpo_openai_key' );
 	delete_option( 'lipishilpo_openai_model' );
 	delete_option( 'lipishilpo_license_key' );
@@ -60,5 +70,16 @@ function lipishilpo_uninstall() {
 	delete_option( 'lipishilpo_ai_base_url' );
 }
 
-lipishilpo_uninstall();
-
+// Multisite vs Single-Site Execution
+if ( is_multisite() ) {
+	$lipishilpo_sites = get_sites( array( 'number' => 500 ) );
+	if ( ! empty( $lipishilpo_sites ) ) {
+		foreach ( $lipishilpo_sites as $lipishilpo_site ) {
+			switch_to_blog( (int) $lipishilpo_site->blog_id );
+			lipishilpo_uninstall_single_site();
+			restore_current_blog();
+		}
+	}
+} else {
+	lipishilpo_uninstall_single_site();
+}

@@ -2,7 +2,7 @@
 /**
  * Admin Settings Page — Lipishilpo (Free)
  *
- * Provides general info, shortcode guides, and premium dashboard styling.
+ * Provides general info, shortcode guides, data retention settings, and dashboard styling.
  * When Lipishilpo Pro is active, Pro settings (Universal AI, License) are attached via hooks.
  */
 
@@ -29,12 +29,38 @@ class Lipishilpo_Admin {
 				'lipishilpo-admin-style',
 				LIPISHILPO_URL . 'assets/css/lipishilpo-admin.css',
 				array(),
-				filemtime( $css_file )
+				LIPISHILPO_VERSION
 			);
 		}
+
+		$js = "function lipishilpoCopyShortcode(btn) {
+			if (!navigator.clipboard) return;
+			navigator.clipboard.writeText('[lipishilpo]').then(function() {
+				var origText = btn.innerHTML;
+				btn.classList.add('copied');
+				btn.innerHTML = '<span>✓</span> ' + " . wp_json_encode( __( 'Copied!', 'lipishilpo' ) ) . ";
+				setTimeout(function() {
+					btn.classList.remove('copied');
+					btn.innerHTML = origText;
+				}, 2000);
+			});
+		}";
+		wp_register_script( 'lipishilpo-admin-inline', false, array(), LIPISHILPO_VERSION, true );
+		wp_enqueue_script( 'lipishilpo-admin-inline' );
+		wp_add_inline_script( 'lipishilpo-admin-inline', $js );
 	}
 
 	public static function register_settings() {
+		register_setting(
+			'lipishilpo_settings',
+			'lipishilpo_delete_data_on_uninstall',
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_key',
+				'default'           => '0',
+			)
+		);
+
 		// Hook for Pro addon settings registration
 		do_action( 'lipishilpo_register_admin_settings' );
 	}
@@ -56,17 +82,17 @@ class Lipishilpo_Admin {
 					<div class="lipishilpo-hero-badge">
 						<span>✨</span> <?php esc_html_e( 'Lipishilpo Studio & AI Hub', 'lipishilpo' ); ?>
 					</div>
-					<h1><?php esc_html_e( 'লিপিশিল্প সেটিংস ও কনফিগারেশন', 'lipishilpo' ); ?></h1>
+					<h1><?php esc_html_e( 'Lipishilpo Settings & Configuration', 'lipishilpo' ); ?></h1>
 					<p>
-						<?php esc_html_e( 'ইউনিভার্সাল AI প্রোভাইডার, শর্টকোড ইন্টিগ্রেশন এবং প্রো লাইসেন্স পরিচালনা করুন।', 'lipishilpo' ); ?>
+						<?php esc_html_e( 'Configure universal AI connectivity, shortcode embed options, and manuscript storage settings.', 'lipishilpo' ); ?>
 					</p>
 				</div>
 				<div class="lipishilpo-hero-actions">
 					<a href="<?php echo esc_url( $editor_url ); ?>" class="lipishilpo-hero-btn-primary">
-						<span>✍</span> <?php esc_html_e( 'স্টুডিও খুলুন', 'lipishilpo' ); ?>
+						<span>✍</span> <?php esc_html_e( 'Open Studio', 'lipishilpo' ); ?>
 					</a>
 					<a href="<?php echo esc_url( $docs_url ); ?>" class="lipishilpo-hero-btn-secondary">
-						<span>📖</span> <?php esc_html_e( 'ইউজার গাইড', 'lipishilpo' ); ?>
+						<span>📖</span> <?php esc_html_e( 'User Guide', 'lipishilpo' ); ?>
 					</a>
 				</div>
 			</div>
@@ -81,20 +107,20 @@ class Lipishilpo_Admin {
 						<h3 class="lipishilpo-status-title">
 							<?php
 							if ( $is_pro ) {
-								esc_html_e( 'Lipishilpo Pro সক্রিয় রয়েছে', 'lipishilpo' );
+								esc_html_e( 'Lipishilpo Pro is Active', 'lipishilpo' );
 							} elseif ( $pro_installed ) {
-								esc_html_e( 'Lipishilpo Pro ইনস্টল করা কিন্তু লাইসেন্স হয়নি', 'lipishilpo' );
+								esc_html_e( 'Lipishilpo Pro Installed (License Inactive)', 'lipishilpo' );
 							} else {
-								esc_html_e( 'Lipishilpo (ফ্রি সংস্করণ) সক্রিয়', 'lipishilpo' );
+								esc_html_e( 'Lipishilpo Core (Free Edition) Active', 'lipishilpo' );
 							}
 							?>
 						</h3>
 						<p class="lipishilpo-status-desc">
 							<?php
 							if ( $is_pro ) {
-								esc_html_e( 'ইউনিভার্সাল AI এডিটিং, পুরো বইয়ের ধারাবাহিকতা এবং DOCX, PDF ও EPUB পাবলিকেশন ইঞ্জিন সক্রিয়।', 'lipishilpo' );
+								esc_html_e( 'Universal AI editorial, full-book continuity intelligence, and print-ready DOCX/PDF/EPUB publication engine are enabled.', 'lipishilpo' );
 							} else {
-								esc_html_e( 'বাংলা একাডেমির প্রমিত ব্যাকরণ পরীক্ষণ, পান্ডুলিপি সংগঠন ও অফলাইন স্টুডিও আজীবন ফ্রি।', 'lipishilpo' );
+								esc_html_e( 'Bangla Academy standard grammar inspection, offline proofreading, and manuscript outliner are 100% free forever.', 'lipishilpo' );
 							}
 							?>
 						</p>
@@ -114,43 +140,43 @@ class Lipishilpo_Admin {
 				</div>
 			</div>
 
-			<?php if ( $pro_installed ) : ?>
-				<form method="post" action="options.php" id="lipishilpo_settings_form">
-					<?php
-					settings_fields( 'lipishilpo_settings' );
-					
-					// Hook to render Pro cards
-					do_action( 'lipishilpo_render_admin_pro_cards' );
-					?>
+			<form method="post" action="options.php" id="lipishilpo_settings_form">
+				<?php
+				settings_fields( 'lipishilpo_settings' );
 
-					<!-- Shortcode & Integration Card -->
-					<?php self::render_free_section(); ?>
+				// Hook to render Pro cards if Pro is active
+				do_action( 'lipishilpo_render_admin_pro_cards' );
+				?>
 
-					<div class="lipishilpo-submit-area">
-						<button type="submit" class="lipishilpo-save-btn">
-							<span>💾</span> <?php esc_html_e( 'Save Settings (সংরক্ষণ করুন)', 'lipishilpo' ); ?>
-						</button>
-					</div>
-				</form>
-			<?php else : ?>
-				<!-- Shortcode Card -->
+				<!-- Shortcode & Integration Card -->
 				<?php self::render_free_section(); ?>
 
+				<!-- Data Retention / Uninstall Options Card -->
+				<?php self::render_data_retention_section(); ?>
+
+				<div class="lipishilpo-submit-area">
+					<button type="submit" class="lipishilpo-save-btn">
+						<span>💾</span> <?php esc_html_e( 'Save Settings', 'lipishilpo' ); ?>
+					</button>
+				</div>
+			</form>
+
+			<?php if ( ! $pro_installed ) : ?>
 				<!-- Upgrade Card -->
 				<div class="lipishilpo-card-section" style="border-left: 4px solid #10b981; margin-top: 24px;">
 					<div class="lipishilpo-card-header">
 						<div class="lipishilpo-card-header-icon" style="background: #ecfdf5; color: #059669; border-color: #a7f3d0;">💎</div>
-						<h2 class="lipishilpo-card-title"><?php esc_html_e( 'লিপিশিল্প Pro-তে যা যা পাচ্ছেন', 'lipishilpo' ); ?></h2>
+						<h2 class="lipishilpo-card-title"><?php esc_html_e( 'Unlock Premium Features with Lipishilpo Pro', 'lipishilpo' ); ?></h2>
 					</div>
 					<p class="lipishilpo-card-subtitle">
-						<?php esc_html_e( 'লিপিশিল্প Pro অ্যাড-অন ইনস্টল করে এই প্রিমিয়াম ফিচারগুলো আনলক করুন:', 'lipishilpo' ); ?>
+						<?php esc_html_e( 'Enhance your manuscript studio with professional literary and publishing superpowers:', 'lipishilpo' ); ?>
 					</p>
 					
 					<ul style="list-style: disc; padding-left: 24px; line-height: 1.8; color: #334155; font-size: 14px;">
-						<li><strong><?php esc_html_e( 'ইউনিভার্সাল AI এডিটোরিয়াল (Gemini, Claude, OpenAI):', 'lipishilpo' ); ?></strong> <?php esc_html_e( 'বাংলা ও ইংরেজি সাহিত্যের জন্য নির্ভুল ছন্দ, বাক্যগঠন ও শৈলীগত পরামর্শ।', 'lipishilpo' ); ?></li>
-						<li><strong><?php esc_html_e( 'সমগ্র বইয়ের ধারাবাহিকতা ও চরিত্র ট্র্যাকিং:', 'lipishilpo' ); ?></strong> <?php esc_html_e( 'চরিত্রের বয়স, সম্পর্ক, টাইমলাইন ও প্লটহোল স্বয়ংক্রিয়ভাবে শনাক্তকরণ।', 'lipishilpo' ); ?></li>
-						<li><strong><?php esc_html_e( 'অডিও প্রুফরিডার (TTS):', 'lipishilpo' ); ?></strong> <?php esc_html_e( 'বাংলা ভয়েসে চ্যাপ্টার পাঠ এবং রিয়েলটাইম সেন্টেন্স ফোকাস কার্সার।', 'lipishilpo' ); ?></li>
-						<li><strong><?php esc_html_e( 'বুক পাবলিকেশন স্টুডিও:', 'lipishilpo' ); ?></strong> <?php esc_html_e( 'বাংলা ফন্টসহ প্রিন্ট-রেডি PDF, DOCX এবং রিফ্লোয়েবল EPUB এক্সপোর্ট।', 'lipishilpo' ); ?></li>
+						<li><strong><?php esc_html_e( 'Universal AI Editorial (Gemini, Claude, OpenAI, OpenRouter):', 'lipishilpo' ); ?></strong> <?php esc_html_e( 'Rhythm, sentence cadence, and style suggestions for Bengali & English manuscripts.', 'lipishilpo' ); ?></li>
+						<li><strong><?php esc_html_e( 'Whole-Book Continuity & Character Tracker:', 'lipishilpo' ); ?></strong> <?php esc_html_e( 'Automatic timeline discrepancy, plot-hole, and character trait tracking.', 'lipishilpo' ); ?></li>
+						<li><strong><?php esc_html_e( 'Audio Proofreader (TTS):', 'lipishilpo' ); ?></strong> <?php esc_html_e( 'Natural voice reading with real-time sentence-by-sentence focus cursor.', 'lipishilpo' ); ?></li>
+						<li><strong><?php esc_html_e( 'Book Publication Studio:', 'lipishilpo' ); ?></strong> <?php esc_html_e( 'Print-ready PDF, editable DOCX, and reflowable EPUB export with Bengali font embedding.', 'lipishilpo' ); ?></li>
 					</ul>
 
 					<p style="margin-top: 20px;">
@@ -161,20 +187,6 @@ class Lipishilpo_Admin {
 				</div>
 			<?php endif; ?>
 		</div>
-
-		<script>
-		function lipishilpoCopyShortcode(btn) {
-			navigator.clipboard.writeText('[lipishilpo]').then(function() {
-				const origText = btn.innerHTML;
-				btn.classList.add('copied');
-				btn.innerHTML = '<span>✓</span> ' + '<?php echo esc_js( __( 'কপি হয়েছে!', 'lipishilpo' ) ); ?>';
-				setTimeout(function() {
-					btn.classList.remove('copied');
-					btn.innerHTML = origText;
-				}, 2000);
-			});
-		}
-		</script>
 		<?php
 	}
 
@@ -190,7 +202,7 @@ class Lipishilpo_Admin {
 			esc_html__( 'Third-Party Services & AI Processing', 'lipishilpo' ),
 			esc_html__( 'In the standard Free version, Lipishilpo processes all text analysis and rule-based proofreading locally within the browser with zero external API calls. When the Lipishilpo Pro addon is activated, authors can optionally use AI editorial features (OpenAI, Google Gemini, Anthropic Claude). In such cases, only the specifically selected text or chapter is transmitted to the configured AI provider under the user-supplied API credentials.', 'lipishilpo' ),
 			esc_html__( 'Data Retention & Deletion', 'lipishilpo' ),
-			esc_html__( 'When an author deletes a manuscript project, all related chapters, snapshots, and editorial comments are permanently purged from the database. When the plugin is uninstalled, all plugin post types, user metadata, and configuration options are completely erased.', 'lipishilpo' )
+			esc_html__( 'When an author deletes a manuscript project, all related chapters, snapshots, and editorial comments are permanently purged from the database. When the plugin is uninstalled, data is preserved by default unless the administrator explicitly opts in to remove all manuscript tables and options on uninstall.', 'lipishilpo' )
 		);
 
 		wp_add_privacy_policy_content( 'Lipishilpo', wp_kses_post( $content ) );
@@ -202,25 +214,56 @@ class Lipishilpo_Admin {
 			<div class="lipishilpo-card-header">
 				<div class="lipishilpo-card-header-icon" style="background: #fdf4ff; color: #a855f7; border-color: #f5d0fe;">📌</div>
 				<div>
-					<h2 class="lipishilpo-card-title"><?php esc_html_e( 'ওয়ার্ডপ্রেস শর্টকোড ও সাইট ইন্টিগ্রেশন', 'lipishilpo' ); ?></h2>
+					<h2 class="lipishilpo-card-title"><?php esc_html_e( 'WordPress Shortcode & Embed Integration', 'lipishilpo' ); ?></h2>
 					<span class="lipishilpo-card-tag"><?php esc_html_e( 'Frontend Embed & Access Control', 'lipishilpo' ); ?></span>
 				</div>
 			</div>
 			<p class="lipishilpo-card-subtitle">
-				<?php esc_html_e( 'আপনার সাইটের যেকোনো পেজ বা পোস্টে নিচের শর্টকোডটি বসিয়ে সম্পূর্ণ পান্ডুলিপি স্টুডিও প্রদর্শন করতে পারেন:', 'lipishilpo' ); ?>
+				<?php esc_html_e( 'Display the complete writing studio on any page or post by adding this shortcode:', 'lipishilpo' ); ?>
 			</p>
 
 			<div class="lipishilpo-shortcode-box">
 				<span class="lipishilpo-shortcode-code">[lipishilpo]</span>
 				<button type="button" class="lipishilpo-copy-btn" onclick="lipishilpoCopyShortcode(this)">
-					<span>📋</span> <?php esc_html_e( 'কপি শর্টকোড', 'lipishilpo' ); ?>
+					<span>📋</span> <?php esc_html_e( 'Copy Shortcode', 'lipishilpo' ); ?>
 				</button>
 			</div>
 
 			<p class="description" style="margin-top: 8px;">
-				💡 <strong><?php esc_html_e( 'টিপস:', 'lipishilpo' ); ?></strong>
-				<?php esc_html_e( 'শর্টকোডযুক্ত পেজটিকে ফুল-উইডথ (Full-Width / Blank Template) টেমপ্লেটে রাখলে লেখকরা সবচেয়ে স্বাচ্ছন্দ্যে লিখতে পারবেন। নিরাপত্তার স্বার্থে শুধুমাত্র লগইন করা ইউজাররা তাদের নিজস্ব পাণ্ডুলিপি দেখতে ও সম্পাদনা করতে পারবেন।', 'lipishilpo' ); ?>
+				💡 <strong><?php esc_html_e( 'Tip:', 'lipishilpo' ); ?></strong>
+				<?php esc_html_e( 'Set your shortcode page template to Full-Width or Canvas/Blank for the best distraction-free experience. For security and privacy, only logged-in users with edit permissions can view and write in the studio.', 'lipishilpo' ); ?>
 			</p>
+		</div>
+		<?php
+	}
+
+	public static function render_data_retention_section() {
+		$delete_on_uninstall = get_option( 'lipishilpo_delete_data_on_uninstall', '0' );
+		?>
+		<div class="lipishilpo-card-section" style="margin-top: 15px;">
+			<div class="lipishilpo-card-header">
+				<div class="lipishilpo-card-header-icon" style="background: #fef2f2; color: #ef4444; border-color: #fecaca;">🗑️</div>
+				<div>
+					<h2 class="lipishilpo-card-title"><?php esc_html_e( 'Data Retention & Uninstall Settings', 'lipishilpo' ); ?></h2>
+					<span class="lipishilpo-card-tag" style="background: #fee2e2; color: #991b1b;"><?php esc_html_e( 'Database Safety', 'lipishilpo' ); ?></span>
+				</div>
+			</div>
+			<p class="lipishilpo-card-subtitle">
+				<?php esc_html_e( 'Choose whether plugin data and manuscripts should be completely wiped when uninstalling the plugin:', 'lipishilpo' ); ?>
+			</p>
+
+			<div style="margin-top: 12px;">
+				<label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; font-size: 14px; color: #1e293b;">
+					<input type="checkbox" name="lipishilpo_delete_data_on_uninstall" value="1" <?php checked( '1', $delete_on_uninstall ); ?> style="margin-top: 3px;" />
+					<span>
+						<strong><?php esc_html_e( 'Erase all manuscripts and plugin data upon uninstall', 'lipishilpo' ); ?></strong>
+						<br />
+						<span style="font-size: 12px; color: #64748b;">
+							<?php esc_html_e( 'By default, your literary manuscripts are kept safely in the database even if the plugin is uninstalled. Check this box ONLY if you wish to permanently purge all manuscripts, snapshots, and options when Lipishilpo is deleted.', 'lipishilpo' ); ?>
+						</span>
+					</span>
+				</label>
+			</div>
 		</div>
 		<?php
 	}

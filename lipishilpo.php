@@ -186,12 +186,11 @@ function lipishilpo_admin_editor_page() {
 register_activation_hook( LIPISHILPO_FILE, 'lipishilpo_activate' );
 function lipishilpo_activate() {
 	Lipishilpo_Projects::create_tables();
-	flush_rewrite_rules();
 }
 
 register_deactivation_hook( LIPISHILPO_FILE, 'lipishilpo_deactivate' );
 function lipishilpo_deactivate() {
-	flush_rewrite_rules();
+	// Clean transient cache or deactivation logic if needed.
 }
 
 // ── Pro State Check (Hook-based — Free contains zero dormant Pro code) ────
