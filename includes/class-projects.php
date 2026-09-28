@@ -27,6 +27,7 @@ class Lipishilpo_Projects {
 	const META_SNAPSHOTS  = '_lipishilpo_snapshots';
 	const META_COMMENTS   = '_lipishilpo_comments';
 	const META_EDITS      = '_lipishilpo_edits';
+	const META_WORD_COUNT = '_lipishilpo_word_count';
 	const USER_DICT       = '_lipishilpo_personal_dict';
 	const USER_GOAL       = '_lipishilpo_daily_target';
 	const USER_STREAK     = '_lipishilpo_streak_count';
@@ -464,11 +465,8 @@ class Lipishilpo_Projects {
 		}
 
 		$chapter_summaries = array();
-		$total_words       = 0;
 		foreach ( $chapters as $c ) {
 			if ( is_array( $c ) ) {
-				$txt = isset( $c['text'] ) && is_string( $c['text'] ) ? $c['text'] : '';
-				$total_words += self::count_words( $txt );
 				$chapter_summaries[] = array(
 					'id'     => isset( $c['id'] ) ? (string) $c['id'] : '',
 					'title'  => isset( $c['title'] ) ? (string) $c['title'] : '',
@@ -477,17 +475,32 @@ class Lipishilpo_Projects {
 			}
 		}
 
+		// Cached word count lookup for maximum performance across large libraries
+		$cached_words = get_post_meta( $post->ID, self::META_WORD_COUNT, true );
+		if ( '' !== $cached_words && false !== $cached_words ) {
+			$total_words = absint( $cached_words );
+		} else {
+			// Legacy backfill: compute once and cache
+			$total_words = 0;
+			foreach ( $chapters as $c ) {
+				if ( is_array( $c ) ) {
+					$txt = isset( $c['text'] ) && is_string( $c['text'] ) ? $c['text'] : '';
+					$total_words += self::count_words( $txt );
+				}
+			}
+			update_post_meta( $post->ID, self::META_WORD_COUNT, $total_words );
+		}
+
 		return array(
-			'id'              => (string) $post->ID,
-			'title'           => $post->post_title,
-			'genre'           => $genre,
-			'language'        => $language,
-			'chapterCount'    => count( $chapters ),
-			'wordCount'       => $total_words,
-			'approxWordCount' => $total_words,
-			'chapters'        => $chapter_summaries,
-			'created'         => $post->post_date,
-			'modified'        => $post->post_modified,
+			'id'           => (string) $post->ID,
+			'title'        => $post->post_title,
+			'genre'        => $genre,
+			'language'     => $language,
+			'chapterCount' => count( $chapters ),
+			'wordCount'    => $total_words,
+			'chapters'     => $chapter_summaries,
+			'created'      => $post->post_date,
+			'modified'     => $post->post_modified,
 		);
 	}
 
@@ -591,9 +604,15 @@ class Lipishilpo_Projects {
 			return new WP_Error( 'lipishilpo_db', __( 'Failed to create project.', 'lipishilpo' ), array( 'status' => 500 ) );
 		}
 
+		$total_words = 0;
+		foreach ( $chapters as $c ) {
+			$total_words += self::count_words( isset( $c['text'] ) ? (string) $c['text'] : '' );
+		}
+
 		update_post_meta( $post_id, self::META_GENRE, wp_slash( $genre ) );
 		update_post_meta( $post_id, self::META_LANGUAGE, wp_slash( $language ) );
 		update_post_meta( $post_id, self::META_CHAPTERS, wp_slash( $chapters ) );
+		update_post_meta( $post_id, self::META_WORD_COUNT, $total_words );
 		update_post_meta( $post_id, self::META_SNAPSHOTS, wp_slash( array() ) );
 		update_post_meta( $post_id, self::META_COMMENTS, wp_slash( array() ) );
 		update_post_meta( $post_id, self::META_EDITS, wp_slash( array() ) );
@@ -644,7 +663,63 @@ class Lipishilpo_Projects {
 			if ( $limit_error ) {
 				return $limit_error;
 			}
+
+			// Automatic Shrink Guard (Accidental Deletion & Zero-Length Protection)
+			$snapshots_meta = get_post_meta( $id, self::META_SNAPSHOTS, true );
+			if ( ! is_array( $snapshots_meta ) ) {
+				$snapshots_meta = array();
+			}
+			$snapshots_modified = false;
+
+			foreach ( $chapters as $c ) {
+				$cid = $c['id'];
+				if ( isset( $existing_by_id[ $cid ] ) ) {
+					$prev_txt = isset( $existing_by_id[ $cid ]['text'] ) ? (string) $existing_by_id[ $cid ]['text'] : '';
+					$prev_len = function_exists( 'mb_strlen' ) ? mb_strlen( $prev_txt, 'UTF-8' ) : strlen( $prev_txt );
+					$new_txt  = isset( $c['text'] ) ? (string) $c['text'] : '';
+					$new_len  = function_exists( 'mb_strlen' ) ? mb_strlen( $new_txt, 'UTF-8' ) : strlen( $new_txt );
+
+					// If previously > 2000 chars and now reduced to < 10% of previous length:
+					if ( $prev_len > 2000 && $new_len < (int) ( $prev_len * 0.10 ) ) {
+						/**
+						 * Filters whether automatic snapshot backup is enabled when large text deletion occurs.
+						 *
+						 * @param bool   $enabled  Default true.
+						 * @param int    $post_id  Manuscript project ID.
+						 * @param string $cid      Chapter ID.
+						 */
+						if ( (bool) apply_filters( 'lipishilpo_shrink_guard_enabled', true, $id, $cid ) ) {
+							$auto_snap = array(
+								'id'        => wp_generate_uuid4(),
+								'name'      => __( 'Auto-backup before large deletion', 'lipishilpo' ),
+								'date'      => current_time( 'mysql' ),
+								'wordCount' => self::count_words( $prev_txt ),
+								'text'      => self::sanitize_manuscript_text( $prev_txt ),
+							);
+
+							if ( ! isset( $snapshots_meta[ $cid ] ) || ! is_array( $snapshots_meta[ $cid ] ) ) {
+								$snapshots_meta[ $cid ] = array();
+							}
+							array_unshift( $snapshots_meta[ $cid ], $auto_snap );
+							$snapshots_meta[ $cid ] = array_slice( $snapshots_meta[ $cid ], 0, 30 );
+							$snapshots_modified     = true;
+						}
+					}
+				}
+			}
+
+			if ( $snapshots_modified && ! $request->has_param( 'snapshots' ) ) {
+				update_post_meta( $id, self::META_SNAPSHOTS, wp_slash( $snapshots_meta ) );
+			}
+
 			update_post_meta( $id, self::META_CHAPTERS, wp_slash( $chapters ) );
+
+			// Cache total word count
+			$total_words = 0;
+			foreach ( $chapters as $c ) {
+				$total_words += self::count_words( isset( $c['text'] ) ? (string) $c['text'] : '' );
+			}
+			update_post_meta( $id, self::META_WORD_COUNT, $total_words );
 		}
 		if ( $request->has_param( 'snapshots' ) ) {
 			update_post_meta( $id, self::META_SNAPSHOTS, wp_slash( self::sanitize_snapshots( $request->get_param( 'snapshots' ) ) ) );

@@ -1756,8 +1756,11 @@ window.addEventListener('keydown', handleKeyDown);
 
   // ── TXT & Markdown Downloads ───────────────────────────────────────────────
   function downloadTxt() {
-    if (!project) return;
-    const content = project.title + '\n\n' + project.chapters.map((c) => c.title + '\n\n' + c.text).join('\n\n— — —\n\n');
+    if (!project || !project.chapters || project.chapters.length === 0 || project.chapters.some((c) => c.text === undefined)) {
+      setNotice(lang === 'bn' ? 'এক্সপোর্ট ব্যর্থ: পাণ্ডুলিপির তথ্য সম্পূর্ণ লোড হয়নি।' : 'Export failed: manuscript is not fully loaded.');
+      return;
+    }
+    const content = project.title + '\n\n' + project.chapters.map((c) => c.title + '\n\n' + (c.text || '')).join('\n\n— — —\n\n');
     const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -1769,10 +1772,13 @@ window.addEventListener('keydown', handleKeyDown);
   }
 
   function downloadMarkdown() {
-    if (!project) return;
+    if (!project || !project.chapters || project.chapters.length === 0 || project.chapters.some((c) => c.text === undefined)) {
+      setNotice(lang === 'bn' ? 'এক্সপোর্ট ব্যর্থ: পাণ্ডুলিপির তথ্য সম্পূর্ণ লোড হয়নি।' : 'Export failed: manuscript is not fully loaded.');
+      return;
+    }
     let md = `# ${project.title}\n\n`;
     project.chapters.forEach((c, i) => {
-      md += `## ${c.title || `Chapter ${i + 1}`}\n\n${c.text}\n\n---\n\n`;
+      md += `## ${c.title || `Chapter ${i + 1}`}\n\n${c.text || ''}\n\n---\n\n`;
     });
     const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -1793,7 +1799,10 @@ window.addEventListener('keydown', handleKeyDown);
   }
 
   function downloadHtml() {
-    if (!project) return;
+    if (!project || !project.chapters || project.chapters.length === 0 || project.chapters.some((c) => c.text === undefined)) {
+      setNotice(lang === 'bn' ? 'এক্সপোর্ট ব্যর্থ: পাণ্ডুলিপির তথ্য সম্পূর্ণ লোড হয়নি।' : 'Export failed: manuscript is not fully loaded.');
+      return;
+    }
     const chaptersHtml = project.chapters.map((c) => {
       const body = markupToHtml(c.text || '');
       return `<section>\n<h2>${escapeHtml(c.title || '')}</h2>\n${body}\n</section>`;
@@ -2629,11 +2638,28 @@ ${chaptersHtml}
                         onClick={async (e) => {
                           e.stopPropagation();
                           let exportData = p;
-                          if (!p.chapters || p.chapters.length === 0 || p.chapters[0].text === undefined) {
+                          if (!p.chapters || p.chapters.length === 0 || p.chapters.some((c) => c.text === undefined)) {
                             try {
+                              setNotice(lang === 'bn' ? 'ব্যাকআপের জন্য সম্পূর্ণ পাণ্ডুলিপি লোড হচ্ছে...' : 'Loading full manuscript for backup...');
                               exportData = await fetchProject(p.id);
                               setProjects((prev) => prev.map((item) => (item.id === p.id ? exportData : item)));
-                            } catch {}
+                            } catch (err) {
+                              console.error('Backup export fetch failed:', err);
+                              setNotice(
+                                lang === 'bn'
+                                  ? 'ব্যাকআপ ব্যর্থ: সম্পূর্ণ পাণ্ডুলিপি সার্ভার থেকে আনা যায়নি। দয়া করে পুনরায় চেষ্টা করুন।'
+                                  : 'Backup failed: could not load the full manuscript. Please retry.'
+                              );
+                              return;
+                            }
+                          }
+                          if (!exportData.chapters || exportData.chapters.length === 0 || exportData.chapters.some((c) => c.text === undefined)) {
+                            setNotice(
+                              lang === 'bn'
+                                ? 'ব্যাকআপ ব্যর্থ: পাণ্ডুলিপির তথ্য অসম্পূর্ণ। পুনরায় চেষ্টা করুন।'
+                                : 'Backup failed: manuscript data is incomplete. Please retry.'
+                            );
+                            return;
                           }
                           exportProjectToJson(exportData);
                           setNotice(t.btnExportBackup);
