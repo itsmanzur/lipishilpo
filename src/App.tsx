@@ -86,6 +86,7 @@ export default function App() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [pid, setPid] = useState<string | null>(null);
   const [cid, setCid] = useState<string | null>(null);
+  const [projectLoadError, setProjectLoadError] = useState<{ id: string; name: string } | null>(null);
   const [view, setView] = useState<'projects' | 'editor' | 'docs' | 'settings'>(() => {
     try {
       const urlParams = new URLSearchParams(window.location.search);
@@ -338,13 +339,16 @@ export default function App() {
         setProjectPages(list.pages);
         if (list.items.length > 0) {
           const firstId = list.items[0].id;
-          setPid(firstId);
           try {
             const fullFirst = await fetchProject(firstId);
             setProjects((prev) => prev.map((p) => (p.id === firstId ? fullFirst : p)));
+            setPid(firstId);
             setCid(fullFirst.chapters[0]?.id ?? null);
-          } catch {
-            setCid(list.items[0].chapters[0]?.id ?? null);
+          } catch (err) {
+            console.error('Initial full project fetch failed:', err);
+            setProjectLoadError({ id: firstId, name: list.items[0].title });
+            // Stay in projects library view to protect manuscript from uninitialized writes
+            setView('projects');
           }
         }
         setDailyTarget(prefs.dailyTarget || 500);
@@ -391,10 +395,18 @@ export default function App() {
     const projectId = pid;
     if (!projectId) return;
     if (saveTimer.current) clearTimeout(saveTimer.current);
-    setSaveState('saving');
 
     const current = updatedProjects.find((p) => p.id === projectId);
     if (!current) return;
+
+    // Client-side Data Loss Guard:
+    // Block autosave if chapters are missing, empty, or if ANY chapter in project has text === undefined (partial summary)
+    if (!current.chapters || current.chapters.length === 0 || current.chapters.some((c) => c.text === undefined)) {
+      console.warn('Autosave blocked: Project full data is not loaded.');
+      return;
+    }
+
+    setSaveState('saving');
 
     pendingSave.current = {
       id: projectId,
@@ -431,7 +443,7 @@ export default function App() {
     return () => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
       const pending = pendingSave.current;
-      if (pending) {
+      if (pending && pending.data.chapters && !pending.data.chapters.some((c) => c.text === undefined)) {
         updateProject(pending.id, pending.data).catch(() => {});
         pendingSave.current = null;
       }
@@ -1526,17 +1538,24 @@ window.addEventListener('keydown', handleKeyDown);
   }
 
   async function openProject(targetPid: string, targetCid?: string) {
-    setPid(targetPid);
     const target = projects.find((p) => p.id === targetPid);
-    if (!target || !target.chapters || target.chapters.length === 0 || target.chapters[0].text === undefined) {
+    if (!target || !target.chapters || target.chapters.length === 0 || target.chapters.some((c) => c.text === undefined)) {
       try {
+        setNotice(lang === 'bn' ? 'পাণ্ডুলিপি লোড হচ্ছে...' : 'Loading manuscript...');
         const full = await fetchProject(targetPid);
         setProjects((prev) => prev.map((p) => (p.id === targetPid ? full : p)));
+        setProjectLoadError(null);
+        setPid(targetPid);
         selectChapter(targetCid ?? full.chapters[0]?.id ?? '');
-      } catch {
-        selectChapter(targetCid ?? target?.chapters[0]?.id ?? '');
+      } catch (err) {
+        console.error('Failed to load full project:', err);
+        setProjectLoadError({ id: targetPid, name: target?.title || 'Manuscript' });
+        setNotice(lang === 'bn' ? 'পাণ্ডুলিপি লোড করা যায়নি। নেটওয়ার্ক চেক করে আবার চেষ্টা করুন।' : 'Failed to load manuscript. Please check your network and retry.');
+        // Strictly avoid opening editor or switching pid to prevent uninitialized autosave
       }
     } else {
+      setProjectLoadError(null);
+      setPid(targetPid);
       selectChapter(targetCid ?? target.chapters[0]?.id ?? '');
     }
   }
@@ -2526,6 +2545,42 @@ ${chaptersHtml}
                 </button>
               </div>
             </div>
+
+            {projectLoadError && (
+              <div
+                style={{
+                  background: '#fef2f2',
+                  border: '1px solid #fecaca',
+                  borderRadius: '10px',
+                  padding: '14px 18px',
+                  marginBottom: '22px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '12px',
+                  color: '#991b1b',
+                }}
+              >
+                <div>
+                  <strong style={{ fontSize: '14px' }}>
+                    {lang === 'bn' ? '⚠️ পাণ্ডুলিপি লোড করা যায়নি:' : '⚠️ Manuscript Load Error:'}
+                  </strong>{' '}
+                  <span style={{ fontSize: '13px' }}>
+                    {lang === 'bn'
+                      ? `"${projectLoadError.name}" পাণ্ডুলিপিটি সার্ভার থেকে আনতে সমস্যা হয়েছে। পূর্বের লেখা সুরক্ষিত রাখতে এডিটর ও সেভ বন্ধ রয়েছে।`
+                      : `Could not fetch full content for "${projectLoadError.name}". Editor & autosave are suspended to protect your data.`}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  className="primary"
+                  style={{ padding: '6px 14px', fontSize: '13px', whiteSpace: 'nowrap' }}
+                  onClick={() => openProject(projectLoadError.id)}
+                >
+                  {lang === 'bn' ? 'পুনরায় চেষ্টা করুন (Retry)' : 'Retry'}
+                </button>
+              </div>
+            )}
 
             {projects.length === 0 ? (
               <div className="empty">

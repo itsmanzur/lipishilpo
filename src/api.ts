@@ -10,6 +10,7 @@ export interface WPConfig {
   isPro: boolean;
   version: string;
   dictsUrl: string;
+  maxChars: number;
 }
 
 export function getWPConfig(): WPConfig {
@@ -22,6 +23,7 @@ export function getWPConfig(): WPConfig {
     isPro: el?.dataset.pro === '1',
     version: el?.dataset.version ?? '1.0.0',
     dictsUrl: el?.dataset.dictsUrl ?? '',
+    maxChars: parseInt(el?.dataset.maxChars ?? '500000', 10) || 500000,
   };
 }
 

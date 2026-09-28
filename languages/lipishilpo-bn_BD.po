@@ -1,0 +1,260 @@
+# Copyright (C) 2026 Lipishilpo Team
+# This file is distributed under the GPL-2.0-or-later.
+msgid ""
+msgstr ""
+"Project-Id-Version: Lipishilpo 1.0.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/lipishilpo\n"
+"Last-Translator: Lipishilpo Team <info@lipishilpo.com>\n"
+"Language-Team: Bengali (Bangladesh) <bn_BD@li.org>\n"
+"Language: bn_BD\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"PO-Revision-Date: 2026-09-28 14:00+0600\n"
+"X-Generator: Lipishilpo i18n Tool\n"
+"X-Domain: lipishilpo\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: lipishilpo.php
+msgid "Lipishilpo"
+msgstr "লিপিশিল্প"
+
+#: lipishilpo.php
+msgid "Studio Editor"
+msgstr "স্টুডিও এডিটর"
+
+#: lipishilpo.php
+msgid "User Guide & Docs"
+msgstr "ইউজার গাইড ও ডকস"
+
+#: lipishilpo.php
+msgid "Settings & Info"
+msgstr "সেটিংস ও তথ্য"
+
+#: lipishilpo.php
+msgid "Please <a href=\"%s\">sign in</a> to access Lipishilpo."
+msgstr "লিপিশিল্পে প্রবেশ করতে অনুগ্রহ করে <a href=\"%s\">সাইন ইন</a> করুন।"
+
+#: lipishilpo.php
+msgid "You need permission to create or edit posts to use Lipishilpo."
+msgstr "লিপিশিল্প ব্যবহার করতে আপনার পোস্ট তৈরি বা সম্পাদনার অনুমতি প্রয়োজন।"
+
+#: lipishilpo.php includes/class-admin.php
+msgid "Permission denied."
+msgstr "অনুমতি অস্বীকৃত।"
+
+#: includes/class-projects.php
+msgid "Manuscripts"
+msgstr "পাণ্ডুলিপিসমূহ"
+
+#: includes/class-projects.php
+msgid "Manuscript"
+msgstr "পাণ্ডুলিপি"
+
+#: includes/class-projects.php
+msgid "Please sign in to continue."
+msgstr "চালিয়ে যেতে অনুগ্রহ করে সাইন ইন করুন।"
+
+#: includes/class-projects.php
+msgid "Project title is required."
+msgstr "প্রজেক্টের শিরোনাম আবশ্যক।"
+
+#: includes/class-projects.php
+msgid "Failed to create project."
+msgstr "প্রজেক্ট তৈরি করা সম্ভব হয়নি।"
+
+#: includes/class-projects.php
+msgid "Manuscript not found."
+msgstr "পাণ্ডুলিপিটি পাওয়া যায়নি।"
+
+#: includes/class-projects.php
+msgid "Failed to delete manuscript."
+msgstr "পাণ্ডুলিপিটি মুছে ফেলা সম্ভব হয়নি।"
+
+#: includes/class-projects.php
+msgid "Permission denied to create or edit posts."
+msgstr "পোস্ট তৈরি বা সম্পাদনার অনুমতি নেই।"
+
+#: includes/class-projects.php
+msgid "You do not have permission to publish. Save as a draft instead."
+msgstr "আপনার সরাসরি প্রকাশের অনুমতি নেই। খসড়া হিসেবে সংরক্ষণ করুন।"
+
+#: includes/class-projects.php
+msgid "You do not have permission to create pages."
+msgstr "আপনার পেজ তৈরির অনুমতি নেই।"
+
+#: includes/class-projects.php
+msgid "Maximum 200 chapters allowed per project."
+msgstr "প্রতিটি প্রজেক্টে সর্বোচ্চ ২০০টি চ্যাপ্টার রাখা যাবে।"
+
+#: includes/class-projects.php
+msgid "Total manuscript character count (%1$s) exceeds the limit of %2$s characters."
+msgstr "পাণ্ডুলিপির মোট অক্ষরের সংখ্যা (%1$s) নির্ধারিত সীমা %2$s অক্ষর অতিক্রম করেছে।"
+
+#: includes/class-admin.php
+msgid "Copied!"
+msgstr "কপি হয়েছে!"
+
+#: includes/class-admin.php
+msgid "Lipishilpo Studio & AI Hub"
+msgstr "লিপিশিল্প স্টুডিও ও এআই হাব"
+
+#: includes/class-admin.php
+msgid "Lipishilpo Settings & Configuration"
+msgstr "লিপিশিল্প সেটিংস ও কনফিগারেশন"
+
+#: includes/class-admin.php
+msgid "Configure universal AI connectivity, shortcode embed options, and manuscript storage settings."
+msgstr "ইউনিভার্সাল এআই প্রোভাইডার, শর্টকোড এম্বেড এবং পাণ্ডুলিপি সংরক্ষণ সেটিংস পরিচালনা করুন।"
+
+#: includes/class-admin.php
+msgid "Open Studio"
+msgstr "স্টুডিও খুলুন"
+
+#: includes/class-admin.php
+msgid "User Guide"
+msgstr "ইউজার গাইড"
+
+#: includes/class-admin.php
+msgid "Lipishilpo Pro is Active"
+msgstr "লিপিশিল্প Pro সক্রিয় রয়েছে"
+
+#: includes/class-admin.php
+msgid "Lipishilpo Pro Installed (License Inactive)"
+msgstr "লিপিশিল্প Pro ইনস্টল করা কিন্তু লাইসেন্স হয়নি"
+
+#: includes/class-admin.php
+msgid "Lipishilpo Core (Free Edition) Active"
+msgstr "লিপিশিল্প কোর (ফ্রি সংস্করণ) সক্রিয়"
+
+#: includes/class-admin.php
+msgid "Universal AI editorial, full-book continuity intelligence, and print-ready DOCX/PDF/EPUB publication engine are enabled."
+msgstr "ইউনিভার্সাল এআই এডিটিং, পুরো বইয়ের ধারাবাহিকতা এবং DOCX, PDF ও EPUB পাবলিকেশন ইঞ্জিন সক্রিয়।"
+
+#: includes/class-admin.php
+msgid "Bangla Academy standard grammar inspection, offline proofreading, and manuscript outliner are 100% free forever."
+msgstr "বাংলা একাডেমির প্রমিত ব্যাকরণ পরীক্ষণ, অফলাইন প্রুফরিডিং ও পাণ্ডুলিপি সংগঠন আজীবন ফ্রি।"
+
+#: includes/class-admin.php
+msgid "Pro Active"
+msgstr "প্রো সক্রিয়"
+
+#: includes/class-admin.php
+msgid "Free Core"
+msgstr "ফ্রি কোর"
+
+#: includes/class-admin.php
+msgid "Save Settings"
+msgstr "সেটিংস সংরক্ষণ করুন"
+
+#: includes/class-admin.php
+msgid "Unlock Premium Features with Lipishilpo Pro"
+msgstr "লিপিশিল্প Pro-তে যা যা পাচ্ছেন"
+
+#: includes/class-admin.php
+msgid "Enhance your manuscript studio with professional literary and publishing superpowers:"
+msgstr "লিপিশিল্প Pro অ্যাড-অন ইনস্টল করে এই প্রিমিয়াম ফিচারগুলো আনলক করুন:"
+
+#: includes/class-admin.php
+msgid "Universal AI Editorial (Gemini, Claude, OpenAI, OpenRouter):"
+msgstr "ইউনিভার্সাল AI এডিটোরিয়াল (Gemini, Claude, OpenAI, OpenRouter):"
+
+#: includes/class-admin.php
+msgid "Rhythm, sentence cadence, and style suggestions for Bengali & English manuscripts."
+msgstr "বাংলা ও ইংরেজি সাহিত্যের জন্য নির্ভুল ছন্দ, বাক্যগঠন ও শৈলীগত পরামর্শ।"
+
+#: includes/class-admin.php
+msgid "Whole-Book Continuity & Character Tracker:"
+msgstr "সমগ্র বইয়ের ধারাবাহিকতা ও চরিত্র ট্র্যাকিং:"
+
+#: includes/class-admin.php
+msgid "Automatic timeline discrepancy, plot-hole, and character trait tracking."
+msgstr "চরিত্রের বয়স, সম্পর্ক, টাইমলাইন ও প্লটহোল স্বয়ংক্রিয়ভাবে শনাক্তকরণ।"
+
+#: includes/class-admin.php
+msgid "Audio Proofreader (TTS):"
+msgstr "অডিও প্রুফরিডার (TTS):"
+
+#: includes/class-admin.php
+msgid "Natural voice reading with real-time sentence-by-sentence focus cursor."
+msgstr "বাংলা ভয়েসে চ্যাপ্টার পাঠ এবং রিয়েলটাইম সেন্টেন্স ফোকাস কার্সার।"
+
+#: includes/class-admin.php
+msgid "Book Publication Studio:"
+msgstr "বুক পাবলিকেশন স্টুডিও:"
+
+#: includes/class-admin.php
+msgid "Print-ready PDF, editable DOCX, and reflowable EPUB export with Bengali font embedding."
+msgstr "বাংলা ফন্টসহ প্রিন্ট-রেডি PDF, DOCX এবং রিফ্লোয়েবল EPUB এক্সপোর্ট।"
+
+#: includes/class-admin.php
+msgid "Upgrade to Lipishilpo Pro →"
+msgstr "Upgrade to Lipishilpo Pro →"
+
+#: includes/class-admin.php
+msgid "Lipishilpo Writing Studio Data & Privacy"
+msgstr "লিপিশিল্প রাইটিং স্টুডিও ডাটা ও প্রাইভেসি"
+
+#: includes/class-admin.php
+msgid "Lipishilpo stores manuscript drafts, chapter contents, character codex profiles, personal dictionary words, and writing streak statistics exclusively in the local WordPress database. Manuscript drafts are private and accessible only by their creator."
+msgstr "লিপিশিল্প পাণ্ডুলিপি, অধ্যায়ের বিষয়বস্তু, চরিত্র প্রোফাইল, ব্যক্তিগত ডিকশনারি এবং লেখার পরিসংখ্যান সম্পূর্ণ লোকাল ওয়ার্ডপ্রেস ডেটাবেজে সংরক্ষণ করে। পাণ্ডুলিপিগুলো সম্পূর্ণ ব্যক্তিগত ও শুধুমাত্র লেখকের জন্য দৃশ্যমান।"
+
+#: includes/class-admin.php
+msgid "Third-Party Services & AI Processing"
+msgstr "থার্ড পার্টি সেবা ও এআই প্রসেসিং"
+
+#: includes/class-admin.php
+msgid "In the standard Free version, Lipishilpo processes all text analysis and rule-based proofreading locally within the browser with zero external API calls. When the Lipishilpo Pro addon is activated, authors can optionally use AI editorial features (OpenAI, Google Gemini, Anthropic Claude). In such cases, only the specifically selected text or chapter is transmitted to the configured AI provider under the user-supplied API credentials."
+msgstr "স্ট্যান্ডার্ড ফ্রি সংস্করণে লিপিশিল্প ব্রাউজারের ভেতরে সম্পূর্ণ লোকালভাবে টেক্সট অ্যানালাইসিস সম্পন্ন করে এবং কোনো বাহ্যিক সার্ভার কল করে না। লিপিশিল্প Pro সক্রিয় থাকলে লেখকরা ঐচ্ছিকভাবে এআই এডিটোরিয়াল (OpenAI, Gemini, Claude) ব্যবহার করতে পারেন। সেক্ষেত্রে কেবল লেখকের নির্দেশিত অংশটিই কনফিগার করা এআই সার্ভারে প্রেরিত হয়।"
+
+#: includes/class-admin.php
+msgid "Data Retention & Deletion"
+msgstr "ডাটা সংরক্ষণ ও মুছে ফেলা"
+
+#: includes/class-admin.php
+msgid "When an author deletes a manuscript project, all related chapters, snapshots, and editorial comments are permanently purged from the database. When the plugin is uninstalled, data is preserved by default unless the administrator explicitly opts in to remove all manuscript tables and options on uninstall."
+msgstr "লেখক কোনো পাণ্ডুলিপি মুছে ফেললে তার সকল অধ্যায়, স্ন্যাপশট ও কমেন্ট ডেটাবেজ থেকে স্থায়ীভাবে মুছে যায়। প্লাগইন আনইনস্টল করলেও পাণ্ডুলিপি সংরক্ষিত থাকে, যদি না অ্যাডমিনিস্ট্রেটর আনইনস্টলে মুছে ফেলার অপশন চালু করেন।"
+
+#: includes/class-admin.php
+msgid "WordPress Shortcode & Embed Integration"
+msgstr "ওয়ার্ডপ্রেস শর্টকোড ও সাইট ইন্টিগ্রেশন"
+
+#: includes/class-admin.php
+msgid "Frontend Embed & Access Control"
+msgstr "ফ্রন্টএন্ড এম্বেড ও অ্যাক্সেস কন্ট্রোল"
+
+#: includes/class-admin.php
+msgid "Display the complete writing studio on any page or post by adding this shortcode:"
+msgstr "আপনার সাইটের যেকোনো পেজ বা পোস্টে নিচের শর্টকোডটি বসিয়ে সম্পূর্ণ পাণ্ডুলিপি স্টুডিও প্রদর্শন করতে পারেন:"
+
+#: includes/class-admin.php
+msgid "Copy Shortcode"
+msgstr "কপি শর্টকোড"
+
+#: includes/class-admin.php
+msgid "Tip:"
+msgstr "টিপস:"
+
+#: includes/class-admin.php
+msgid "Set your shortcode page template to Full-Width or Canvas/Blank for the best distraction-free experience. For security and privacy, only logged-in users with edit permissions can view and write in the studio."
+msgstr "শর্টকোডযুক্ত পেজটিকে ফুল-উইডথ (Full-Width / Blank Template) টেমপ্লেটে রাখলে লেখকরা সবচেয়ে স্বাচ্ছন্দ্যে লিখতে পারবেন। নিরাপত্তার স্বার্থে শুধুমাত্র লগইন করা ইউজাররা তাদের নিজস্ব পাণ্ডুলিপি দেখতে ও সম্পাদনা করতে পারবেন।"
+
+#: includes/class-admin.php
+msgid "Data Retention & Uninstall Settings"
+msgstr "ডাটা সংরক্ষণ ও আনইনস্টল সেটিংস"
+
+#: includes/class-admin.php
+msgid "Database Safety"
+msgstr "ডাটাবেজ সুরক্ষা"
+
+#: includes/class-admin.php
+msgid "Choose whether plugin data and manuscripts should be completely wiped when uninstalling the plugin:"
+msgstr "প্লাগইন আনইনস্টল করার সময় পাণ্ডুলিপি ও সেটিংস ডেটাবেজ থেকে সম্পূর্ণরূপে মুছে ফেলা হবে কিনা নির্ধারণ করুন:"
+
+#: includes/class-admin.php
+msgid "Erase all manuscripts and plugin data upon uninstall"
+msgstr "আনইনস্টল করার সময় সমস্ত পাণ্ডুলিপি ও প্লাগইন ডাটা স্থায়ীভাবে মুছে ফেলুন"
+
+#: includes/class-admin.php
+msgid "By default, your literary manuscripts are kept safely in the database even if the plugin is uninstalled. Check this box ONLY if you wish to permanently purge all manuscripts, snapshots, and options when Lipishilpo is deleted."
+msgstr "ডিফল্টভাবে, প্লাগইন আনইনস্টল করলেও আপনার সাহিত্য পাণ্ডুলিপিগুলো ডেটাবেজে নিরাপদে সংরক্ষিত থাকে। লিপিশিল্প ডিলিট করার সময় সমস্ত পাণ্ডুলিপি, স্ন্যাপশট ও অপশন স্থায়ীভাবে মুছে ফেলতে চাইলে কেবল এই বক্সে টিক দিন।"

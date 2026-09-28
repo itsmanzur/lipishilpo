@@ -4,12 +4,12 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Lipishilpo 1.0.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/lipishilpo\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
+"Last-Translator: Lipishilpo Team <info@lipishilpo.com>\n"
+"Language-Team: Bengali <bn@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-09-08T04:15:00+00:00\n"
+"POT-Creation-Date: 2026-09-28T14:00:00+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: Lipishilpo i18n Tool\n"
 "X-Domain: lipishilpo\n"
@@ -38,7 +38,7 @@ msgstr ""
 msgid "You need permission to create or edit posts to use Lipishilpo."
 msgstr ""
 
-#: lipishilpo.php
+#: lipishilpo.php includes/class-admin.php
 msgid "Permission denied."
 msgstr ""
 
@@ -87,39 +87,59 @@ msgid "Maximum 200 chapters allowed per project."
 msgstr ""
 
 #: includes/class-projects.php
-msgid "Total character count exceeds the limit."
+msgid "Total manuscript character count (%1$s) exceeds the limit of %2$s characters."
 msgstr ""
 
 #: includes/class-admin.php
-msgid "General Information & Usage Guide"
+msgid "Copied!"
 msgstr ""
 
 #: includes/class-admin.php
-msgid "Lipishilpo Settings & Documentation"
+msgid "Lipishilpo Studio & AI Hub"
 msgstr ""
 
 #: includes/class-admin.php
-msgid "Lipishilpo Pro is active."
+msgid "Lipishilpo Settings & Configuration"
 msgstr ""
 
 #: includes/class-admin.php
-msgid "AI editorial analysis, character tracking, and advanced book formatting are unlocked."
+msgid "Configure universal AI connectivity, shortcode embed options, and manuscript storage settings."
 msgstr ""
 
 #: includes/class-admin.php
-msgid "Lipishilpo Pro is installed but not licensed."
+msgid "Open Studio"
 msgstr ""
 
 #: includes/class-admin.php
-msgid "Enter a license key below to unlock Pro features."
+msgid "User Guide"
 msgstr ""
 
 #: includes/class-admin.php
-msgid "Lipishilpo (Free Version) is active."
+msgid "Lipishilpo Pro is Active"
 msgstr ""
 
 #: includes/class-admin.php
-msgid "Rule-based proofreading and manuscript management are always free to use."
+msgid "Lipishilpo Pro Installed (License Inactive)"
+msgstr ""
+
+#: includes/class-admin.php
+msgid "Lipishilpo Core (Free Edition) Active"
+msgstr ""
+
+#: includes/class-admin.php
+msgid "Universal AI editorial, full-book continuity intelligence, and print-ready DOCX/PDF/EPUB publication engine are enabled."
+msgstr ""
+
+#: includes/class-admin.php
+msgid "Bangla Academy standard grammar inspection, offline proofreading, and manuscript outliner are 100% free forever."
+msgstr ""
+
+#: includes/class-admin.php
+msgid "Pro Active"
+msgstr ""
+
+#: includes/class-admin.php
+msgid "Free Core"
 msgstr ""
 
 #: includes/class-admin.php
@@ -127,47 +147,47 @@ msgid "Save Settings"
 msgstr ""
 
 #: includes/class-admin.php
-msgid "💎 What you get in Lipishilpo Pro"
+msgid "Unlock Premium Features with Lipishilpo Pro"
 msgstr ""
 
 #: includes/class-admin.php
-msgid "Install and activate the Lipishilpo Pro addon to unlock these advanced features:"
+msgid "Enhance your manuscript studio with professional literary and publishing superpowers:"
 msgstr ""
 
 #: includes/class-admin.php
-msgid "AI Editorial Suggestions:"
+msgid "Universal AI Editorial (Gemini, Claude, OpenAI, OpenRouter):"
 msgstr ""
 
 #: includes/class-admin.php
-msgid "Contextual Bengali/English phrasing refinements, clarity improvements, and style polish."
+msgid "Rhythm, sentence cadence, and style suggestions for Bengali & English manuscripts."
 msgstr ""
 
 #: includes/class-admin.php
-msgid "Story & Character Tracking:"
+msgid "Whole-Book Continuity & Character Tracker:"
 msgstr ""
 
 #: includes/class-admin.php
-msgid "Detect character age conflicts, narrative inconsistencies, and unresolved plot points."
+msgid "Automatic timeline discrepancy, plot-hole, and character trait tracking."
 msgstr ""
 
 #: includes/class-admin.php
-msgid "AI Reader Simulations:"
+msgid "Audio Proofreader (TTS):"
 msgstr ""
 
 #: includes/class-admin.php
-msgid "Simulate reader engagement, pace drops, and confusing passages before publishing."
+msgid "Natural voice reading with real-time sentence-by-sentence focus cursor."
 msgstr ""
 
 #: includes/class-admin.php
-msgid "Book Publication Formatting:"
+msgid "Book Publication Studio:"
 msgstr ""
 
 #: includes/class-admin.php
-msgid "Export ready-to-publish DOCX, PDF, and EPUB files with embedded Bengali fonts and table of contents."
+msgid "Print-ready PDF, editable DOCX, and reflowable EPUB export with Bengali font embedding."
 msgstr ""
 
 #: includes/class-admin.php
-msgid "Get Lipishilpo Pro →"
+msgid "Upgrade to Lipishilpo Pro →"
 msgstr ""
 
 #: includes/class-admin.php
@@ -183,7 +203,7 @@ msgid "Third-Party Services & AI Processing"
 msgstr ""
 
 #: includes/class-admin.php
-msgid "In the standard Free version, Lipishilpo processes all text analysis and rule-based proofreading locally within the browser with zero external API calls. When the Lipishilpo Pro addon is activated, authors can optionally use AI editorial features (OpenAI GPT-4o). In such cases, only the specifically selected text or chapter is transmitted to OpenAI servers under the configured API credentials."
+msgid "In the standard Free version, Lipishilpo processes all text analysis and rule-based proofreading locally within the browser with zero external API calls. When the Lipishilpo Pro addon is activated, authors can optionally use AI editorial features (OpenAI, Google Gemini, Anthropic Claude). In such cases, only the specifically selected text or chapter is transmitted to the configured AI provider under the user-supplied API credentials."
 msgstr ""
 
 #: includes/class-admin.php
@@ -191,18 +211,49 @@ msgid "Data Retention & Deletion"
 msgstr ""
 
 #: includes/class-admin.php
-msgid "When an author deletes a manuscript project, all related chapters, snapshots, and editorial comments are permanently purged from the database. When the plugin is uninstalled, all plugin post types, user metadata, and configuration options are completely erased."
+msgid "When an author deletes a manuscript project, all related chapters, snapshots, and editorial comments are permanently purged from the database. When the plugin is uninstalled, data is preserved by default unless the administrator explicitly opts in to remove all manuscript tables and options on uninstall."
 msgstr ""
 
 #: includes/class-admin.php
-msgid "Shortcode Usage:"
+msgid "WordPress Shortcode & Embed Integration"
 msgstr ""
 
 #: includes/class-admin.php
-msgid "Place the following shortcode on any post or page to render the complete studio editor:"
+msgid "Frontend Embed & Access Control"
 msgstr ""
 
 #: includes/class-admin.php
-msgid "For security and privacy, only logged-in users can view, create, and edit their manuscripts."
+msgid "Display the complete writing studio on any page or post by adding this shortcode:"
 msgstr ""
 
+#: includes/class-admin.php
+msgid "Copy Shortcode"
+msgstr ""
+
+#: includes/class-admin.php
+msgid "Tip:"
+msgstr ""
+
+#: includes/class-admin.php
+msgid "Set your shortcode page template to Full-Width or Canvas/Blank for the best distraction-free experience. For security and privacy, only logged-in users with edit permissions can view and write in the studio."
+msgstr ""
+
+#: includes/class-admin.php
+msgid "Data Retention & Uninstall Settings"
+msgstr ""
+
+#: includes/class-admin.php
+msgid "Database Safety"
+msgstr ""
+
+#: includes/class-admin.php
+msgid "Choose whether plugin data and manuscripts should be completely wiped when uninstalling the plugin:"
+msgstr ""
+
+#: includes/class-admin.php
+msgid "Erase all manuscripts and plugin data upon uninstall"
+msgstr ""
+
+#: includes/class-admin.php
+msgid "By default, your literary manuscripts are kept safely in the database even if the plugin is uninstalled. Check this box ONLY if you wish to permanently purge all manuscripts, snapshots, and options when Lipishilpo is deleted."
+msgstr ""

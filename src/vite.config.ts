@@ -28,7 +28,7 @@ export default defineConfig({
       input: resolve(__dirname, 'main.tsx'),
       output: {
         entryFileNames: 'js/lipishilpo-editor.js',
-        chunkFileNames: 'js/lipishilpo-editor-[name].js',
+        chunkFileNames: 'js/lipishilpo-editor-[name]-[hash].js',
         assetFileNames: (assetInfo) => {
           if (assetInfo.name?.endsWith('.css')) {
             return 'css/lipishilpo-editor.css';

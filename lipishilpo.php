@@ -31,6 +31,7 @@ require_once LIPISHILPO_DIR . 'includes/class-projects.php';
 add_action( 'plugins_loaded', 'lipishilpo_init', 10 );
 
 function lipishilpo_init() {
+	load_plugin_textdomain( 'lipishilpo', false, dirname( plugin_basename( LIPISHILPO_FILE ) ) . '/languages' );
 	Lipishilpo_Admin::init();
 	Lipishilpo_Projects::init();
 
@@ -64,6 +65,7 @@ function lipishilpo_shortcode( $atts ) {
 
 	$is_pro    = lipishilpo_is_pro() ? '1' : '0';
 	$fonts_url = apply_filters( 'lipishilpo_fonts_url', LIPISHILPO_URL . 'assets/fonts' );
+	$max_chars = (int) apply_filters( 'lipishilpo_max_manuscript_chars', 500000, array(), 0 );
 
 	return '<div id="lipishilpo-root" 
 		data-rest-url="' . esc_attr( get_rest_url( null, LIPISHILPO_REST_NAMESPACE ) ) . '"
@@ -74,6 +76,7 @@ function lipishilpo_shortcode( $atts ) {
 		data-version="' . esc_attr( LIPISHILPO_VERSION ) . '"
 		data-fonts-url="' . esc_attr( $fonts_url ) . '"
 		data-dicts-url="' . esc_attr( LIPISHILPO_URL . 'assets/dicts' ) . '"
+		data-max-chars="' . esc_attr( (string) $max_chars ) . '"
 	></div>';
 }
 

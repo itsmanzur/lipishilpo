@@ -269,7 +269,33 @@ class Lipishilpo_Projects {
 		return ( null !== $clean ) ? $clean : sanitize_textarea_field( $text );
 	}
 
-	private static function sanitize_chapters( $chapters ) {
+	/**
+	 * Accurately counts words across Unicode scripts (Bengali, English, multilingual).
+	 *
+	 * @param string $text Raw text.
+	 * @return int Word count.
+	 */
+	public static function count_words( $text ) {
+		if ( ! is_string( $text ) || '' === trim( $text ) ) {
+			return 0;
+		}
+		$clean = trim( wp_strip_all_tags( $text ) );
+		if ( '' === $clean ) {
+			return 0;
+		}
+		$words = preg_split( '/\s+/u', $clean, -1, PREG_SPLIT_NO_EMPTY );
+		return is_array( $words ) ? count( $words ) : 0;
+	}
+
+	/**
+	 * Sanitizes chapters array with server-side data loss protection.
+	 * If an incoming chapter object omits 'text' or 'notes', existing stored values are preserved.
+	 *
+	 * @param array $chapters       Input chapters from payload.
+	 * @param array $existing_by_id Existing chapters indexed by chapter ID.
+	 * @return array Sanitized clean chapters.
+	 */
+	private static function sanitize_chapters( $chapters, $existing_by_id = array() ) {
 		if ( ! is_array( $chapters ) ) {
 			return array();
 		}
@@ -279,12 +305,52 @@ class Lipishilpo_Projects {
 			if ( ! is_array( $c ) ) {
 				continue;
 			}
+			$cid      = ! empty( $c['id'] ) ? sanitize_text_field( (string) $c['id'] ) : wp_generate_uuid4();
+			$existing = isset( $existing_by_id[ $cid ] ) && is_array( $existing_by_id[ $cid ] ) ? $existing_by_id[ $cid ] : null;
+
+			// Server-side Data Loss Guard:
+			// If 'text' is not explicitly present in payload, keep existing text if known, else default to ''
+			if ( array_key_exists( 'text', $c ) ) {
+				$text = self::sanitize_manuscript_text( $c['text'] );
+			} elseif ( $existing && isset( $existing['text'] ) ) {
+				$text = (string) $existing['text'];
+			} else {
+				$text = '';
+			}
+
+			// Notes Guard
+			if ( array_key_exists( 'notes', $c ) ) {
+				$notes = self::sanitize_manuscript_text( $c['notes'] );
+			} elseif ( $existing && isset( $existing['notes'] ) ) {
+				$notes = (string) $existing['notes'];
+			} else {
+				$notes = '';
+			}
+
+			// Title Guard
+			if ( array_key_exists( 'title', $c ) ) {
+				$title = sanitize_text_field( (string) $c['title'] );
+			} elseif ( $existing && isset( $existing['title'] ) ) {
+				$title = (string) $existing['title'];
+			} else {
+				$title = '';
+			}
+
+			// Status Guard
+			if ( isset( $c['status'] ) && in_array( $c['status'], array( 'draft', 'in_progress', 'revised', 'final' ), true ) ) {
+				$status = $c['status'];
+			} elseif ( $existing && ! empty( $existing['status'] ) ) {
+				$status = $existing['status'];
+			} else {
+				$status = 'draft';
+			}
+
 			$clean[] = array(
-				'id'     => ! empty( $c['id'] ) ? sanitize_text_field( (string) $c['id'] ) : wp_generate_uuid4(),
-				'title'  => isset( $c['title'] ) ? sanitize_text_field( (string) $c['title'] ) : '',
-				'text'   => isset( $c['text'] ) ? self::sanitize_manuscript_text( $c['text'] ) : '',
-				'notes'  => isset( $c['notes'] ) ? self::sanitize_manuscript_text( $c['notes'] ) : '',
-				'status' => ( isset( $c['status'] ) && in_array( $c['status'], array( 'draft', 'in_progress', 'revised', 'final' ), true ) ) ? $c['status'] : 'draft',
+				'id'     => $cid,
+				'title'  => $title,
+				'text'   => $text,
+				'notes'  => $notes,
+				'status' => $status,
 			);
 		}
 
@@ -402,7 +468,7 @@ class Lipishilpo_Projects {
 		foreach ( $chapters as $c ) {
 			if ( is_array( $c ) ) {
 				$txt = isset( $c['text'] ) && is_string( $c['text'] ) ? $c['text'] : '';
-				$total_words += function_exists( 'mb_strlen' ) ? (int) ceil( mb_strlen( $txt, 'UTF-8' ) / 6 ) : str_word_count( $txt );
+				$total_words += self::count_words( $txt );
 				$chapter_summaries[] = array(
 					'id'     => isset( $c['id'] ) ? (string) $c['id'] : '',
 					'title'  => isset( $c['title'] ) ? (string) $c['title'] : '',
@@ -412,15 +478,16 @@ class Lipishilpo_Projects {
 		}
 
 		return array(
-			'id'           => (string) $post->ID,
-			'title'        => $post->post_title,
-			'genre'        => $genre,
-			'language'     => $language,
-			'chapterCount' => count( $chapters ),
-			'wordCount'    => $total_words,
-			'chapters'     => $chapter_summaries,
-			'created'      => $post->post_date,
-			'modified'     => $post->post_modified,
+			'id'              => (string) $post->ID,
+			'title'           => $post->post_title,
+			'genre'           => $genre,
+			'language'        => $language,
+			'chapterCount'    => count( $chapters ),
+			'wordCount'       => $total_words,
+			'approxWordCount' => $total_words,
+			'chapters'        => $chapter_summaries,
+			'created'         => $post->post_date,
+			'modified'        => $post->post_modified,
 		);
 	}
 
@@ -494,10 +561,11 @@ class Lipishilpo_Projects {
 		if ( empty( $chapters ) ) {
 			$chapters = array(
 				array(
-					'id'    => wp_generate_uuid4(),
-					'title' => 'Chapter 1',
-					'text'  => '',
-					'notes' => '',
+					'id'     => wp_generate_uuid4(),
+					'title'  => 'Chapter 1',
+					'text'   => '',
+					'notes'  => '',
+					'status' => 'draft',
 				),
 			);
 		}
@@ -562,8 +630,17 @@ class Lipishilpo_Projects {
 			update_post_meta( $id, self::META_LANGUAGE, wp_slash( sanitize_text_field( $request->get_param( 'language' ) ) ) );
 		}
 		if ( $request->has_param( 'chapters' ) ) {
-			$chapters    = self::sanitize_chapters( $request->get_param( 'chapters' ) );
-			$limit_error = self::validate_chapter_limits( $chapters );
+			$existing_raw   = get_post_meta( $id, self::META_CHAPTERS, true );
+			$existing_by_id = array();
+			if ( is_array( $existing_raw ) ) {
+				foreach ( $existing_raw as $ex ) {
+					if ( is_array( $ex ) && ! empty( $ex['id'] ) ) {
+						$existing_by_id[ (string) $ex['id'] ] = $ex;
+					}
+				}
+			}
+			$chapters    = self::sanitize_chapters( $request->get_param( 'chapters' ), $existing_by_id );
+			$limit_error = self::validate_chapter_limits( $chapters, $id );
 			if ( $limit_error ) {
 				return $limit_error;
 			}
@@ -699,7 +776,7 @@ class Lipishilpo_Projects {
 		return self::get_prefs();
 	}
 
-	private static function validate_chapter_limits( $chapters ) {
+	private static function validate_chapter_limits( $chapters, $post_id = 0 ) {
 		if ( count( $chapters ) > 200 ) {
 			return new WP_Error( 'lipishilpo_limit', __( 'Maximum 200 chapters allowed per project.', 'lipishilpo' ), array( 'status' => 400 ) );
 		}
@@ -708,14 +785,28 @@ class Lipishilpo_Projects {
 			$raw_text = isset( $c['text'] ) && is_string( $c['text'] ) ? $c['text'] : '';
 			$total   += function_exists( 'mb_strlen' ) ? mb_strlen( $raw_text, 'UTF-8' ) : strlen( $raw_text );
 		}
-		if ( $total > 500000 ) {
+
+		/**
+		 * Filters the maximum allowed character count across all chapters in a manuscript project.
+		 * Default: 500,000 UTF-8 characters (~80,000 to 100,000 words).
+		 *
+		 * @param int   $max_chars Maximum allowed UTF-8 characters.
+		 * @param array $chapters  The array of chapter objects.
+		 * @param int   $post_id   The manuscript post ID.
+		 */
+		$max_chars = (int) apply_filters( 'lipishilpo_max_manuscript_chars', 500000, $chapters, $post_id );
+		if ( $max_chars <= 0 ) {
+			$max_chars = 500000;
+		}
+
+		if ( $total > $max_chars ) {
 			return new WP_Error(
 				'lipishilpo_limit',
 				sprintf(
 					/* translators: 1: current character count, 2: maximum allowed characters */
 					__( 'Total manuscript character count (%1$s) exceeds the limit of %2$s characters.', 'lipishilpo' ),
 					number_format_i18n( $total ),
-					number_format_i18n( 500000 )
+					number_format_i18n( $max_chars )
 				),
 				array( 'status' => 400 )
 			);

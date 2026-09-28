@@ -29,7 +29,7 @@ class Lipishilpo_Admin {
 				'lipishilpo-admin-style',
 				LIPISHILPO_URL . 'assets/css/lipishilpo-admin.css',
 				array(),
-				LIPISHILPO_VERSION
+				filemtime( $css_file )
 			);
 		}
 
