@@ -1,10 +1,11 @@
+import { readDictionary, writeDictionary } from '../lib/personal-dictionary';
 import React, { useState, useEffect } from 'react';
 import {
   Check, Copy, BookOpen, Trash2,
   Globe, Sliders, Compass
 } from 'lucide-react';
 import { translations, type Language } from '../i18n';
-import { fetchPrefs, updatePrefs } from '../api';
+import { fetchPrefs, updatePrefs, wpConfig } from '../api';
 
 interface SettingsViewProps {
   isPro: boolean;
@@ -23,30 +24,19 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 }) => {
   const t = translations[lang];
   const [copied, setCopied] = useState(false);
-  const [dict, setDict] = useState<string[]>(() => {
-    try {
-      const saved = localStorage.getItem('lipishilpo_personal_dict');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [dict, setDict] = useState<string[]>(() => readDictionary(wpConfig.userId));
 
   useEffect(() => {
     fetchPrefs().then((prefs) => {
-      if (prefs.dictionary.length) {
-        setDict(prefs.dictionary);
-        try {
-          localStorage.setItem('lipishilpo_personal_dict', JSON.stringify(prefs.dictionary));
-        } catch {}
-      }
+      setDict(prefs.dictionary);
+      writeDictionary(wpConfig.userId, prefs.dictionary);
     }).catch(() => {});
   }, []);
 
   function persistDict(updated: string[]) {
     setDict(updated);
     try {
-      localStorage.setItem('lipishilpo_personal_dict', JSON.stringify(updated));
+      writeDictionary(wpConfig.userId, updated);
     } catch {}
     updatePrefs({ dictionary: updated }).catch(() => {});
   }
@@ -65,7 +55,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     if (!confirm(lang === 'bn' ? 'ব্যক্তিগত ডিকশনারি কি খালি করতে চান?' : 'Clear all words from personal dictionary?')) return;
     persistDict([]);
     try {
-      localStorage.removeItem('lipishilpo_personal_dict');
+      writeDictionary(wpConfig.userId, []);
     } catch {}
   }
 

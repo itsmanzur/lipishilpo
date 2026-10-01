@@ -1,3 +1,4 @@
+import { buildRestUrl } from './lib/rest-url';
 /**
  * WordPress REST API client — লিপিশিল্প
  */
@@ -14,7 +15,7 @@ export interface WPConfig {
 }
 
 export function getWPConfig(): WPConfig {
-  const el = document.getElementById('lipishilpo-root');
+  const el = typeof document === 'undefined' ? null : document.getElementById('lipishilpo-root');
   return {
     restUrl: el?.dataset.restUrl ?? '/wp-json/lipishilpo/v1',
     adminUrl: el?.dataset.adminUrl ?? '/wp-admin/',
@@ -33,7 +34,7 @@ async function wpFetch(
   path: string,
   options: RequestInit = {}
 ): Promise<Response> {
-  const url = config.restUrl.replace(/\/$/, '') + '/' + path.replace(/^\//, '');
+  const url = buildRestUrl(config.restUrl, path, window.location.href);
   const headers: Record<string, string> = {
     'X-WP-Nonce': config.nonce,
     ...(options.headers as Record<string, string>),
@@ -82,6 +83,7 @@ export type Project = {
   edits?: Record<string, unknown[]>;
   created?: string;
   modified?: string;
+  revision?: string;
 };
 
 export interface ProjectList {
@@ -133,6 +135,11 @@ export async function createProject(data: {
   title: string;
   genre: string;
   language: string;
+  chapters?: Chapter[];
+  codex?: Project['codex'];
+  snapshots?: Project['snapshots'];
+  comments?: Project['comments'];
+  edits?: Project['edits'];
 }): Promise<Project> {
   const r = await wpFetch('projects', {
     method: 'POST',
@@ -145,9 +152,11 @@ export async function createProject(data: {
   return normalizeProject(await r.json() as Project);
 }
 
+export class ProjectConflictError extends Error {}
+
 export async function updateProject(
   id: number | string,
-  data: Partial<Pick<Project, 'title' | 'genre' | 'language' | 'chapters' | 'snapshots' | 'comments' | 'edits'>>
+  data: Partial<Pick<Project, 'title' | 'genre' | 'language' | 'chapters' | 'snapshots' | 'comments' | 'edits' | 'codex'>> & { deleted_snapshot_ids?: string[]; revision?: string }
 ): Promise<Project> {
   const r = await wpFetch(`projects/${id}`, {
     method: 'PUT',
@@ -155,6 +164,7 @@ export async function updateProject(
   });
   if (!r.ok) {
     const err = await r.json().catch(() => ({}));
+    if (r.status === 409 || r.status === 428) throw new ProjectConflictError(err.message || 'Manuscript conflict');
     throw new Error(err.message || 'প্রজেক্ট আপডেট হয়নি।');
   }
   return normalizeProject(await r.json() as Project);

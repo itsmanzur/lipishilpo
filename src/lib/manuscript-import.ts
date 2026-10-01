@@ -3,15 +3,11 @@
  * Parsing stays in the browser so the file is never uploaded elsewhere.
  */
 import { createId } from './id';
-import { parseProjectBackup } from './project-backup';
+import { type BackupProject, parseProjectBackup } from './project-backup';
 
 export type ImportSource = 'json' | 'docx' | 'markdown' | 'text';
 
-export interface ImportedManuscript {
-  title: string;
-  genre: string;
-  language: string;
-  chapters: Array<{ id: string; title: string; text: string; notes?: string }>;
+export interface ImportedManuscript extends BackupProject {
   source: ImportSource;
 }
 
@@ -22,7 +18,8 @@ export type ImportErrorCode =
   | 'empty'
   | 'invalid_json'
   | 'parse_failed'
-  | 'too_long';
+  | 'too_long'
+  | 'too_many_chapters';
 
 export class ManuscriptImportError extends Error {
   constructor(public readonly code: ImportErrorCode) {
@@ -34,6 +31,10 @@ export class ManuscriptImportError extends Error {
 const MAX_BYTES = 12 * 1024 * 1024;
 const MAX_CHAPTERS = 200;
 const MAX_CHARS = 500_000;
+function checkedChapters(chapters: ImportedManuscript['chapters']) {
+  if (chapters.length > MAX_CHAPTERS) throw new ManuscriptImportError('too_many_chapters');
+  return chapters;
+}
 const CHAPTER_LINE = /^(?:অধ্যায়|অধ্যায়|পরিচ্ছেদ|দৃশ্য|Chapter|CHAPTER)\s*[\d০-৯IVXLCDM]+/u;
 
 function fileNameTitle(file: File): string {
@@ -152,7 +153,7 @@ function splitMarkdownHeadings(rawText: string, fallbackTitle: string): { title:
     if (marked && marked.length > 1) {
       return {
         title: projectTitle.slice(0, 120),
-        chapters: marked.map((s, i) => makeChapter(s.title, s.text, i)).slice(0, MAX_CHAPTERS),
+        chapters: checkedChapters(marked.map((s, i) => makeChapter(s.title, s.text, i))),
       };
     }
   }
@@ -161,7 +162,7 @@ function splitMarkdownHeadings(rawText: string, fallbackTitle: string): { title:
     chapters.push(makeChapter(fallbackTitle, rawText, 0));
   }
 
-  return { title: projectTitle.slice(0, 120), chapters: chapters.slice(0, MAX_CHAPTERS) };
+  return { title: projectTitle.slice(0, 120), chapters: checkedChapters(chapters) };
 }
 
 function splitHtmlByHeading(root: Element, tag: 'h1' | 'h2', fallbackTitle: string) {
@@ -238,7 +239,7 @@ function chaptersFromHtml(html: string, fallbackTitle: string): { title: string;
     throw new ManuscriptImportError('empty');
   }
 
-  return { title: projectTitle.slice(0, 120), chapters: chapters.slice(0, MAX_CHAPTERS) };
+  return { title: projectTitle.slice(0, 120), chapters: checkedChapters(chapters) };
 }
 
 async function sniffHeader(file: File): Promise<Uint8Array> {
@@ -327,7 +328,7 @@ async function parsePlainText(file: File): Promise<ImportedManuscript> {
     title: fallback,
     genre: 'General Writing',
     language: detectLanguage(allText),
-    chapters: chapters.slice(0, MAX_CHAPTERS),
+    chapters: checkedChapters(chapters),
     source: 'text',
   };
 }
@@ -343,6 +344,8 @@ export async function importManuscriptFile(file: File): Promise<ImportedManuscri
   if (name.endsWith('.json') || name.endsWith('.lipishilpo.json')) {
     try {
       const parsed = await parseProjectBackup(file);
+      checkedChapters(parsed.chapters);
+      if (parsed.chapters.reduce((total, c) => total + c.text.length, 0) > MAX_CHARS) throw new ManuscriptImportError('too_long');
       if (!parsed.chapters.length) throw new ManuscriptImportError('empty');
       return { ...parsed, source: 'json' };
     } catch (err) {

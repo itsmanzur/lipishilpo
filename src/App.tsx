@@ -1,3 +1,4 @@
+import { readDictionary, writeDictionary } from './lib/personal-dictionary';
 import { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react';
 import {
   Feather, BookOpen, Plus, FileText, Library, BarChart3,
@@ -12,7 +13,7 @@ import {
 import {
   type Project, type Chapter, type ChapterStatus,
   fetchProjects, fetchProject, createProject, updateProject, deleteProject,
-  fetchPrefs, updatePrefs,
+  fetchPrefs, updatePrefs, ProjectConflictError,
 } from './api';
 import {
   findIssues, applyAllFixes, calculateStats,
@@ -43,6 +44,7 @@ import { ImportManuscriptModal } from './components/ImportManuscriptModal';
 import { CodexPanel, type ProjectCodex } from './components/CodexPanel';
 import { analyzeManuscript } from './lib/analytics';
 import { handleSmartKeyDown } from './lib/smart-typography';
+import { SaveQueue } from './lib/save-queue';
 import { exportProjectToJson } from './lib/project-backup';
 import { importManuscriptFile, ManuscriptImportError, type ImportedManuscript } from './lib/manuscript-import';
 import { createId } from './lib/id';
@@ -163,7 +165,35 @@ export default function App() {
   const [dailyTarget, setDailyTarget] = useState(500);
   const [goalModalOpen, setGoalModalOpen] = useState(false);
   const [wordsToday, setWordsToday] = useState(0);
-  const pendingSave = useRef<{ id: string; data: Parameters<typeof updateProject>[1] } | null>(null);
+  const [saveConflicts, setSaveConflicts] = useState<Record<string, boolean>>({});
+  const acknowledgedRevisions = useRef<Record<string, string>>({});
+  const deletedSnapshots = useRef<Record<string, string[]>>({});
+  const saveQueue = useRef<SaveQueue<Parameters<typeof updateProject>[1]>>(new SaveQueue<Parameters<typeof updateProject>[1]>(async (id, data) => {
+    let saved: Project;
+    try {
+      saved = await updateProject(id, { ...data, revision: acknowledgedRevisions.current[id] ?? data.revision });
+    } catch (error) {
+      if (error instanceof ProjectConflictError) {
+        saveQueue.current.block(id);
+        setSaveConflicts((previous) => ({ ...previous, [id]: true }));
+      }
+      throw error;
+    }
+    acknowledgedRevisions.current[id] = saved.revision!;
+    // Merge only server-created safety backups; never replace newer editor content.
+    setProjects((previous) => previous.map((item) => {
+      if (item.id !== id) return item;
+      const snapshots = { ...item.snapshots };
+      for (const [chapterId, entries] of Object.entries(saved.snapshots ?? {})) {
+        const current = snapshots[chapterId] ?? [];
+        const ids = new Set(current.map((entry: any) => entry.id));
+        const added = entries.filter((entry: any) => entry.automatic && !ids.has(entry.id) && !(deletedSnapshots.current[id] ?? []).includes(entry.id));
+        if (added.length) snapshots[chapterId] = [...added, ...current].slice(0, 30);
+      }
+      return { ...item, snapshots, revision: saved.revision, modified: saved.modified };
+    }));
+    return saved;
+  }));
 
   // Comments State
   const [comments, setComments] = useState<ChapterComment[]>([]);
@@ -198,14 +228,7 @@ export default function App() {
   });
   const [issues, setIssues] = useState<ProofMatch[]>([]);
   const [proofFilter, setProofFilter] = useState<RuleCategory | 'all' | 'complexity'>('all');
-  const [ignored, setIgnored] = useState<string[]>(() => {
-    try {
-      const saved = localStorage.getItem('lipishilpo_personal_dict');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [ignored, setIgnored] = useState<string[]>(() => readDictionary(wpConfig.userId));
   const [history, setHistory] = useState<string[]>([]);
 
   // Snapshots (Version History)
@@ -341,6 +364,7 @@ export default function App() {
           const firstId = list.items[0].id;
           try {
             const fullFirst = await fetchProject(firstId);
+            acknowledgedRevisions.current[firstId] = fullFirst.revision!;
             setProjects((prev) => prev.map((p) => (p.id === firstId ? fullFirst : p)));
             setPid(firstId);
             setCid(fullFirst.chapters[0]?.id ?? null);
@@ -352,9 +376,8 @@ export default function App() {
           }
         }
         setDailyTarget(prefs.dailyTarget || 500);
-        if (prefs.dictionary.length) {
-          setIgnored(prefs.dictionary);
-        }
+        setIgnored(prefs.dictionary);
+        writeDictionary(wpConfig.userId, prefs.dictionary);
       })
       .catch((e) => setLoadError(e.message))
       .finally(() => setLoading(false));
@@ -408,23 +431,20 @@ export default function App() {
 
     setSaveState('saving');
 
-    pendingSave.current = {
-      id: projectId,
-      data: {
-        chapters: current.chapters,
-        snapshots: current.snapshots,
-        comments: current.comments,
-        edits: current.edits,
-      },
-    };
+    saveQueue.current.set(projectId, {
+      revision: current.revision,
+      chapters: current.chapters,
+      snapshots: current.snapshots,
+      comments: current.comments,
+      edits: current.edits,
+      codex: current.codex,
+      deleted_snapshot_ids: deletedSnapshots.current[projectId] ?? [],
+    });
 
     saveTimer.current = setTimeout(async () => {
-      const pending = pendingSave.current;
-      if (!pending) return;
       try {
-        await updateProject(pending.id, pending.data);
-        pendingSave.current = null;
-        setSaveState('saved');
+        await saveQueue.current.flush();
+        setSaveState(saveQueue.current.dirty ? 'error' : 'saved');
       } catch {
         setSaveState('error');
       }
@@ -442,13 +462,19 @@ export default function App() {
   useEffect(() => {
     return () => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
-      const pending = pendingSave.current;
-      if (pending && pending.data.chapters && !pending.data.chapters.some((c) => c.text === undefined)) {
-        updateProject(pending.id, pending.data).catch(() => {});
-        pendingSave.current = null;
-      }
+      void saveQueue.current.flush().then(() => setSaveState(saveQueue.current.dirty ? 'error' : 'saved')).catch(() => setSaveState('error'));
     };
   }, [pid]);
+
+  useEffect(() => {
+    const warn = (event: BeforeUnloadEvent) => {
+      if (!saveQueue.current.dirty) return;
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, []);
 
   // ── Snapshots Lifecycle (server first, localStorage migrate) ───────────────
   useEffect(() => {
@@ -467,7 +493,7 @@ export default function App() {
     } catch {
       setSnapshots([]);
     }
-  }, [chapter?.id, project?.id]);
+  }, [chapter?.id, project?.id, project?.snapshots]);
 
   function saveAutoSnapshot(label: string) {
     if (!chapter || !text.trim()) return;
@@ -530,16 +556,17 @@ export default function App() {
 
   async function handleImportNewProject(data: ImportedManuscript) {
     try {
-      const created = await createProject({
-        title: data.title,
-        genre: data.genre,
-        language: data.language,
-      });
-      if (data.chapters.length > 0) {
-        await updateProject(created.id, { chapters: data.chapters });
-      }
+      const created = await createProject(data);
       const updatedList = await fetchProjects(1);
-      setProjects(updatedList.items);
+      setProjects((previous) => {
+        const merged = [created, ...updatedList.items.filter((p) => p.id !== created.id)]
+          .map((item) => previous.find((cached) => cached.id === item.id) ?? item);
+        // Library refreshes must not evict unsaved/conflicted local manuscripts.
+        for (const item of previous) {
+          if (saveQueue.current.has(item.id) && !merged.some((entry) => entry.id === item.id)) merged.push(item);
+        }
+        return merged;
+      });
       setProjectPages(updatedList.pages);
       setProjectPage(1);
       setPid(created.id);
@@ -567,7 +594,8 @@ export default function App() {
   }
 
   function handleDeleteSnapshot(snapId: string) {
-    if (!chapter) return;
+    if (!chapter || !project) return;
+    deletedSnapshots.current[project.id] = [...(deletedSnapshots.current[project.id] ?? []), snapId];
     const updated = snapshots.filter((s) => s.id !== snapId);
     setSnapshots(updated);
     persistChapterMeta('snapshots', chapter.id, updated);
@@ -906,23 +934,47 @@ export default function App() {
   const forceSave = useCallback(async () => {
     if (!pid) return;
     const current = projects.find((p) => p.id === pid);
-    if (!current) return;
+    if (!current || current.chapters.some((c) => c.text === undefined)) return;
     if (saveTimer.current) clearTimeout(saveTimer.current);
     setSaveState('saving');
     try {
-      await updateProject(pid, {
+      saveQueue.current.set(pid, {
+        revision: current.revision,
         chapters: current.chapters,
         snapshots: current.snapshots,
         comments: current.comments,
         edits: current.edits,
+        codex: current.codex,
+        deleted_snapshot_ids: deletedSnapshots.current[pid] ?? [],
       });
-      pendingSave.current = null;
-      setSaveState('saved');
-      setNotice(t.saved);
+      await saveQueue.current.flush();
+      setSaveState(saveQueue.current.dirty ? 'error' : 'saved');
+      if (!saveQueue.current.dirty) setNotice(t.saved);
     } catch {
       setSaveState('error');
     }
   }, [pid, projects, t.saved]);
+
+  async function reloadConflictedProject(id: string) {
+    if (!window.confirm(lang === 'bn'
+      ? 'সর্বশেষ server copy লোড করলে এই tab-এর অসংরক্ষিত পরিবর্তন বাদ যাবে। আগে backup ডাউনলোড করুন। লোড করবেন?'
+      : 'Loading the latest copy discards unsaved changes in this tab. Download your backup first. Continue?')) return;
+    try {
+      const latest = await fetchProject(id);
+      saveQueue.current.discard(id);
+      acknowledgedRevisions.current[id] = latest.revision!;
+      delete deletedSnapshots.current[id];
+      setProjects((previous) => previous.map((item) => item.id === id ? latest : item));
+      setSaveConflicts((previous) => { const next = { ...previous }; delete next[id]; return next; });
+      if (pid === id) {
+        setCid(latest.chapters[0]?.id ?? null);
+        setHistory([]);
+      }
+      setSaveState(saveQueue.current.dirty ? 'error' : 'saved');
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : t.saveFailed);
+    }
+  }
 
   // ── Keyboard Shortcuts (Ctrl+S, Ctrl+F, F11, Esc, ?) ────────────────────────
   useEffect(() => {
@@ -1543,6 +1595,7 @@ window.addEventListener('keydown', handleKeyDown);
       try {
         setNotice(lang === 'bn' ? 'পাণ্ডুলিপি লোড হচ্ছে...' : 'Loading manuscript...');
         const full = await fetchProject(targetPid);
+        acknowledgedRevisions.current[targetPid] = full.revision!;
         setProjects((prev) => prev.map((p) => (p.id === targetPid ? full : p)));
         setProjectLoadError(null);
         setPid(targetPid);
@@ -1739,6 +1792,11 @@ window.addEventListener('keydown', handleKeyDown);
     setDeleting(id);
     try {
       await deleteProject(id);
+      saveQueue.current.discard(id);
+      delete acknowledgedRevisions.current[id];
+      delete deletedSnapshots.current[id];
+      setSaveConflicts((previous) => { const next = { ...previous }; delete next[id]; return next; });
+      setSaveState(saveQueue.current.dirty ? 'error' : 'saved');
       const remaining = projects.filter((p) => p.id !== id);
       setProjects(remaining);
       if (pid === id) {
@@ -1858,6 +1916,7 @@ ${chaptersHtml}
         invalid_json: t.importErrInvalidJson,
         parse_failed: t.importErrParse,
         too_long: t.importErrTooLong,
+        too_many_chapters: lang === 'bn' ? 'সর্বোচ্চ ২০০টি অধ্যায় ইমপোর্ট করা যাবে। কোনো লেখা বাদ দেওয়া হয়নি।' : 'Maximum 200 chapters allowed. No text was discarded.',
       } as const;
       return map[err.code];
     }
@@ -1870,16 +1929,17 @@ ${chaptersHtml}
     setImporting(true);
     try {
       const parsed = await importManuscriptFile(file);
-      const created = await createProject({
-        title: parsed.title,
-        genre: parsed.genre,
-        language: parsed.language,
-      });
-      if (parsed.chapters.length > 0) {
-        await updateProject(created.id, { chapters: parsed.chapters });
-      }
+      const created = await createProject(parsed);
       const updatedList = await fetchProjects(1);
-      setProjects(updatedList.items);
+      setProjects((previous) => {
+        const merged = [created, ...updatedList.items.filter((p) => p.id !== created.id)]
+          .map((item) => previous.find((cached) => cached.id === item.id) ?? item);
+        // Library refreshes must not evict unsaved/conflicted local manuscripts.
+        for (const item of previous) {
+          if (saveQueue.current.has(item.id) && !merged.some((entry) => entry.id === item.id)) merged.push(item);
+        }
+        return merged;
+      });
       setProjectPages(updatedList.pages);
       setProjectPage(1);
       setPid(created.id);
@@ -1976,7 +2036,7 @@ ${chaptersHtml}
     setIgnored((prev) => {
       const next = [...prev, ...extra].filter((v, i, arr) => arr.indexOf(v) === i);
       try {
-        localStorage.setItem('lipishilpo_personal_dict', JSON.stringify(next));
+        writeDictionary(wpConfig.userId, next);
       } catch {}
       updatePrefs({ dictionary: next }).catch(() => {});
       return next;
@@ -2021,8 +2081,9 @@ ${chaptersHtml}
     const nextDict = Array.from(new Set([...ignored, clean]));
     setIgnored(nextDict);
     try {
-      localStorage.setItem('lipishilpo_personal_dict', JSON.stringify(nextDict));
+      writeDictionary(wpConfig.userId, nextDict);
     } catch {}
+    updatePrefs({ dictionary: nextDict }).catch(() => {});
     setNotice(lang === 'bn' ? `"${clean}" ব্যক্তিগত শব্দকোষে যোগ করা হয়েছে` : `"${clean}" added to personal dictionary`);
   }
 
@@ -2527,6 +2588,17 @@ ${chaptersHtml}
             </div>
           </header>
         )}
+
+        {Object.keys(saveConflicts).map((id) => {
+          const local = projects.find((item) => item.id === id);
+          return <div className="save-conflict" role="alert" key={id}>
+            <p><strong>{local?.title}</strong> — {lang === 'bn'
+              ? 'অন্য tab বা device-এ নতুন পরিবর্তন আছে। আপনার স্থানীয় লেখা এই tab-এ রাখা হয়েছে; server-এর লেখা overwrite করা হয়নি।'
+              : 'This manuscript changed in another tab or device. Your local edits are retained here; the server copy was not overwritten.'}</p>
+            {local && <button type="button" onClick={() => exportProjectToJson(local)}>{lang === 'bn' ? 'স্থানীয় backup ডাউনলোড' : 'Download local backup'}</button>}
+            <button type="button" onClick={() => reloadConflictedProject(id)}>{lang === 'bn' ? 'সর্বশেষ copy লোড করুন' : 'Load latest copy'}</button>
+          </div>;
+        })}
 
         {/* ── Projects View ── */}
         {view === 'projects' ? (

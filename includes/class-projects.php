@@ -27,6 +27,8 @@ class Lipishilpo_Projects {
 	const META_SNAPSHOTS  = '_lipishilpo_snapshots';
 	const META_COMMENTS   = '_lipishilpo_comments';
 	const META_EDITS      = '_lipishilpo_edits';
+	const META_CODEX      = '_lipishilpo_codex';
+	const META_REVISION   = '_lipishilpo_revision';
 	const META_WORD_COUNT = '_lipishilpo_word_count';
 	const USER_DICT       = '_lipishilpo_personal_dict';
 	const USER_GOAL       = '_lipishilpo_daily_target';
@@ -201,7 +203,7 @@ class Lipishilpo_Projects {
 	}
 
 	private static function project_args( $require_title = true ) {
-		return array(
+		$args = array(
 			'title'     => array(
 				'type'              => 'string',
 				'sanitize_callback' => 'sanitize_text_field',
@@ -234,7 +236,38 @@ class Lipishilpo_Projects {
 			'edits'     => array(
 				'type' => 'object',
 			),
+			'codex' => array( 'type' => 'object' ),
+			'deleted_snapshot_ids' => array( 'type' => 'array', 'items' => array( 'type' => 'string' ) ),
 		);
+		if ( ! $require_title ) {
+			foreach ( $args as &$arg ) {
+				unset( $arg['default'] );
+			}
+			unset( $arg );
+			$args['revision'] = array( 'type' => 'string', 'maxLength' => 64 );
+		}
+		return $args;
+	}
+
+	/** Serialize reads and writes across PHP workers, including the first edit of legacy projects. */
+	private static function with_project_lock( $id, $callback ) {
+		global $wpdb;
+		$key = 'lipishilpo_' . substr( hash( 'sha256', DB_NAME . ':' . $wpdb->prefix . ':' . $id ), 0, 48 );
+		$locked = $wpdb->get_var( $wpdb->prepare( 'SELECT GET_LOCK(%s, %d)', $key, 5 ) );
+		if ( '1' !== (string) $locked ) {
+			return new WP_Error( 'lipishilpo_busy', __( 'This manuscript is being saved. Please try again.', 'lipishilpo' ), array( 'status' => 503 ) );
+		}
+		try {
+			// Another worker may have written while this request was waiting.
+			clean_post_cache( $id );
+			return call_user_func( $callback );
+		} finally {
+			$wpdb->get_var( $wpdb->prepare( 'SELECT RELEASE_LOCK(%s)', $key ) );
+		}
+	}
+
+	private static function revision( $id ) {
+		return (string) ( get_post_meta( $id, self::META_REVISION, true ) ?: '0' );
 	}
 
 	private static function owns_post( $post_id ) {
@@ -352,10 +385,37 @@ class Lipishilpo_Projects {
 				'text'   => $text,
 				'notes'  => $notes,
 				'status' => $status,
+				'partTitle' => isset( $c['partTitle'] ) ? sanitize_text_field( (string) $c['partTitle'] ) : ( $existing['partTitle'] ?? '' ),
 			);
 		}
 
 		return $clean;
+	}
+
+	private static function sanitize_codex( $value ) {
+		$out = array( 'characters' => array(), 'lore' => array() );
+		if ( ! is_array( $value ) ) {
+			return $out;
+		}
+		$fields = array(
+			'characters' => array( 'id', 'name', 'role', 'age', 'traits', 'goal', 'notes', 'color' ),
+			'lore' => array( 'id', 'title', 'category', 'summary' ),
+		);
+		foreach ( $fields as $group => $keys ) {
+			foreach ( isset( $value[ $group ] ) && is_array( $value[ $group ] ) ? $value[ $group ] : array() as $item ) {
+				if ( ! is_array( $item ) ) {
+					continue;
+				}
+				$clean = array();
+				foreach ( $keys as $key ) {
+					if ( isset( $item[ $key ] ) && is_string( $item[ $key ] ) ) {
+						$clean[ $key ] = sanitize_textarea_field( $item[ $key ] );
+					}
+				}
+				$out[ $group ][] = $clean;
+			}
+		}
+		return $out;
 	}
 
 	private static function sanitize_snapshots( $map ) {
@@ -364,7 +424,7 @@ class Lipishilpo_Projects {
 		}
 
 		$out = array();
-		foreach ( array_slice( $map, 0, 50, true ) as $chapter_id => $items ) {
+		foreach ( array_slice( $map, 0, 200, true ) as $chapter_id => $items ) {
 			if ( ! is_array( $items ) ) {
 				continue;
 			}
@@ -378,6 +438,7 @@ class Lipishilpo_Projects {
 					'id'        => ! empty( $item['id'] ) ? sanitize_text_field( (string) $item['id'] ) : wp_generate_uuid4(),
 					'name'      => isset( $item['name'] ) ? sanitize_text_field( (string) $item['name'] ) : '',
 					'date'      => isset( $item['date'] ) ? sanitize_text_field( (string) $item['date'] ) : '',
+					'automatic' => ! empty( $item['automatic'] ),
 					'wordCount' => isset( $item['wordCount'] ) ? absint( $item['wordCount'] ) : 0,
 					'text'      => isset( $item['text'] ) ? self::sanitize_manuscript_text( $item['text'] ) : '',
 				);
@@ -394,7 +455,7 @@ class Lipishilpo_Projects {
 		}
 
 		$out = array();
-		foreach ( array_slice( $map, 0, 50, true ) as $chapter_id => $items ) {
+		foreach ( array_slice( $map, 0, 200, true ) as $chapter_id => $items ) {
 			if ( ! is_array( $items ) ) {
 				continue;
 			}
@@ -425,7 +486,7 @@ class Lipishilpo_Projects {
 
 		$allowed = array( 'spelling', 'grammar', 'style', 'punctuation', 'replace', 'custom' );
 		$out     = array();
-		foreach ( array_slice( $map, 0, 50, true ) as $chapter_id => $items ) {
+		foreach ( array_slice( $map, 0, 200, true ) as $chapter_id => $items ) {
 			if ( ! is_array( $items ) ) {
 				continue;
 			}
@@ -520,6 +581,8 @@ class Lipishilpo_Projects {
 			'genre'     => get_post_meta( $post->ID, self::META_GENRE, true ) ?: 'General Writing',
 			'language'  => get_post_meta( $post->ID, self::META_LANGUAGE, true ) ?: 'English',
 			'chapters'  => $chapters,
+			'revision' => self::revision( $post->ID ),
+			'codex' => self::sanitize_codex( get_post_meta( $post->ID, self::META_CODEX, true ) ),
 			'snapshots' => ! empty( $snapshots ) && is_array( $snapshots ) ? (object) $snapshots : (object) array(),
 			'comments'  => ! empty( $comments ) && is_array( $comments ) ? (object) $comments : (object) array(),
 			'edits'     => ! empty( $edits ) && is_array( $edits ) ? (object) $edits : (object) array(),
@@ -554,6 +617,12 @@ class Lipishilpo_Projects {
 	}
 
 	public static function get_project( $request ) {
+		return self::with_project_lock( (int) $request['id'], function() use ( $request ) {
+			return self::get_project_locked( $request );
+		} );
+	}
+
+	private static function get_project_locked( $request ) {
 		$id = (int) $request['id'];
 		if ( ! self::owns_post( $id ) ) {
 			return new WP_Error( 'lipishilpo_not_found', __( 'Manuscript not found.', 'lipishilpo' ), array( 'status' => 404 ) );
@@ -613,9 +682,11 @@ class Lipishilpo_Projects {
 		update_post_meta( $post_id, self::META_LANGUAGE, wp_slash( $language ) );
 		update_post_meta( $post_id, self::META_CHAPTERS, wp_slash( $chapters ) );
 		update_post_meta( $post_id, self::META_WORD_COUNT, $total_words );
-		update_post_meta( $post_id, self::META_SNAPSHOTS, wp_slash( array() ) );
-		update_post_meta( $post_id, self::META_COMMENTS, wp_slash( array() ) );
-		update_post_meta( $post_id, self::META_EDITS, wp_slash( array() ) );
+		update_post_meta( $post_id, self::META_REVISION, wp_generate_uuid4() );
+		update_post_meta( $post_id, self::META_CODEX, wp_slash( self::sanitize_codex( $request->get_param( 'codex' ) ) ) );
+		update_post_meta( $post_id, self::META_SNAPSHOTS, wp_slash( self::sanitize_snapshots( $request->get_param( 'snapshots' ) ) ) );
+		update_post_meta( $post_id, self::META_COMMENTS, wp_slash( self::sanitize_comments( $request->get_param( 'comments' ) ) ) );
+		update_post_meta( $post_id, self::META_EDITS, wp_slash( self::sanitize_edits( $request->get_param( 'edits' ) ) ) );
 
 		$response = rest_ensure_response( self::format_project( get_post( $post_id ) ) );
 		$response->set_status( 201 );
@@ -623,11 +694,34 @@ class Lipishilpo_Projects {
 	}
 
 	public static function update_project( $request ) {
+		return self::with_project_lock( (int) $request['id'], function() use ( $request ) {
+			return self::update_project_locked( $request );
+		} );
+	}
+
+	private static function update_project_locked( $request ) {
 		$id = (int) $request['id'];
 		if ( ! self::owns_post( $id ) ) {
 			return new WP_Error( 'lipishilpo_not_found', __( 'Manuscript not found.', 'lipishilpo' ), array( 'status' => 404 ) );
 		}
 
+		$revision = $request->get_param( 'revision' );
+		if ( ! is_string( $revision ) || '' === $revision ) {
+			return new WP_Error( 'lipishilpo_revision_required', __( 'Reload this manuscript before saving.', 'lipishilpo' ), array( 'status' => 428 ) );
+		}
+		if ( ! hash_equals( self::revision( $id ), $revision ) ) {
+			return new WP_Error( 'lipishilpo_conflict', __( 'This manuscript changed in another tab or device. Download your local backup before loading the latest version.', 'lipishilpo' ), array( 'status' => 409 ) );
+		}
+
+		// Validate the full chapter payload before changing any stored field.
+		if ( $request->has_param( 'chapters' ) ) {
+			$existing = get_post_meta( $id, self::META_CHAPTERS, true );
+			$existing = is_array( $existing ) ? array_column( $existing, null, 'id' ) : array();
+			$limit_error = self::validate_chapter_limits( self::sanitize_chapters( $request->get_param( 'chapters' ), $existing ), $id );
+			if ( $limit_error ) {
+				return $limit_error;
+			}
+		}
 		$update = array( 'ID' => $id );
 
 		if ( $request->has_param( 'title' ) ) {
@@ -638,8 +732,10 @@ class Lipishilpo_Projects {
 			$update['post_title'] = $title;
 		}
 
-		if ( count( $update ) > 1 ) {
-			wp_update_post( wp_slash( $update ) );
+		// Metadata-only edits must also update WordPress's modified timestamps.
+		$result = wp_update_post( wp_slash( $update ), true );
+		if ( is_wp_error( $result ) ) {
+			return $result;
 		}
 
 		if ( $request->has_param( 'genre' ) ) {
@@ -647,6 +743,21 @@ class Lipishilpo_Projects {
 		}
 		if ( $request->has_param( 'language' ) ) {
 			update_post_meta( $id, self::META_LANGUAGE, wp_slash( sanitize_text_field( $request->get_param( 'language' ) ) ) );
+		}
+		$snapshots_meta = self::sanitize_snapshots( $request->has_param( 'snapshots' ) ? $request->get_param( 'snapshots' ) : get_post_meta( $id, self::META_SNAPSHOTS, true ) );
+		$deleted_snapshot_ids = $request->get_param( 'deleted_snapshot_ids' ) ?: array();
+		$stored_snapshots = get_post_meta( $id, self::META_SNAPSHOTS, true );
+		foreach ( is_array( $stored_snapshots ) ? $stored_snapshots : array() as $cid => $items ) {
+			$incoming = $snapshots_meta[ $cid ] ?? array();
+			$ids = array_column( $incoming, 'id' );
+			foreach ( is_array( $items ) ? $items : array() as $item ) {
+				if ( ! empty( $item['automatic'] ) && ! in_array( $item['id'], $ids, true ) && ! in_array( $item['id'], $deleted_snapshot_ids, true ) ) {
+					array_unshift( $incoming, $item );
+				}
+			}
+			$snapshots_meta[ $cid ] = array_slice( array_values( array_filter( $incoming, function( $item ) use ( $deleted_snapshot_ids ) {
+				return ! in_array( $item['id'], $deleted_snapshot_ids, true );
+			} ) ), 0, 30 );
 		}
 		if ( $request->has_param( 'chapters' ) ) {
 			$existing_raw   = get_post_meta( $id, self::META_CHAPTERS, true );
@@ -665,7 +776,7 @@ class Lipishilpo_Projects {
 			}
 
 			// Automatic Shrink Guard (Accidental Deletion & Zero-Length Protection)
-			$snapshots_meta = get_post_meta( $id, self::META_SNAPSHOTS, true );
+			// The merged snapshots above include automatic backups from previous saves.
 			if ( ! is_array( $snapshots_meta ) ) {
 				$snapshots_meta = array();
 			}
@@ -690,6 +801,7 @@ class Lipishilpo_Projects {
 						 */
 						if ( (bool) apply_filters( 'lipishilpo_shrink_guard_enabled', true, $id, $cid ) ) {
 							$auto_snap = array(
+								'automatic' => true,
 								'id'        => wp_generate_uuid4(),
 								'name'      => __( 'Auto-backup before large deletion', 'lipishilpo' ),
 								'date'      => current_time( 'mysql' ),
@@ -708,7 +820,7 @@ class Lipishilpo_Projects {
 				}
 			}
 
-			if ( $snapshots_modified && ! $request->has_param( 'snapshots' ) ) {
+			if ( $snapshots_modified ) {
 				update_post_meta( $id, self::META_SNAPSHOTS, wp_slash( $snapshots_meta ) );
 			}
 
@@ -721,8 +833,11 @@ class Lipishilpo_Projects {
 			}
 			update_post_meta( $id, self::META_WORD_COUNT, $total_words );
 		}
-		if ( $request->has_param( 'snapshots' ) ) {
-			update_post_meta( $id, self::META_SNAPSHOTS, wp_slash( self::sanitize_snapshots( $request->get_param( 'snapshots' ) ) ) );
+		if ( $request->has_param( 'snapshots' ) || $request->has_param( 'deleted_snapshot_ids' ) ) {
+			update_post_meta( $id, self::META_SNAPSHOTS, wp_slash( $snapshots_meta ) );
+		}
+		if ( $request->has_param( 'codex' ) ) {
+			update_post_meta( $id, self::META_CODEX, wp_slash( self::sanitize_codex( $request->get_param( 'codex' ) ) ) );
 		}
 		if ( $request->has_param( 'comments' ) ) {
 			update_post_meta( $id, self::META_COMMENTS, wp_slash( self::sanitize_comments( $request->get_param( 'comments' ) ) ) );
@@ -731,10 +846,17 @@ class Lipishilpo_Projects {
 			update_post_meta( $id, self::META_EDITS, wp_slash( self::sanitize_edits( $request->get_param( 'edits' ) ) ) );
 		}
 
+		update_post_meta( $id, self::META_REVISION, wp_generate_uuid4() );
 		return rest_ensure_response( self::format_project( get_post( $id ) ) );
 	}
 
 	public static function delete_project( $request ) {
+		return self::with_project_lock( (int) $request['id'], function() use ( $request ) {
+			return self::delete_project_locked( $request );
+		} );
+	}
+
+	private static function delete_project_locked( $request ) {
 		$id = (int) $request['id'];
 		if ( ! self::owns_post( $id ) ) {
 			return new WP_Error( 'lipishilpo_not_found', __( 'Manuscript not found.', 'lipishilpo' ), array( 'status' => 404 ) );

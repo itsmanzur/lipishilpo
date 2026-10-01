@@ -41,7 +41,11 @@ export function ImportManuscriptModal({
       setProjectTitle(res.title);
     } catch (err: unknown) {
       if (err instanceof ManuscriptImportError) {
-        if (err.code === 'too_large') {
+        if (err.code === 'too_many_chapters') {
+          setError(lang === 'bn' ? 'সর্বোচ্চ ২০০টি অধ্যায় ইমপোর্ট করা যাবে। কোনো লেখা বাদ দেওয়া হয়নি।' : 'Maximum 200 chapters allowed. No text was discarded.');
+        } else if (err.code === 'too_long') {
+          setError(lang === 'bn' ? 'পাণ্ডুলিপি সর্বোচ্চ অক্ষরসীমা ছাড়িয়েছে।' : 'Manuscript exceeds the character limit.');
+        } else if (err.code === 'too_large') {
           setError(lang === 'bn' ? 'ফাইলের আকার ১২ মেগাবাইটের বেশি হতে পারবে না।' : 'File size exceeds 12MB limit.');
         } else if (err.code === 'legacy_doc') {
           setError(lang === 'bn' ? 'পুরনো .doc ফাইল সমর্থিত নয়। অনুগ্রহ করে .docx হিসেবে সেভ করে আপলোড করুন।' : 'Legacy .doc files are not supported. Please save as .docx.');

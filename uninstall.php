@@ -49,13 +49,8 @@ function lipishilpo_uninstall_single_site() {
 		);
 	}
 
-	// 2. Delete plugin user metadata
-	delete_metadata( 'user', 0, '_lipishilpo_personal_dict', '', true );
-	delete_metadata( 'user', 0, '_lipishilpo_daily_target', '', true );
-	delete_metadata( 'user', 0, '_lipishilpo_streak_count', '', true );
-	delete_metadata( 'user', 0, '_lipishilpo_last_streak_date', '', true );
-
-	// 3. Delete plugin options
+	// User preferences are shared across sites and are handled after checking every site.
+	// Delete site-local plugin options.
 	delete_option( 'lipishilpo_version' );
 	delete_option( 'lipishilpo_daily_target' );
 	delete_option( 'lipishilpo_delete_data_on_uninstall' );
@@ -70,16 +65,39 @@ function lipishilpo_uninstall_single_site() {
 	delete_option( 'lipishilpo_ai_base_url' );
 }
 
-// Multisite vs Single-Site Execution
+function lipishilpo_uninstall_shared_preferences() {
+	delete_metadata( 'user', 0, '_lipishilpo_personal_dict', '', true );
+	delete_metadata( 'user', 0, '_lipishilpo_daily_target', '', true );
+	delete_metadata( 'user', 0, '_lipishilpo_streak_count', '', true );
+	delete_metadata( 'user', 0, '_lipishilpo_last_streak_date', '', true );
+}
+
+// Preserve shared preferences if any site retains its plugin data.
 if ( is_multisite() ) {
-	$lipishilpo_sites = get_sites( array( 'number' => 500 ) );
-	if ( ! empty( $lipishilpo_sites ) ) {
-		foreach ( $lipishilpo_sites as $lipishilpo_site ) {
-			switch_to_blog( (int) $lipishilpo_site->blog_id );
-			lipishilpo_uninstall_single_site();
-			restore_current_blog();
+	$lipishilpo_delete_shared = true;
+	$lipishilpo_offset = 0;
+	do {
+		$lipishilpo_sites = get_sites( array( 'number' => 100, 'offset' => $lipishilpo_offset, 'fields' => 'ids', 'orderby' => 'id', 'order' => 'ASC' ) );
+		foreach ( $lipishilpo_sites as $lipishilpo_site_id ) {
+			switch_to_blog( (int) $lipishilpo_site_id );
+			try {
+				if ( get_option( 'lipishilpo_delete_data_on_uninstall' ) !== '1' ) {
+					$lipishilpo_delete_shared = false;
+				}
+				lipishilpo_uninstall_single_site();
+			} finally {
+				restore_current_blog();
+			}
 		}
+		$lipishilpo_offset += count( $lipishilpo_sites );
+	} while ( count( $lipishilpo_sites ) === 100 );
+	if ( $lipishilpo_delete_shared && $lipishilpo_offset > 0 ) {
+		lipishilpo_uninstall_shared_preferences();
 	}
 } else {
+	$lipishilpo_delete_shared = get_option( 'lipishilpo_delete_data_on_uninstall' ) === '1';
 	lipishilpo_uninstall_single_site();
+	if ( $lipishilpo_delete_shared ) {
+		lipishilpo_uninstall_shared_preferences();
+	}
 }
