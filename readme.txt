@@ -8,137 +8,101 @@ Stable tag: 1.0.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-A professional, distraction-free manuscript studio for novelists, authors, editors, and publishers writing in Bengali and multilingual scripts.
+Write Bengali and multilingual manuscripts with chapters, browser-based proofreading, character notes, snapshots, and portable backups.
 
 == Description ==
 
-**LipiShilpo (লিপিশিল্প)** is an international-standard writing and manuscript studio built specifically for Bengali literature, novels, research papers, and books.
+Lipishilpo (লিপিশিল্প) is a manuscript editor inside WordPress. Organize chapters, write in Bengali or other Unicode scripts, keep character and world-building notes, and export your work.
 
-It bridges the gap between distraction-free writing environments (like Ulysses and Scrivener) and modern WordPress web publishing with deep phonetic typing support, smart typographic quotes, world-building codex, and in-depth literary analytics.
+The interface supports Bengali and English. Dictionary-based spellchecking is available for Bengali and US English. Rule-based suggestions and writing statistics are editing aids; they do not replace human proofreading or guarantee compliance with a publishing standard.
 
-### 🌟 Key Highlights
+= Writing and organization =
 
-* **Notion-Style Slash Commands (`/`):** Type `/` anywhere on a line to open an instant command palette and insert headings, dialogues, poems, boxes, footnotes, and dividers with zero friction.
-* **Literary & Fiction Formatting Suite:** 1-click Bengali dialogue (`— “উক্তি”`), formatted poem stanzas (`:::poem`), scholarly footnotes (`[^১]`), decorative drop caps (`:::dropcap`), and artistic scene break motifs (`❖ ❖ ❖`, `~ ❦ ~`, `— ✦ —`, `* * *`, `❧ ❧ ❧`).
-* **Multi-Color Semantic Highlighter:** Mark plot twists (Yellow), source verifications (Green), character traits (Purple), and revisions (Pink).
-* **Interactive In-Editor Cheat Sheet (Ctrl+/):** Quick floating syntax helper with 1-click syntax copying and direct insertion into the editor.
-* **Zen & Typewriter Focus Mode:** Vertically centered active typing line keeps authors in deep focus without neck or eye strain.
-* **Floating Selection Bubble Toolbar:** Select any text to instantly apply bold, italic, Bengali smart curly quotes, headings, scene dividers, and highlights.
-* **Smart Bengali Typography Engine:** Keystrokes automatically transform into literary curved quotation marks (“ ” and ‘ ’), em-dashes (—), and ellipses (…).
-* **5 Premium Paper Ambience Themes:** Light Paper, Sepia Warm, Parchment Manuscript, Slate Dark, and OLED Pure Black.
-* **Drag & Drop Chapter Organizer:** Sidebar visual grip handles to easily reorder novel chapters with automatic persistence.
-* **4-Stage Workflow Status Badges:** Track chapter progress across Draft (খসড়া), In Progress (চলমান), Revised (সংশোধিত), and Final (চূড়ান্ত).
-* **Global Project Search & Replace (Ctrl+Shift+F):** Find and replace characters and words across all book chapters in 1 click.
-* **World-Building & Character Codex:** Dedicated profile cards for characters (role, traits, bio) and world lore settings with 1-click name insertion.
-* **Literary Analytics:** Dialogue vs. Narrative ratio visualizer, sentence cadence rhythm, and overused words detector with literary synonyms.
-* **Phonetic Typing & Conjuncts Suite:** Built-in Bijoy to Unicode, Unicode to Bijoy, and Avro phonetic converters with a complete conjuncts cheat sheet.
-* **Universal Exports:** Export manuscripts to JSON backup, Clean HTML, Markdown, and Plain Text. Import Microsoft Word (.docx). Print-ready DOCX, PDF, and EPUB are in Lipishilpo Pro.
+* Chapter reordering, research notes, and Draft / In Progress / Revised / Final status.
+* Focus and typewriter modes, five editor color themes, and locally bundled fonts.
+* Slash commands, a selection toolbar, smart quotation marks, and a formatting reference.
+* Manuscript markup for headings, dialogue, poems, footnotes, and highlights.
+* Character and world-building Codex, comments, snapshots, and edit history.
+* Project-wide find and replace, word counts, sentence-length statistics, and dialogue estimates.
+* Bengali conjuncts reference with Avro key hints and character insertion.
+
+= Saving, import, and export =
+
+* Autosave to your WordPress site, with a warning when another tab or device has saved a newer version.
+* Download a local JSON backup before loading the latest server copy after a conflict.
+* JSON backups include chapters, chapter status, notes, Codex, snapshots, comments, and edit history.
+* Export plain text, Markdown, and HTML; import JSON backups, plain text, Markdown, and Word (.docx).
+* Word import extracts manuscript content; it does not preserve all Word page layout, images, or formatting.
+* The default limit is 200 chapters and 500,000 manuscript characters per project. Import files are limited to 12 MB. Imports exceeding the chapter limit are rejected instead of being truncated.
+
+Lipishilpo Pro is a separate optional plugin for additional AI and publication tools. The Free plugin's writing, local proofreading, and basic export features do not require a paid license.
 
 == Installation ==
 
-1. Upload the `lipishilpo` folder to your `/wp-content/plugins/` directory, or install the `lipishilpo.zip` via **Plugins > Add New > Upload Plugin**.
-2. Activate the plugin through the **Plugins** menu in WordPress.
-3. Access the studio from the **Lipishilpo** menu in your WordPress Admin, or place the `[lipishilpo]` shortcode on any password-protected or member page.
+1. Upload the lipishilpo folder to /wp-content/plugins/, or upload the plugin ZIP through Plugins > Add New.
+2. Activate Lipishilpo and open its menu in WordPress Admin.
+3. Alternatively, add the [lipishilpo] shortcode to a page.
+4. Sign in with an account that can edit posts. A shortcode page does not grant editing access to visitors or subscriber accounts.
 
 == Frequently Asked Questions ==
 
-= Is my manuscript private and secure? =
-Yes! Every manuscript is saved in your local WordPress database and is strictly private to your user account. No external tracking or telemetry is used.
+= Does it include Bijoy conversion or an Avro typing engine? =
 
-= How do Slash Commands work? =
-Type `/` on any line in the editor to pop up the command palette. You can type keywords like `/dialogue`, `/poem`, `/h2`, or use the arrow keys and press Enter.
+No. It includes a Bengali conjuncts reference with Avro key hints and insertion helpers. Use your preferred Unicode keyboard or input method for phonetic typing. Bijoy-to-Unicode and Unicode-to-Bijoy conversion are not included.
 
-= Does it support Bijoy and Avro typing? =
-Yes! LipiShilpo includes a dual-engine converter that allows 1-click bi-directional conversion between Bijoy and standard Unicode, along with an Avro cheat sheet for complex Bengali conjuncts (যুক্তবর্ণ).
+= Where is my manuscript stored? =
 
-= Can I export my book to Microsoft Word? =
-You can import .docx into the Free studio. Layout-aware Word (.docx) export, along with print-ready PDF and EPUB, is in Lipishilpo Pro Book Studio. Free exports HTML, Markdown, plain text, and JSON backup.
+Projects and related metadata are stored in your site's WordPress database. The plugin's project API checks ownership before allowing access. Site administrators with database or server access can still access stored site data. User preferences are stored in WordPress user metadata, with selected preferences cached in the browser.
 
-= What additional features are in Lipishilpo Pro? =
-Lipishilpo Pro unlocks the Book Get-Up Studio (preview demo; licensed PDF, EPUB, and Word export; cover image upload; barcode), universal AI editorial (OpenAI, Gemini, Claude, OpenRouter), and browser Web Speech text-to-speech.
+= Does it send writing to an external service? =
 
-== Screenshots ==
+The Free plugin does not send manuscripts to an external AI or proofreading service and does not include telemetry. Fonts and spellchecking dictionaries are bundled and loaded from your own site. Import parsing and proofreading run in the browser. Saving, loading, and publishing contact your WordPress site. Optional add-ons may have their own external-service settings and disclosures.
 
-1. **Zen Studio Editor** – Distraction-free writing paper with typewriter scrolling, slash commands palette, and floating selection bubble toolbar.
-2. **Formatting Cheat Sheet & Literary Tools** – Interactive syntax guide with dialogue dashes, poetry blocks, footnotes, and color highlighters.
-3. **Manuscript Outliner** – Drag-and-drop chapter organizer with 4-stage workflow status badges.
-4. **World-Building Codex** – Character profiles and lore notes manager.
-5. **Writing Analytics** – Dialogue vs Narrative ratio bar and sentence rhythm cadence analyzer.
-6. **Find, replace, and bilingual spellcheck** – Project-wide search plus offline Bengali and English Hunspell.
+= Does it work offline? =
+
+Proofreading runs locally after the dictionaries have loaded. Loading and saving projects requires a connection to your WordPress site. Download backups before closing a tab with unsaved changes.
+
+= Can I publish to WordPress? =
+
+Yes. You can create a draft or publish a post or page when your WordPress account has the corresponding capabilities.
+
+= Does the Free plugin export DOCX, PDF, or EPUB? =
+
+No. Free exports plain text, Markdown, HTML, and JSON backups. It can import DOCX. Additional publication formats belong to the separate Pro add-on.
+
+= What happens when I uninstall the plugin? =
+
+Project data is retained by default. Administrators can enable deletion in the plugin settings. On multisite, each site's setting controls its project cleanup; shared user preferences are retained if any site keeps its data. Browser caches and previously downloaded backups are not deleted by uninstalling the plugin.
 
 == Changelog ==
 
 = 1.0.0 =
-* Full release of LipiShilpo Free Manuscript Studio.
-* Notion-style slash commands (`/`) for rapid formatting without mouse interaction.
-* Literary writing tools: dialogue standard, poem stanzas, footnotes, drop caps, and scene break motifs.
-* Multi-color semantic text highlighter (Yellow, Green, Purple, Pink).
-* Interactive in-editor formatting cheat sheet modal (`Ctrl+/`).
-* Typewriter scrolling and 5 paper ambience themes.
-* Floating bubble toolbar and smart typographic keystroke engine.
-* Drag-and-drop chapter reordering and workflow status badges.
-* Global project search and replace modal (Ctrl+Shift+F).
-* Character and World Lore Codex panel.
-* Dialogue vs narrative ratio, sentence cadence, and overused words analytics.
-* JSON, HTML, TXT, and Markdown exports; Word (.docx) import. Print-ready DOCX/PDF/EPUB via Pro.
+* Initial release of the manuscript editor, chapter tools, local proofreading, and Codex.
+* JSON backup and restore, text/Markdown/HTML exports, and DOCX import.
+* Serialized autosave and revision checks to prevent stale tabs overwriting newer saves.
+* Partial-update protection, automatic snapshots before large text reductions, and import overflow validation.
+* Account-specific dictionary caches, scoped editor styles, and multisite-aware cleanup.
 
-== Upgrade Notice ==
+== Third-Party Components ==
 
-= 1.0.0 =
-Initial international release of LipiShilpo Free Manuscript Studio.
+Original plugin code is licensed under GPL-2.0-or-later; see LICENSE.txt. Bundled components retain their original licenses and copyright notices.
 
-== 3rd Party / External Services ==
+* JavaScript: React, React DOM, Lucide React, Mammoth, nspell, and their runtime dependencies. Exact installed versions, upstream source links, and complete license texts are in THIRD-PARTY-NOTICES.txt. JSZip uses its MIT license option; Pako includes MIT and zlib notices.
+* Fonts: Hind Siliguri (Indian Type Foundry), Noto Sans Bengali / Noto Serif Bengali / Noto Serif (The Noto Project Authors), and Tiro Bangla (The Indigo Project Authors / Tiro Typeworks). Licensed under SIL Open Font License 1.1. See assets/fonts/FONT-NOTICES.txt and the family-specific LICENSE-*.txt files.
+* Bengali dictionary: Jacob Thomas / Bengal Creative Media Ltd., published by Bangla Type Foundry under GPLv2. Original readable dictionary files, upstream notice, and GPLv2 text are included in assets/dicts/.
+* English dictionary: LibreOffice's en_US Hunspell dictionary derived from SCOWL. Its component copyright notices and permissive license terms are included in assets/dicts/README-en-US-upstream.txt.
 
-This plugin bundles and utilizes several open-source libraries, fonts, and dictionary files to provide its distraction-free writing, typography, and proofreading features:
-
-### Fonts
-* **Noto Sans Bengali / Noto Serif Bengali / Noto Serif**
-  * Author: The Noto Project Authors (Google)
-  * Source: https://github.com/notofonts/bengali / https://github.com/googlefonts/noto-fonts
-  * License: SIL Open Font License, 1.1 (http://scripts.sil.org/OFL)
-* **Hind Siliguri**
-  * Author: Indian Type Foundry
-  * Source: https://github.com/itfoundry/hind-siliguri
-  * License: SIL Open Font License, 1.1 (http://scripts.sil.org/OFL)
-* **Tiro Bangla**
-  * Author: Tiro Typeworks (John Hudson, Fiona Ross)
-  * Source: https://github.com/TiroTypeworks/Tiro-Bangla
-  * License: SIL Open Font License, 1.1 (http://scripts.sil.org/OFL)
-
-### Dictionaries (Proofreading)
-* **Bengali (bn-BD) Hunspell Dictionary**
-  * Author/Source: Bangla Type Foundry / Jacob Thomas (mirrored by mm-crj/bangla-hunspell)
-  * Source: https://banglatypefoundry.com/spellchecker/
-  * License: GNU General Public License v2 (GPL-2.0)
-* **English (en-US) Hunspell Dictionary**
-  * Author/Source: LibreOffice dictionaries / SCOWL (Kevin Atkinson)
-  * Source: https://github.com/LibreOffice/dictionaries/tree/master/en
-  * License: BSD-style / LGPL / MPL
-
-### JavaScript Libraries (Bundled)
-* **React & React-DOM** (v19.x)
-  * Author: Meta Platforms, Inc.
-  * Source: https://react.dev
-  * License: MIT License (https://github.com/facebook/react/blob/main/LICENSE)
-* **Lucide React**
-  * Author: Lucide Project
-  * Source: https://lucide.dev
-  * License: ISC License (https://github.com/lucide-icons/lucide/blob/main/LICENSE)
-* **Mammoth.js**
-  * Author: Michael Williamson
-  * Source: https://github.com/mwilliamson/mammoth.js
-  * License: BSD 2-Clause License (https://github.com/mwilliamson/mammoth.js/blob/master/LICENSE)
-* **Nspell**
-  * Author: Titus Wormer
-  * Source: https://github.com/wooorm/nspell
-  * License: MIT License (https://github.com/wooorm/nspell/blob/main/license)
+These bundled components are not external services. Source URLs and dictionary provenance are recorded in assets/dicts/NOTICE.txt and assets/fonts/SOURCES.txt.
 
 == Source Code ==
 
-The unminified TypeScript/React source code for Lipishilpo is publicly available in our Git repository:
-* Repository: https://github.com/itsmanzur/lipishilpo
-* Build Instructions:
-  1. Clone repository and navigate to `src/` directory.
-  2. Run `npm install` to install build dependencies.
-  3. Run `npm run build` to compile the TypeScript React application into `/assets/js/` and `/assets/css/`.
+The readable TypeScript/React source and locked npm dependency manifest are included in src/ in this distribution.
 
+To rebuild the editor:
+
+1. Use Node.js and npm (the release build was tested with Node.js 24).
+2. From the src/ directory, run npm ci.
+3. Run npm run build. Vite writes the browser assets to assets/js/ and assets/css/.
+4. From the plugin root, run node scripts/generate-notices.cjs after dependency changes to regenerate the JavaScript notices.
+
+Third-party package sources are available from the repository and npm links in THIRD-PARTY-NOTICES.txt. No node_modules directory is required on the WordPress server.

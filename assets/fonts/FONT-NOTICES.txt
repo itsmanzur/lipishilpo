@@ -1,0 +1,33 @@
+LIPISHILPO BUNDLED FONT NOTICES
+
+All bundled fonts are licensed under the SIL Open Font License 1.1.
+The copyright statements below are read from the bundled font binaries.
+Complete family-specific licenses are included in LICENSE-*.txt.
+
+HindSiliguri-Regular.woff2
+Copyright (c) 2015 Indian Type Foundry (info@indiantypefoundry.com)
+Version 1.001;PS 1.0;hotconv 1.0.86;makeotf.lib2.5.63406; ttfautohint (v1.5.33-1714) -l 8 -r 50 -G 200 -x 13 -D latn -f beng -w G -W -c -X ""
+
+NotoSansBengali-Regular.woff2
+Copyright 2025 The Noto Project Authors (https://github.com/notofonts/bengali)
+Version 3.011
+
+NotoSerif-Bold.ttf
+Copyright 2022 The Noto Project Authors (https://github.com/notofonts/latin-greek-cyrillic)
+Version 2.015; ttfautohint (v1.8.4.7-5d5b)
+
+NotoSerif-Regular.ttf
+Copyright 2022 The Noto Project Authors (https://github.com/notofonts/latin-greek-cyrillic)
+Version 2.015; ttfautohint (v1.8.4.7-5d5b)
+
+NotoSerifBengali-Bold.ttf
+Copyright 2025 The Noto Project Authors (https://github.com/notofonts/bengali)
+Version 3.000; ttfautohint (v1.8.4.7-5d5b)
+
+NotoSerifBengali-Regular.ttf
+Copyright 2025 The Noto Project Authors (https://github.com/notofonts/bengali)
+Version 3.000; ttfautohint (v1.8.4.7-5d5b)
+
+TiroBangla-Regular.woff2
+Copyright 2020 The Indigo Project Authors (https://github.com/TiroTypeworks/Indigo)
+Version 1.52

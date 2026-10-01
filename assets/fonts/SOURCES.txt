@@ -1,0 +1,19 @@
+FONT SOURCES AND LICENSES
+
+Exact bundled font copyright statements and version strings: FONT-NOTICES.txt.
+All five families use SIL Open Font License 1.1.
+
+Hind Siliguri: https://github.com/itfoundry/hind-siliguri
+License copy: https://github.com/google/fonts/blob/main/ofl/hindsiliguri/OFL.txt
+Noto Sans Bengali / Noto Serif Bengali: https://github.com/notofonts/bengali
+License copies: https://github.com/google/fonts/blob/main/ofl/notosansbengali/OFL.txt
+https://github.com/google/fonts/blob/main/ofl/notoserifbengali/OFL.txt
+Noto Serif: https://github.com/notofonts/latin-greek-cyrillic
+License copy: https://github.com/google/fonts/blob/main/ofl/notoserif/OFL.txt
+Tiro Bangla: https://github.com/TiroTypeworks/Indigo
+License copy: https://github.com/google/fonts/blob/main/ofl/tirobangla/OFL.txt
+
+The upstream license copies were retrieved on 2026-10-01. Noto Bengali upstream
+license headers currently say 2022; the bundled newer font binaries say 2025.
+Both are retained in the license files and FONT-NOTICES.txt without altering the
+upstream license texts. Fonts are served locally; no external font service is used.

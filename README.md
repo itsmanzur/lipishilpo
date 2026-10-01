@@ -1,92 +1,40 @@
-# লিপি শিল্প (LipiShilpo) — Bengali & Multilingual Manuscript Studio
+# লিপিশিল্প — WordPress manuscript editor
 
-**বাংলা সাহিত্যিক, লেখক, সম্পাদক ও প্রকাশকদের জন্য পূর্ণাঙ্গ ও আন্তর্জাতিক মানের পাণ্ডুলিপি রচনা স্টুডিও।**
+বাংলা ও অন্যান্য Unicode ভাষায় পাণ্ডুলিপি লেখা, অধ্যায় সাজানো, character/world Codex, browser-based proofreading এবং JSON backup-এর জন্য WordPress plugin।
 
-LipiShilpo হলো ওয়ার্ডপ্রেসের জন্য তৈরি একটি ডিস্ট্র্যাকশন-মুক্ত ও অত্যন্ত দ্রুত রাইটিং এবং পাণ্ডুলিপি ব্যবস্থাপনা স্যুট। এতে রয়েছে জেন ফোকাস রাইটিং পরিবেশ, নোশন-স্টাইল স্ল্যাশ কমান্ড (`/`), স্মার্ট টাইপোগ্রাফি রূপান্তর, অফলাইন ব্যাকরণ ও বানান সংশোধন, অধ্যায় বিন্যাস ও স্ন্যাপশট ভার্সন হিস্ট্রি, ক্যারেক্টার ও ওয়ার্ল্ড কোডেক্স এবং গভীর সাহিত্যিক অ্যানালিটিক্স।
+ব্যবহার, সীমাবদ্ধতা, privacy ও Free/Pro পার্থক্যের মূল ডকুমেন্ট: [readme.txt](readme.txt)।
 
----
+Bijoy converter বা built-in Avro phonetic engine নেই। Bengali conjuncts reference ও Avro key hints আছে। Spellchecking বাংলা ও US English dictionary-ভিত্তিক; অন্যান্য Unicode ভাষায় লেখা যায়।
 
-## 🚀 প্রধান বৈশিষ্ট্যসমূহ (Key Features)
+## Build
 
-### ১. জেন ও টাইপরাইটার ফোকাস (Zen & Focus Writing)
-- 🎯 **Typewriter Scrolling Mode:** লেখকের সক্রিয় টাইপিং লাইন সর্বদা স্ক্রিনের কেন্দ্রে উল্লম্বভাবে স্থির থাকে।
-- ✍️ **Floating Selection Bubble Toolbar:** যেকোনো টেক্সট সিলেক্ট করলেই ভেসে ওঠে আধুনিক ফরম্যাটিং বাবল (বোল্ড, ইটালিক, কোটেশন, দৃশ্য বিভাজক, হাইলাইটার)।
-- 🔤 **Smart Bangla Typography:** কীবোর্ডের সাধারণ কোট ও ড্যাশ স্বয়ংক্রিয়ভাবে সাহিত্যিক বাঁকা কোটেশন (`“”`, `‘’`), এম-ড্যাশ (`—`), এবং ইলিপসিস (`…`) চিহ্নে রূপান্তরিত হয়।
-- 🎨 **৫টি প্রিমিয়াম পেপার থিম:** Light Paper, Sepia Warm, Parchment Manuscript, Slate Dark, এবং OLED Pure Black।
+Node.js 24-এ release build পরীক্ষা করা হয়েছে।
 
-### ২. স্ল্যাশ কমান্ড ও সাহিত্যিক ফরম্যাটিং (Slash Commands & Syntax)
-- ⚡ **Notion-Style Slash Commands (`/`):** যেকোনো লাইনে `/` টাইপ করলেই ভেসে ওঠে কমান্ড প্যালেট—মাউস ছাড়াই হেডিং, সংলাপ, কবিতা, দৃশ্য বিভাজক, ফুটনোট ও ড্রপ ক্যাপ যুক্ত করা যায়।
-- 💬 **বাংলা ডায়ালগ ফরম্যাট (`— “উক্তি”`):** এক ক্লিকে বাংলা সাহিত্যের আদর্শ সংলাপ শৈলী ইনসার্ট।
-- 📜 **কবিতা ও স্তবক ব্লক (`:::poem`):** কবিতার পঙক্তি ও স্তবকের নান্দনিক ইন্ডেন্টেশন ও স্পেসিং।
-- 🔢 **পাণ্ডুলিপি ফুটনোট (`[^১]`):** সাহিত্যিক ও গবেষণামূলক লেখার জন্য ফুটনোট ও টীকা সমর্থন।
-- ⚜️ **দৃশ্য বিভাজক মোটিফ (Scene Breaks):** `❖ ❖ ❖`, `~ ❦ ~`, `— ✦ —`, `* * *`, `❧ ❧ ❧` ইত্যাদি ৫টি ক্লাসিক সাহিত্যিক বিভাজক।
-- 🖍️ **মাল্টি-কালার হাইলাইটার:** প্লট টুইস্ট (হলুদ), উৎস বা সত্যতা (সবুজ), চরিত্রের বৈশিষ্ট্য (বেগুনি) ও রিভিশন নোট (গোলাপি)।
+```sh
+cd src
+npm ci
+npm run build
+cd ..
+node scripts/generate-notices.cjs
+```
 
-### ৩. পাণ্ডুলিপি সংগঠন ও স্ন্যাপশট হিস্ট্রি (Manuscript & Version Control)
-- 📂 **ড্র্যাগ অ্যান্ড ড্রপ আউটলাইনার:** সাইডবারে গ্রিপ হ্যান্ডেলের মাধ্যমে এক টানে অধ্যায়ের ক্রম পুনর্বিন্যাস।
-- 🏷️ **৪-ধাপের স্ট্যাটাস ওয়ার্কফ্লো:** প্রতিটি অধ্যায়ের অগ্রগতি ট্র্যাক করুন — খসড়া (Draft), চলমান (In Progress), সংশোধিত (Revised), এবং চূড়ান্ত (Final)।
-- 🕒 **অটো-সেফটি স্ন্যাপশট ও ১-ক্লিক রিস্টোর:** লেখার প্রতিটি গুরুত্বপূর্ণ ধাপে স্বয়ংক্রিয় স্ন্যাপশট এবং সাইড-বাই-সাইড ডিফারেন্স (Diff) দেখে পূর্বের সংস্করণে ফিরে যাওয়ার সুবিধা।
-- 📥 **মাল্টি-ফরম্যাট ইম্পোর্ট:** Microsoft Word (`.docx`), Markdown (`.md`), Plain Text (`.txt`), এবং LipiShilpo Backup (`.json`) ফাইল থেকে সরাসরি অধ্যায় ইম্পোর্ট।
-- 🔍 **গ্লোবাল সার্চ ও রিপ্লেস (`Ctrl+Shift+F`):** সমগ্র বইয়ের সমস্ত অধ্যায়ে একসাথে চরিত্র বা শব্দের অনুসন্ধান ও এক ক্লিকে সংশোধন।
+Readable source এবং lockfile src/ ফোল্ডারে রয়েছে। WordPress server-এ Node.js বা node_modules প্রয়োজন নেই।
 
-### ৪. ব্যাকরণ, বিশ্ব-নির্মাণ ও অ্যানালিটিক্স (Proofread, Codex & Analytics)
-- 🔍 **অফলাইন বাংলা ও ইংরেজি স্পেলচেকার:** বাংলা একাডেমি প্রমিত বানান ডিকশনারি (bn-BD) ও ইংরেজি (en-US) অফলাইন Hunspell প্রুফরিডিং।
-- 👥 **World-Building Codex:** চরিত্র প্রোফাইলিং (রোল, বয়স, ব্যক্তিত্ব, ব্যাকস্টোরি) এবং কাল্পনিক বিশ্বের ভৌগোলিক ও ঐতিহাসিক নিয়মাবলি সংরক্ষণের নিবেদিত প্যানেল।
-- 📊 **Literary Analytics:** সংলাপ বনাম বর্ণনা অনুপাত (Dialogue vs. Narrative Ratio), বাক্যের গতিশীলতা ছন্দ (Sentence Cadence), এবং অতিব্যবহৃত শব্দ ডিটেক্টর ও সাহিত্যিক প্রতিশব্দ সাজেশন।
-- 🔄 **ফনেটিক ও কনভার্সন ইঞ্জিন:** বিজয় ↔ ইউনিকোড উভমুখী কনভার্টার ও অভ্র যুক্তবর্ণ চিট শিট।
-- 💾 **ইউনিভার্সাল এক্সপোর্ট:** JSON ব্যাকআপ, Clean HTML, Markdown এবং Plain Text। Word (`.docx`) ইমপোর্ট ফ্রি; লেআউটসহ DOCX/PDF/EPUB এক্সপোর্ট প্রোতে।
+## Regression tests
 
----
+```sh
+node tests/frontend-regressions.cjs
+php tests/uninstall-regressions.php mixed
+php tests/uninstall-regressions.php all
+php tests/uninstall-regressions.php single-keep
+php tests/uninstall-regressions.php single-delete
+```
 
-## ⌨️ প্রয়োজনীয় কীবোর্ড শর্টকাট (Shortcuts)
+Local WordPress database-এ REST smoke tests: php tests/run-rest-regressions.php /path/to/wp-load.php। Test runner অস্থায়ী user ও manuscript তৈরি করে শেষে মুছে দেয়; উপযুক্ত PHP/MySQL configuration প্রয়োজন।
 
-| শর্টকাট | কাজ |
-| :--- | :--- |
-| `Ctrl + S` / `Cmd + S` | তাৎক্ষণিক ক্লাউড/ডাটাবেজ সেভ |
-| `Ctrl + /` / `Cmd + /` | ফরম্যাটিং চিট শিট ও শর্টকাট মডাল ওপেন |
-| `Ctrl + Shift + F` | প্রজেক্ট-ওয়াইড গ্লোবাল সার্চ ও রিপ্লেস |
-| `/` (নতুন লাইনে) | নোশন-স্টাইল স্ল্যাশ কমান্ড প্যালেট |
-| `Alt + Z` | জেন ও টাইপরাইটার ফোকাস মোড টগল |
-| `Alt + N` | দ্রুত নতুন অধ্যায় তৈরি |
+## Licensing
 
----
-
-## 📦 ইনস্টলেশন ও ডেভেলপমেন্ট
-
-1. প্লাগইন ফোল্ডারটি ওয়ার্ডপ্রেসের `wp-content/plugins/lipishilpo` ডিরেক্টরিতে রাখুন।
-2. ওয়ার্ডপ্রেস অ্যাডমিন প্যানেল থেকে **Plugins > Installed Plugins** এ গিয়ে **LipiShilpo** সক্রিয় (Activate) করুন।
-3. ক্লায়েন্ট অ্যাপ বিল্ড করতে:
-   ```bash
-   cd src
-   npm install
-   npm run build
-   ```
-
----
-
-## 📄 লাইসেন্স ও ডকুমেন্টেশন
-- লিপিশিল্প প্লাগিনটি **GPL-2.0-or-later** লাইসেন্সের অধীনে মুক্ত ও উন্মুক্ত সোর্স সফটওয়্যার।
-- বিস্তারিত ফ্রি ফিচারের জন্য দেখুন: [FREE_FEATURES.md](FREE_FEATURES.md)
-- বিস্তারিত প্রো ফিচারের জন্য দেখুন: [PRO_FEATURES.md](PRO_FEATURES.md)
-
----
-
-## 🏛️ থার্ড-পার্টি লাইব্রেরি ও ফন্ট কৃতজ্ঞতা (Third-Party Assets & Credits)
-
-লিপিশিল্পে ব্যবহৃত সকল থার্ড-পার্টি রিসোর্স ১০০% ওপেন সোর্স এবং ওয়ার্ডপ্রেস নির্দেশিকার সাথে সামঞ্জস্যপূর্ণ:
-
-### ফন্টসমূহ (Fonts)
-* **Noto Sans Bengali / Noto Serif Bengali / Noto Serif:** The Noto Project Authors (Google) — [SIL Open Font License 1.1](http://scripts.sil.org/OFL)
-* **Hind Siliguri:** Indian Type Foundry — [SIL Open Font License 1.1](http://scripts.sil.org/OFL)
-* **Tiro Bangla:** Tiro Typeworks (John Hudson, Fiona Ross) — [SIL Open Font License 1.1](http://scripts.sil.org/OFL)
-
-### অফলাইন ডিকশনারি (Dictionaries)
-* **Bengali (bn-BD) Hunspell:** Bangla Type Foundry / Jacob Thomas — [GNU GPL v2](https://banglatypefoundry.com/spellchecker/)
-* **English (en-US) Hunspell:** LibreOffice / SCOWL (Kevin Atkinson) — BSD / LGPL / MPL
-
-### জাভাস্ক্রিপ্ট লাইব্রেরিসমূহ (Bundled JS Libraries)
-* **React & React-DOM (v19):** Meta Platforms, Inc. — [MIT License](https://github.com/facebook/react/blob/main/LICENSE)
-* **Lucide React:** Lucide Project — [ISC License](https://github.com/lucide-icons/lucide/blob/main/LICENSE)
-* **Mammoth.js:** Michael Williamson — [BSD 2-Clause License](https://github.com/mwilliamson/mammoth.js/blob/master/LICENSE)
-* **Nspell:** Titus Wormer — [MIT License](https://github.com/wooorm/nspell/blob/main/license)
-
+Original code: GPL-2.0-or-later ([LICENSE.txt](LICENSE.txt))।
+JavaScript dependency notices: [THIRD-PARTY-NOTICES.txt](THIRD-PARTY-NOTICES.txt)।
+Font notices: [assets/fonts/FONT-NOTICES.txt](assets/fonts/FONT-NOTICES.txt)।
+Dictionary provenance: [assets/dicts/NOTICE.txt](assets/dicts/NOTICE.txt)।

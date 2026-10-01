@@ -1,12 +1,25 @@
-Bengali (bn-BD) Hunspell dictionary
-Source: Bangla Type Foundry / Jacob Thomas
-https://banglatypefoundry.com/spellchecker/
-Mirrored via https://github.com/mm-crj/bangla-hunspell
-License: GNU GPL v2
-Used by Lipishilpo for offline dictionary proofreading.
+BUNDLED DICTIONARY PROVENANCE
 
-English (en-US) Hunspell dictionary
-Source: LibreOffice dictionaries (en_US), based on SCOWL / Kevin Atkinson
-https://github.com/LibreOffice/dictionaries/tree/master/en
-License: BSD-style (see README-en-US.txt)
-Shipped as en-US.aff and en-US.dic for offline browser spellchecking.
+Bengali (Bangladesh): bn-BD.aff and bn-BD.dic
+Copyright 2018 Jacob Thomas, Bengal Creative Media LTD (from the affix file).
+Publisher: Bangla Type Foundry, https://banglatypefoundry.com/spellchecker/
+License: GPLv2, as stated in README-bn-BD-upstream.txt.
+Full GNU GPL v2 terms: COPYING-GPL-2.0.txt.
+Source mirror: https://github.com/mm-crj/bangla-hunspell/tree/main/resources/bangla-type-foundry
+The bundled aff/dic files were verified byte-for-byte against that mirror on 2026-10-01.
+The upstream README is preserved verbatim and refers to a file named Copyright.
+The mirror does not contain that separate file. This package includes the
+original affix copyright statement above and the full standard GPLv2 text.
+
+English (US): en-US.aff and en-US.dic
+Source: https://github.com/LibreOffice/dictionaries/tree/master/en
+Files upstream: en_US.aff, en_US.dic, README_en_US.txt.
+The bundled aff/dic files were verified byte-for-byte against that source on 2026-10-01.
+Only the filenames use hyphens instead of underscores; dictionary contents are unchanged.
+SCOWL and its contributing word lists retain the copyright and permissive license
+terms reproduced in full in README-en-US-upstream.txt. Do not replace those terms
+with a generic single-author notice or a blanket LGPL/MPL label.
+
+These plain-text files are loaded from the site's own plugin directory for
+browser-based Hunspell/nspell checking. They are not downloaded from these upstream
+URLs at runtime.
